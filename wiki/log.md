@@ -109,3 +109,39 @@ Log cronologico append-only. Ogni riga: data, azione, pagine toccate.
   Pagine aggiornate: `data-sources.md`, `data-model.md`, `etl-pipeline.md`,
   `config-reference.md`, `project-status.md` (item 3 della roadmap segnato
   fatto, aggiunta voce minore su population/elevation mancanti).
+
+- **2026-07-04** — CARICAMENTO `temperature` (PUNTO 4, ULTIMO BUCO DELLA
+  PIPELINE). `src/data_processing/clean_data.py` **non era mai stato
+  eseguibile**: da `validate_temperature` in poi il file aveva newline
+  letterali (`\n` testuali) invece di righe vere, un `SyntaxError`
+  bloccava l'import. Riscritto da capo preservando la logica (il contenuto
+  era leggibile, solo "srotolato" su una riga fisica). Prima esecuzione
+  reale su `data/raw/temperature_data.csv`: sopravvivevano solo 10 righe su
+  75.976 — bug trovato in `apply_quality_flags`: `quality_flag` viene
+  valorizzata da `validate_temperature`/`detect_outliers` solo per le righe
+  sospette *prima* che la colonna esista, quindi pandas la crea con `NaN`
+  per tutte le altre; il filtro `quality_flag < 2` scarta anche quelle
+  (`NaN < 2` è `False`). Fix: `df['quality_flag'] = 0` esplicito prima di
+  `validate_temperature`. Ri-eseguito: 75.976/75.976 righe mantenute, 10
+  flaggate (ondata di freddo febbraio 2012, non errori).
+
+  Scritto `DatabaseLoader.insert_temperature()` in `load_to_db.py` (batch
+  insert via `psycopg2.extras.execute_values`). Discussione con l'utente
+  sulla granularità: i dati Open-Meteo sono per provincia (1 stazione =
+  il capoluogo), ma `temperature.municipality_id` è `NOT NULL` — scelto
+  (con l'utente) di associare ogni riga al **comune capoluogo di
+  provincia**, lasciando gli altri 1172 comuni senza dati (alternativa
+  scartata: rendere `municipality_id` nullable per un "livello
+  provinciale"). Trovata un'eccezione nella mappatura nome-capoluogo:
+  la provincia "Verbano-Cusio-Ossola" ha come capoluogo il comune di
+  "Verbania" (nome diverso dalla provincia, a differenza delle altre 7).
+
+  **Risultato finale verificato nel DB**: 75.976 righe in `temperature`,
+  8 comuni capoluogo, range 2000-01-01/2025-12-31, `quality_flag` 0/1
+  coerente, nessun record scartato. La pipeline Extract→Transform→Load è
+  ora completa ed eseguita end-to-end su dati reali per la prima volta.
+
+  Pagine aggiornate: `etl-pipeline.md` (sezioni Transform e Load, bug
+  critici documentati), `project-status.md` (item 4 segnato fatto, righe
+  Settimana 2 aggiornate, prossimi passi ridefiniti attorno a
+  `identify_heatwaves()`/analisi ora che i dati reali ci sono).

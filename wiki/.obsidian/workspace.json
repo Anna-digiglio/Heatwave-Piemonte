@@ -183,8 +183,10 @@
       "bases:Crea nuova Base": false
     }
   },
-  "active": "7267d39c82e18fea",
+  "active": "d5547cbf4ef82087",
   "lastOpenFiles": [
+    "log.md.tmp.13736.9567f7cf0088",
+    "pages/etl-pipeline.md.tmp.13736.2c53d89a9bd2",
     "pages/sql-queries.md",
     "pages/gis-maps.md",
     "log.md.tmp.13736.1d5373ed2823",
@@ -201,7 +203,6 @@
     "pages/architecture.md",
     "log.md.tmp.13736.3105afc9ff6a",
     "pages/project-status.md.tmp.13736.4325ed5b3742",
-    "pages/data-sources.md.tmp.13736.6c2432c2e188",
     "pages/project-overview.md"
   ]
 }

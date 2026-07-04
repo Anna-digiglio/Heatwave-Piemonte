@@ -21,10 +21,10 @@ ogni sessione di lavoro rilevante (vedi workflow di ingest in `CLAUDE.md`).
 
 | Attività | Roadmap | Realtà |
 |---|---|---|
-| `DataCleaner` completo | pianificato | ✅ scritto e ragionevolmente completo (vedi [ETL](etl-pipeline.md)) |
-| Caricamento `temperature` nel DB | pianificato | ❌ `load_to_db.py` crea solo schema + 1 record di test, non carica CSV reali |
-| `identify_heatwaves()` eseguita | pianificato | Funzione SQL scritta, mai eseguita (nessun dato da processare) |
-| KPI calcolati | pianificato | Solo via viste materializzate SQL (vuote, nessun dato sotto) |
+| `DataCleaner` completo | pianificato | ✅ scritto, **ma non era mai stato eseguibile** fino al 2026-07-04 (`SyntaxError` da newline letterali corrotte + bug che scartava il 99,9% dei dati — vedi [ETL](etl-pipeline.md)). Ora eseguito su dati reali: 75.976/75.976 righe mantenute |
+| Caricamento `temperature` nel DB | pianificato | ✅ **eseguito il 2026-07-04** — 75.976 righe reali (8 comuni capoluogo, 2000-2025) in `temperature`, batch insert (vedi [ETL](etl-pipeline.md)) |
+| `identify_heatwaves()` eseguita | pianificato | Funzione SQL scritta, non ancora eseguita — ora possibile, `temperature` è popolata |
+| KPI calcolati | pianificato | Solo via viste materializzate SQL, non ancora refreshate contro i dati reali appena caricati |
 | Query SQL (10+) | pianificato | 3 query scritte in `02_common_queries.sql` |
 
 ## Settimana 3 — Visualizzazione & Deployment
@@ -40,25 +40,33 @@ ogni sessione di lavoro rilevante (vedi workflow di ingest in `CLAUDE.md`).
 
 ## Prossimo passo a maggiore impatto
 
-Fatti (2026-07-04): fix bug import `download_data.py`, download reale
-Open-Meteo (75.976 righe, 2000-2025), database Postgres/PostGIS locale
-configurato e raggiungibile (via `.env`, non più placeholder in
-`config.yaml`), schema inizializzato, 8 province + 1180 comuni reali
-caricati. Nell'ordine, i prossimi sbloccano tutto il resto:
+**La pipeline Extract → Transform → Load è ora completa ed eseguita
+end-to-end su dati reali** (2026-07-04): download Open-Meteo reale,
+database Postgres/PostGIS locale configurato e raggiungibile (via `.env`),
+schema inizializzato, 8 province + 1180 comuni reali + 75.976 righe di
+temperatura (8 comuni capoluogo, 2000-2025) caricati. Questo era il buco più
+grande del progetto — ora l'intero resto ha dati reali su cui lavorare.
 
-1. **Scrivere il pezzo mancante di `load_to_db.py`** che carica
-   `data/processed/temperature_clean.csv` nella tabella `temperature` a batch
-   — oggi è il buco più grande della pipeline (vedi [ETL](etl-pipeline.md)).
-   Il DB è ora pronto a riceverli (schema + FK verso `municipalities`/
-   `provinces` già popolate).
-2. Solo dopo (1), tutto il resto (KPI, mappe, dashboard, analisi statistiche)
-   ha dati reali su cui lavorare
+Nota di granularità: `temperature` copre solo gli **8 comuni capoluogo di
+provincia** (unica granularità realmente misurata da Open-Meteo), non tutti
+i 1180 comuni — scelta deliberata, vedi [ETL](etl-pipeline.md).
+
+Prossimi passi, in ordine:
+
+1. **Eseguire `identify_heatwaves()`** sui dati reali appena caricati e
+   verificare/refreshare le viste materializzate KPI (vedi
+   [Modello Dati](data-model.md))
+2. Costruire `src/analysis/`, mappe GIS, dashboard — ora con dati reali
+   (8 serie storiche comunali, 2000-2025) invece che vuoti
 3. **(minore, non bloccante)** correggere `logging.format` in `config.yaml`
    per la sintassi loguru — oggi console e file di log sono illeggibili
    (vedi [Fonti Dati](data-sources.md))
 4. **(minore, non bloccante)** popolare `population`/`elevation_m` dei
    comuni con un dataset ISTAT demografico separato (oggi `NULL`, lo
    shapefile dei confini non li include — vedi [Modello Dati](data-model.md))
+5. **(minore, non bloccante)** riavviare `postgresql-x64-16` come vero
+   servizio Windows (oggi gira via `pg_ctl` manuale — il servizio in sé
+   risulta "Stopped" e non ripartirebbe da solo dopo un riavvio del PC)
 
 ## Discrepanze da tenere a mente quando si presenta il progetto
 

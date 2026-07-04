@@ -107,6 +107,86 @@ class DatabaseLoader:
         logger.success(f'{len(records)} comuni inseriti/aggiornati in municipalities')
         return len(records)
 
+    def insert_temperature(self, csv_path: Optional[Path] = None, page_size: int = 5000) -> int:
+        """
+        Carica `data/processed/temperature_clean.csv` nella tabella
+        `temperature` a batch.
+
+        I dati Open-Meteo sono per provincia (una stazione = il capoluogo),
+        non per comune: ogni riga viene associata al comune capoluogo di
+        provincia (unico comune per cui esiste davvero una misura). Gli
+        altri comuni della provincia restano senza dati di temperatura —
+        vedi [ETL](../../wiki/pages/etl-pipeline.md) per la motivazione.
+        """
+        import pandas as pd
+        from psycopg2.extras import execute_values
+
+        if csv_path is None:
+            csv_path = Path(config.get('paths.processed_data')) / 'temperature_clean.csv'
+        if not csv_path.exists():
+            raise FileNotFoundError(
+                f'{csv_path} non trovato. Esegui prima '
+                'src.data_processing.clean_data (DataCleaner.clean_data).'
+            )
+
+        df = pd.read_csv(csv_path, parse_dates=['date'])
+
+        # Nome del comune capoluogo per provincia: coincide col nome della
+        # provincia per 7 province su 8. Eccezione: la provincia
+        # "Verbano-Cusio-Ossola" (nome dell'ente, nato dalla fusione di più
+        # aree) ha come capoluogo il comune di Verbania.
+        capital_name_by_province = {'Verbano-Cusio-Ossola': 'Verbania'}
+
+        with db_manager.engine.begin() as conn:
+            province_rows = conn.execute(text('SELECT province_id, name FROM provinces')).fetchall()
+            municipality_rows = conn.execute(text(
+                'SELECT m.municipality_id, m.name, p.name AS province_name '
+                'FROM municipalities m JOIN provinces p ON m.province_id = p.province_id'
+            )).fetchall()
+
+        province_map = {row.name: row.province_id for row in province_rows}
+        municipality_by_province_and_name = {
+            (row.province_name, row.name): row.municipality_id for row in municipality_rows
+        }
+        capital_map = {}
+        for province_name in province_map:
+            capital_name = capital_name_by_province.get(province_name, province_name)
+            municipality_id = municipality_by_province_and_name.get((province_name, capital_name))
+            if municipality_id is not None:
+                capital_map[province_name] = municipality_id
+
+        missing_capitals = set(df['province']) - set(capital_map)
+        if missing_capitals:
+            raise ValueError(f'Comune capoluogo non trovato per le province: {missing_capitals}')
+
+        records = [
+            (
+                capital_map[row.province],
+                province_map[row.province],
+                row.date.date(),
+                float(row.temp_mean),
+                float(row.temp_max),
+                float(row.temp_min),
+                float(row.precipitation),
+                row.data_source,
+                int(row.quality_flag),
+            )
+            for row in df.itertuples(index=False)
+        ]
+
+        insert_sql = (
+            "INSERT INTO temperature "
+            "(municipality_id, province_id, date, temp_mean, temp_max, temp_min, "
+            "precipitation, data_source, quality_flag) VALUES %s"
+        )
+
+        with db_manager.engine.begin() as conn:
+            cursor = conn.connection.cursor()
+            execute_values(cursor, insert_sql, records, page_size=page_size)
+
+        logger.success(f'{len(records)} righe inserite in temperature')
+        return len(records)
+
     def insert_sample_province(self) -> None:
         """Inserisce un record di prova nella tabella provinces."""
         query = text(
@@ -140,6 +220,12 @@ def main():
     if 'municipalities' in verification['tables']:
         try:
             loader.insert_municipalities()
+        except FileNotFoundError as e:
+            logger.warning(str(e))
+
+    if 'temperature' in verification['tables']:
+        try:
+            loader.insert_temperature()
         except FileNotFoundError as e:
             logger.warning(str(e))
 
