@@ -1,0 +1,53 @@
+# ============================================================================
+# HEATWAVE PIEMONTE - Dependencies
+# ============================================================================
+
+# --- Data Processing ---
+pandas==2.1.4
+numpy==1.26.3
+scipy==1.11.4
+
+# --- Database ---
+sqlalchemy==2.0.23
+psycopg2-binary==2.9.9
+geoalchemy2==0.14.1
+
+# --- Geospatial ---
+geopandas==0.14.1
+shapely==2.0.2
+pyproj==3.6.1
+
+# --- API & Data Acquisition ---
+requests==2.31.0
+openmeteo-requests==1.1.2
+cdsapi==0.7.2
+netCDF4==1.6.4
+xarray==2023.12.1
+
+# --- Visualization ---
+matplotlib==3.8.2
+plotly==5.18.0
+seaborn==0.13.0
+folium==0.14.0
+
+# --- Web Framework ---
+streamlit==1.29.0
+streamlit-folium==0.17.0
+
+# --- Utilities ---
+pyyaml==6.0.1
+python-dotenv==1.0.0
+tqdm==4.66.1
+
+# --- Logging & Configuration ---
+loguru==0.7.2
+
+# --- Testing ---
+pytest==7.4.3
+pytest-cov==4.1.0
+
+# --- Code Quality ---
+black==23.12.1
+flake8==6.1.0
+mypy==1.7.1
+pylint==3.0.3

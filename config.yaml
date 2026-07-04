@@ -1,0 +1,107 @@
+# ============================================================================
+# HEATWAVE PIEMONTE - Configuration File
+# Configurazione centrale per il progetto di analisi delle ondate di calore
+# ============================================================================
+
+# --- DATABASE ---
+database:
+  host: "localhost"
+  port: 5432
+  database: "heatwave_piemonte"
+  user: "postgres"
+  password: "your_password"  # DA CAMBIARE - usare variabili d'ambiente in produzione
+  schema: "public"
+  srid: 4326  # EPSG code per le coordinate geografiche
+
+# --- DATA SOURCES ---
+data_sources:
+  open_meteo:
+    enabled: true
+    url: "https://archive-api.open-meteo.com/v1/archive"
+    format: "json"
+    description: "Free meteorological API - Temperature, precipitation data"
+    rate_limit: 10000  # requests per day
+
+  copernicus:
+    enabled: true
+    url: "https://cds.climate.copernicus.eu/api/v2"
+    dataset: "reanalysis-era5-single-levels"
+    variables:
+      - "2m_temperature"
+      - "total_precipitation"
+      - "surface_pressure"
+    product_type: "reanalysis"
+    format: "netcdf"
+    area: [47.1, 5.8, 44.0, 9.8]
+    description: "Copernicus ERA5 climate data for Piemonte bounding box"
+
+  arpa_piemonte:
+    enabled: false
+    url: "https://www.arpa.piemonte.it/dati/climatici"
+    download_type: "csv"
+    description: "Dati climatici ARPA Piemonte per stazioni e serie storiche (opzionale)"
+
+  istat:
+    enabled: false
+    municipalities_url: "https://www.istat.it/it/archivio/222527"
+    provinces_url: "https://www.istat.it/it/archivio/6789"
+    description: "Dati geografici amministrativi ISTAT per comuni e province (opzionale)"
+
+  openstreetmap:
+    enabled: false
+    nominatim_url: "https://nominatim.openstreetmap.org/search.php"
+    user_agent: "HeatwavePiemonte/1.0"
+    description: "Dati OSM per confini amministrativi e geometrie territoriali (opzionale)"
+
+# --- PATHS ---
+paths:
+  raw_data: "./data/raw"
+  processed_data: "./data/processed"
+  external_data: "./data/external"
+  sql_scripts: "./sql"
+  output: "./output"
+  logs: "./logs"
+
+# --- PROCESSING PARAMETERS ---
+processing:
+  temperature_thresholds:
+    extreme_heat_1: 30  # Caldo moderato (°C)
+    extreme_heat_2: 35  # Caldo intenso (°C)
+    extreme_heat_3: 40  # Caldo estremo (°C)
+  
+  heatwave_duration_days: 3  # Minimo giorni consecutivi per ondata di calore
+  
+  date_range:
+    start_year: 2000
+    end_year: 2026
+  
+  regions:
+    - "Alessandria"
+    - "Asti"
+    - "Biella"
+    - "Cuneo"
+    - "Novara"
+    - "Torino"
+    - "Verbano-Cusio-Ossola"
+    - "Vercelli"
+
+# --- LOGGING ---
+logging:
+  level: "INFO"
+  format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+  file: "./logs/heatwave_piemonte.log"
+  console: true
+
+# --- VISUALIZATION ---
+visualization:
+  style: "seaborn"
+  color_palette: "RdYlBu_r"
+  figure_dpi: 300
+  figure_format: "png"
+
+# --- DASHBOARD ---
+dashboard:
+  port: 8501
+  title: "Heatwave Piemonte - Analisi Spazio-Temporale"
+  theme: "light"
+  max_upload_size: 200  # MB
