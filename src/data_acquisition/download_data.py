@@ -92,32 +92,49 @@ class WeatherDataDownloader:
             "timezone": "Europe/Rome"
         }
         
-        try:
-            response = requests.get(
-                self.BASE_URL,
-                params=params,
-                timeout=30
-            )
-            response.raise_for_status()
-            data = response.json()
-            
-            # Trasforma in DataFrame
-            df = pd.DataFrame({
-                'date': pd.to_datetime(data['daily']['time']),
-                'temp_max': data['daily']['temperature_2m_max'],
-                'temp_min': data['daily']['temperature_2m_min'],
-                'temp_mean': data['daily']['temperature_2m_mean'],
-                'precipitation': data['daily']['precipitation_sum'],
-                'province': region,
-                'data_source': 'OpenMeteo'
-            })
-            
-            logger.info(f"✓ Downloaded {len(df)} records for {region}")
-            return df
-            
-        except requests.RequestException as e:
-            logger.error(f"✗ Errore download: {e}")
-            raise
+        max_retries = 5
+        backoff_seconds = 5
+
+        for attempt in range(1, max_retries + 1):
+            try:
+                response = requests.get(
+                    self.BASE_URL,
+                    params=params,
+                    timeout=30
+                )
+
+                if response.status_code == 429:
+                    wait = int(response.headers.get('Retry-After', backoff_seconds))
+                    logger.warning(
+                        f"Rate limit raggiunto per {region}, "
+                        f"attesa {wait}s (tentativo {attempt}/{max_retries})"
+                    )
+                    time.sleep(wait)
+                    backoff_seconds *= 2
+                    continue
+
+                response.raise_for_status()
+                data = response.json()
+
+                # Trasforma in DataFrame
+                df = pd.DataFrame({
+                    'date': pd.to_datetime(data['daily']['time']),
+                    'temp_max': data['daily']['temperature_2m_max'],
+                    'temp_min': data['daily']['temperature_2m_min'],
+                    'temp_mean': data['daily']['temperature_2m_mean'],
+                    'precipitation': data['daily']['precipitation_sum'],
+                    'province': region,
+                    'data_source': 'OpenMeteo'
+                })
+
+                logger.info(f"✓ Downloaded {len(df)} records for {region}")
+                return df
+
+            except requests.RequestException as e:
+                logger.error(f"✗ Errore download: {e}")
+                raise
+
+        raise RuntimeError(f"Rate limit persistente per {region} dopo {max_retries} tentativi")
     
     def download_all_regions(
         self,
@@ -142,7 +159,7 @@ class WeatherDataDownloader:
             try:
                 df = self.download_historical_data(region, start_date, end_date)
                 all_data.append(df)
-                time.sleep(1)  # Rate limiting
+                time.sleep(3)  # Rate limiting
             except Exception as e:
                 logger.error(f"Errore download {region}: {e}")
                 continue
@@ -181,7 +198,7 @@ class CopernicusERA5Downloader:
         self.area = config.get('data_sources.copernicus.area')
         self.client = self._create_cds_client()
 
-    def _create_cds_client(self) -> cdsapi.Client:
+    def _create_cds_client(self) -> Optional["cdsapi.Client"]:
         api_url = self.api_url or os.getenv('CDS_URL')
         api_key = os.getenv('CDS_KEY')
 

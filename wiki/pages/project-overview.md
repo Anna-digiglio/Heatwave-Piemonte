@@ -1,3 +1,4 @@
+
 # Panoramica del progetto
 
 **Sorgenti**: `README.md`, `PROJECT_SUMMARY.md`

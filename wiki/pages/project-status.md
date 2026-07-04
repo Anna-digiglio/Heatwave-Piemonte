@@ -12,8 +12,8 @@ ogni sessione di lavoro rilevante (vedi workflow di ingest in `CLAUDE.md`).
 |---|---|---|
 | Struttura repo | ✅ | ✅ |
 | Schema DB (`01_init_database.sql`) | ✅ | ✅ completo: 6 tabelle, 2 viste, 1 funzione, 25+ indici |
-| Script download (`download_data.py`) | pianificato | ✅ scritto, **ma con bug di import** (vedi [Fonti Dati](data-sources.md)) — non testato su run reale |
-| Download dati 2000-2026 | ⬜ | ❌ non eseguito — esiste solo `test_open_meteo_torino.csv` (1 riga) |
+| Script download (`download_data.py`) | pianificato | ✅ scritto, bug di import **risolto il 2026-07-04** (vedi [Fonti Dati](data-sources.md)); aggiunto anche retry/backoff per rate limit Open-Meteo |
+| Download dati 2000-2026 | ⬜ | ✅ **eseguito il 2026-07-04** — `data/raw/temperature_data.csv`, 75.976 righe, 8 province, 2000-2025 (2026 non incluso, API storica non accetta date future) |
 | Dati geografici (ISTAT comuni/province) | ⬜ | ❌ non scaricati — `municipalities` è vuota |
 | Python environment / requirements | ⬜ | `.venv` presente, `requirements.txt` presente e dettagliato |
 
@@ -40,18 +40,20 @@ ogni sessione di lavoro rilevante (vedi workflow di ingest in `CLAUDE.md`).
 
 ## Prossimo passo a maggiore impatto
 
-Nell'ordine, sbloccano tutto il resto:
+Fatti (2026-07-04): fix bug import `download_data.py`, download reale
+Open-Meteo (75.976 righe, 2000-2025). Nell'ordine, i prossimi sbloccano tutto
+il resto:
 
-1. **Fixare il bug di import in `download_data.py`** (annotazione `cdsapi.Client`)
-2. **Eseguire un download reale** (anche solo Open-Meteo, senza Copernicus, per
-   partire) → popola `data/raw/`
-3. **Popolare `municipalities`** con dati ISTAT reali (oggi solo `provinces` ha
+1. **Popolare `municipalities`** con dati ISTAT reali (oggi solo `provinces` ha
    8 record seed)
-4. **Scrivere il pezzo mancante di `load_to_db.py`** che carica
+2. **Scrivere il pezzo mancante di `load_to_db.py`** che carica
    `data/processed/temperature_clean.csv` nella tabella `temperature` a batch
    — oggi è il buco più grande della pipeline (vedi [ETL](etl-pipeline.md))
-5. Solo dopo (4), tutto il resto (KPI, mappe, dashboard, analisi statistiche)
+3. Solo dopo (2), tutto il resto (KPI, mappe, dashboard, analisi statistiche)
    ha dati reali su cui lavorare
+4. **(minore, non bloccante)** correggere `logging.format` in `config.yaml`
+   per la sintassi loguru — oggi console e file di log sono illeggibili
+   (vedi [Fonti Dati](data-sources.md))
 
 ## Discrepanze da tenere a mente quando si presenta il progetto
 

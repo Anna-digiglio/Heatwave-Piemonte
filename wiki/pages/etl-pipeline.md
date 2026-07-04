@@ -8,13 +8,16 @@
 CLI: `python src/data_acquisition/download_data.py --years 2000:2026 --regions all --sources open_meteo,copernicus`
 
 - `WeatherDataDownloader.download_all_regions()` itera le 8 province, chiama
-  Open-Meteo per ciascuna con 1s di sleep (rate limiting), concatena in un
-  unico DataFrame, salva in `data/raw/temperature_data.csv`.
+  Open-Meteo per ciascuna con 3s di sleep tra una richiesta e l'altra,
+  concatena in un unico DataFrame, salva in `data/raw/temperature_data.csv`.
+- `download_historical_data()` gestisce i `429` (rate limit) con retry e
+  backoff esponenziale (rispetta `Retry-After`, max 5 tentativi) — se anche
+  dopo i retry una provincia fallisce, viene loggata e saltata (`continue`
+  nel loop di `download_all_regions`), non persa silenziosamente come prima.
 - Downloader analoghi per Copernicus ERA5, ARPA, ISTAT, OSM (vedi
   [Fonti Dati](data-sources.md) per stato/bug di ciascuno).
-- **Gap**: nessuna gestione di retry/backoff oltre al singolo `time.sleep(1)`;
-  se una provincia fallisce viene solo loggata e saltata (`continue`), non
-  ritentata.
+- **Eseguito realmente il 2026-07-04**: `data/raw/temperature_data.csv`
+  popolato con 75.976 righe (8 province, 2000-2025, nessun nullo).
 
 ## Transform — `clean_data.py`
 
