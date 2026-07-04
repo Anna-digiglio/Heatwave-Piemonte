@@ -47,3 +47,65 @@ Log cronologico append-only. Ogni riga: data, azione, pagine toccate.
   minore sul fix di `logging.format` ancora da fare). Bug di logging
   **non corretto** (fuori scope: non bloccava il download, solo la
   leggibilità dei log) — resta in cima ai "prossimi passi" come voce minore.
+
+- **2026-07-04** — POPOLAMENTO `municipalities` CON DATI ISTAT REALI + SETUP DB.
+  Sessione lunga, molti bug reali scoperti perché per la prima volta lo
+  schema è stato eseguito su un database Postgres/PostGIS realmente vivo.
+
+  **Dati**: trovato (ricerca web, verificato con HEAD HTTP) l'URL ufficiale
+  ISTAT dei confini comunali (`.../confini_amministrativi/generalizzati/2026/
+  Limiti01012026_g.zip`, sostituiva una pagina HTML non scaricabile in
+  `config.yaml`). Riscritto `IstatGeodataDownloader.download_municipalities`
+  in `download_data.py` per scaricare/estrarre lo shapefile, filtrare il
+  Piemonte (`COD_REG==1`, 1180 comuni), leggerlo con `encoding='cp1252'`
+  (altrimenti nomi accentati corrotti), calcolare `area_km2` nel CRS
+  proiettato originale prima di riproiettare in 4326, e salvare
+  `data/external/municipalities.csv` + `.geojson`. Scoperto un bug nel seed
+  SQL: `provinces.istat_code` di Alessandria era `'001'`, duplicato di
+  Torino (corretto in `'006'` in `sql/01_init_database.sql`, verificato
+  contro lo shapefile ISTAT). Scoperta anche una curiosità dati: il comune
+  istat_code `001168` si chiama letteralmente "None" (va letto con
+  `keep_default_na=False` per non perderlo come NaN).
+
+  **Config/secrets**: `.env` non aveva alcun effetto — `config.py` non
+  chiamava mai `load_dotenv()` nonostante `python-dotenv` fosse già
+  installato, e `get_database_url()` dava comunque precedenza al placeholder
+  in `config.yaml` (tracciato in git) sulla variabile d'ambiente. Fixato:
+  `load_dotenv()` aggiunto, precedenza invertita (env vars vincono).
+
+  **Database locale**: il Postgres 16+PostGIS locale (già installato per
+  questo progetto) aveva una password sconosciuta. Reset password via
+  metodo standard "trust temporaneo" in `pg_hba.conf` — nel farlo, un mio
+  comando PowerShell (`Set-Content -Encoding utf8`) ha introdotto un BOM
+  UTF-8 a inizio file, mai notato subito, che ha fatto fallire silenziosamente
+  ogni successivo restart del servizio per diversi tentativi (`FATALE:
+  could not load pg_hba.conf`, mascherato da timeout SCM di Windows).
+  Diagnosticato leggendo i log Postgres ed Event Viewer; risolto riscrivendo
+  il file senza BOM. Il servizio Windows (`postgresql-x64-16`) non si è più
+  riavviato correttamente da SCM dopo i tentativi falliti — usato `pg_ctl`
+  direttamente (stop/start bypassando il Service Control Manager) come
+  workaround; **il servizio Windows resta "Stopped"**, Postgres gira ma non
+  come servizio: da sistemare in una sessione futura (probabile bisogno di
+  riavviare il servizio da una sessione admin quando comodo).
+
+  **Bug nello schema/loader, mai emersi prima perché mai eseguiti su un DB
+  vivo**: (1) `initialize_schema()` usava `exec_driver_sql`, che passa
+  sempre un dict di parametri a psycopg2 anche se vuoto, facendo interpretare
+  il `%` letterale di `'% of data completeness'` come segnaposto — fix:
+  esecuzione via cursore DBAPI grezzo; (2) `metadata.value` era `NOT NULL`
+  ma il seed inserisce `NULL` per `last_etl_run` — rimosso il vincolo;
+  (3) `municipalities.geometry` era `GEOMETRY(POLYGON,4326)` ma 74/1180
+  comuni reali sono `MULTIPOLYGON` (exclavi) — cambiato a `MULTIPOLYGON`,
+  insert avvolto in `ST_Multi()`; (4) tutti i `CREATE INDEX` mancavano di
+  `IF NOT EXISTS` (a differenza delle `CREATE TABLE`), rompendo la
+  ri-esecuzione dello script su un DB parzialmente inizializzato — aggiunto
+  a tutte le 24 occorrenze. Rimossa anche la chiamata a
+  `insert_sample_province()` da `main()` (inseriva un record fittizio
+  "Test Comune Piemonte" nella tabella `provinces` reale).
+
+  **Risultato finale verificato nel DB**: 8 province (codici ISTAT corretti),
+  1180 comuni reali, 0 geometrie invalide (`ST_IsValid`).
+
+  Pagine aggiornate: `data-sources.md`, `data-model.md`, `etl-pipeline.md`,
+  `config-reference.md`, `project-status.md` (item 3 della roadmap segnato
+  fatto, aggiunta voce minore su population/elevation mancanti).

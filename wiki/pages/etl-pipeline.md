@@ -49,19 +49,41 @@ mostra codici sentinella (es. `-999` per missing) prima della validazione.
 
 ## Load — `load_to_db.py`
 
-CLI: `python src/database/load_to_db.py` → `DatabaseLoader`
+CLI: `python -m src.database.load_to_db` → `DatabaseLoader`
 
-- `initialize_schema()` — esegue l'intero `sql/01_init_database.sql` via
-  `exec_driver_sql` (idempotente grazie a `IF NOT EXISTS`/`ON CONFLICT`)
+- `initialize_schema()` — esegue l'intero `sql/01_init_database.sql` sul
+  cursore DBAPI grezzo (non via `exec_driver_sql`, vedi bug risolto sotto);
+  idempotente grazie a `IF NOT EXISTS` (tabelle **e** indici) / `ON CONFLICT`
 - `verify_schema()` — controlla che `provinces`, `municipalities`,
   `temperature` esistano
-- `insert_sample_province()` — inserisce **un solo record di prova**
+- `insert_municipalities()` — **carica i 1180 comuni reali** da
+  `data/external/municipalities.csv` in `municipalities`, risolvendo
+  `province_id` dal codice ISTAT di provincia (eseguito il 2026-07-04)
+- ~~`insert_sample_province()`~~ — rimossa da `main()` (inseriva un record
+  fittizio "Test Comune Piemonte" nella tabella `provinces` reale; il metodo
+  resta disponibile ma non viene più chiamato automaticamente)
 
-**Gap importante**: `load_to_db.py` oggi **non carica** `data/processed/*.csv`
-nella tabella `temperature`. Non esiste ancora l'orchestratore
-`etl_pipeline.py` né i `models.py`/batch insert menzionati in
-`PROJECT_SUMMARY.md`. Il "Load" reale si ferma a: crea schema + 8 province +
-1 record di test. Questo è il prossimo pezzo mancante nella pipeline — vedi
+**Bug risolti il 2026-07-04, scoperti eseguendo il caricamento reale:**
+- `exec_driver_sql` passa sempre un dict di parametri (anche vuoto) a
+  psycopg2, che quindi interpreta ogni `%` letterale nello script SQL come
+  segnaposto di parametro (paramstyle pyformat) — falliva su
+  `'% of data completeness'` in `01_init_database.sql`. Fix: esecuzione
+  tramite cursore DBAPI grezzo (`conn.connection.cursor()`).
+- `metadata.value` era `NOT NULL` ma il seed inserisce `NULL` per
+  `last_etl_run` — rimosso il vincolo (vedi [Modello Dati](data-model.md)).
+- `municipalities.geometry` era `GEOMETRY(POLYGON, 4326)` ma 74/1180 comuni
+  reali hanno confini `MULTIPOLYGON` (exclavi) — colonna cambiata a
+  `MULTIPOLYGON`, insert avvolto in `ST_Multi(...)`.
+- Tutti i `CREATE INDEX` nello script DDL non avevano `IF NOT EXISTS`
+  (a differenza delle `CREATE TABLE`), rompendo la ri-esecuzione dello
+  script su un DB parzialmente inizializzato — aggiunto `IF NOT EXISTS`
+  a tutti (24 occorrenze).
+
+**Gap importante**: `load_to_db.py` oggi **non carica ancora**
+`data/processed/*.csv` nella tabella `temperature`. Non esiste ancora
+l'orchestratore `etl_pipeline.py` né i `models.py`/batch insert menzionati in
+`PROJECT_SUMMARY.md`. Il "Load" reale oggi copre: schema + 8 province reali +
+1180 comuni reali. Questo è il prossimo pezzo mancante nella pipeline — vedi
 [Stato del Progetto](project-status.md).
 
 ## Passaggi pianificati ma non ancora scritti

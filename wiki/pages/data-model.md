@@ -10,13 +10,26 @@ può divergere leggermente, in caso di conflitto fidati dello script SQL).
 - `name UNIQUE`, `istat_code`, `geometry GEOMETRY(POINT, 4326)` (baricentro),
   `area_km2`, `population`
 - Indici: nome, GIST su geometria, istat_code
-- 8 record seed (le province piemontesi) inseriti direttamente nello script DDL
+- 8 record seed (le province piemontesi) inseriti direttamente nello script DDL.
+  **Fixato il 2026-07-04**: `istat_code` di Alessandria era `'001'`,
+  duplicato di Torino — corretto in `'006'` (verificato incrociando lo
+  shapefile ufficiale ISTAT, che riporta `COD_PROV=6` per i comuni
+  alessandrini).
 
 ### `municipalities`
 - PK `municipality_id SERIAL`, FK `province_id → provinces` (`ON DELETE RESTRICT`)
-- `istat_code UNIQUE`, `geometry GEOMETRY(POLYGON, 4326)`, `elevation_m`,
+- `istat_code UNIQUE`, `geometry GEOMETRY(MULTIPOLYGON, 4326)`, `elevation_m`,
   `population`, `area_km2`
-- Nessun dato seed: da popolare via download ISTAT (vedi [Fonti Dati](data-sources.md))
+- **Popolata il 2026-07-04** con dati reali ISTAT: 1180 comuni piemontesi
+  (confini amministrativi al 01/01/2026, shapefile generalizzato). Vedi
+  [Fonti Dati](data-sources.md) per la provenienza e [ETL](etl-pipeline.md)
+  per il flusso di caricamento. Colonna `geometry` cambiata da `POLYGON` a
+  `MULTIPOLYGON` (era il tipo originario nello script DDL): 74 dei 1180
+  comuni hanno confini multi-parte nei dati ISTAT reali (es. exclavi), che
+  un `POLYGON` semplice non può rappresentare.
+- `population` ed `elevation_m` sono `NULL` per tutti i comuni: lo
+  shapefile ISTAT dei confini amministrativi non include questi dati
+  (serve un dataset demografico ISTAT separato, non ancora integrato).
 
 ### `temperature` — tabella principale, serie storica giornaliera
 - PK `temperature_id BIGSERIAL`
@@ -53,6 +66,9 @@ può divergere leggermente, in caso di conflitto fidati dello script SQL).
 - PK `key`, `value`, `data_type`, `last_updated`, `notes`
 - Righe seed: `database_version`, `last_etl_run`, `data_start_year` (2000),
   `data_end_year` (2026), `data_completeness`, `created_at`
+- `value` **non è più `NOT NULL`** (fixato il 2026-07-04): il seed inserisce
+  `NULL` per `last_etl_run` (nessun ETL ancora eseguito), che violava il
+  vincolo originario
 
 ## Viste materializzate
 

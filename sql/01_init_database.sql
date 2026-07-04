@@ -23,9 +23,9 @@ CREATE TABLE IF NOT EXISTS provinces (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE INDEX idx_provinces_name ON provinces(name);
-CREATE INDEX idx_provinces_geometry ON provinces USING GIST(geometry);
-CREATE INDEX idx_provinces_istat ON provinces(istat_code);
+CREATE INDEX IF NOT EXISTS idx_provinces_name ON provinces(name);
+CREATE INDEX IF NOT EXISTS idx_provinces_geometry ON provinces USING GIST(geometry);
+CREATE INDEX IF NOT EXISTS idx_provinces_istat ON provinces(istat_code);
 
 -- ============================================================================
 -- 2. MUNICIPALITIES TABLE (Comuni piemontesi)
@@ -36,7 +36,9 @@ CREATE TABLE IF NOT EXISTS municipalities (
     province_id INTEGER NOT NULL REFERENCES provinces(province_id) ON DELETE RESTRICT,
     name VARCHAR(100) NOT NULL,
     istat_code VARCHAR(6) NOT NULL UNIQUE,
-    geometry GEOMETRY(POLYGON, 4326) NOT NULL,
+    -- MULTIPOLYGON e non POLYGON: alcuni comuni reali (es. exclavi/isole
+    -- amministrative) hanno confini multi-parte nei dati ISTAT.
+    geometry GEOMETRY(MULTIPOLYGON, 4326) NOT NULL,
     elevation_m SMALLINT,
     population INTEGER,
     area_km2 NUMERIC(10, 2),
@@ -44,10 +46,10 @@ CREATE TABLE IF NOT EXISTS municipalities (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE INDEX idx_municipalities_province ON municipalities(province_id);
-CREATE INDEX idx_municipalities_istat ON municipalities(istat_code);
-CREATE INDEX idx_municipalities_geometry ON municipalities USING GIST(geometry);
-CREATE INDEX idx_municipalities_name ON municipalities(name);
+CREATE INDEX IF NOT EXISTS idx_municipalities_province ON municipalities(province_id);
+CREATE INDEX IF NOT EXISTS idx_municipalities_istat ON municipalities(istat_code);
+CREATE INDEX IF NOT EXISTS idx_municipalities_geometry ON municipalities USING GIST(geometry);
+CREATE INDEX IF NOT EXISTS idx_municipalities_name ON municipalities(name);
 
 -- ============================================================================
 -- 3. TEMPERATURE TABLE (Timeseries dati giornalieri)
@@ -73,12 +75,12 @@ CREATE TABLE IF NOT EXISTS temperature (
 );
 
 -- Critical indexes for performance
-CREATE INDEX idx_temperature_date ON temperature(date);
-CREATE INDEX idx_temperature_municipality_date ON temperature(municipality_id, date);
-CREATE INDEX idx_temperature_province_date ON temperature(province_id, date);
-CREATE INDEX idx_temperature_temp_max ON temperature(temp_max) 
+CREATE INDEX IF NOT EXISTS idx_temperature_date ON temperature(date);
+CREATE INDEX IF NOT EXISTS idx_temperature_municipality_date ON temperature(municipality_id, date);
+CREATE INDEX IF NOT EXISTS idx_temperature_province_date ON temperature(province_id, date);
+CREATE INDEX IF NOT EXISTS idx_temperature_temp_max ON temperature(temp_max) 
     WHERE temp_max > 30;
-CREATE INDEX idx_temperature_data_source ON temperature(data_source);
+CREATE INDEX IF NOT EXISTS idx_temperature_data_source ON temperature(data_source);
 
 -- ============================================================================
 -- 4. HEATWAVE_EVENTS TABLE (Ondate di calore identificate)
@@ -102,11 +104,11 @@ CREATE TABLE IF NOT EXISTS heatwave_events (
     )
 );
 
-CREATE INDEX idx_heatwave_dates ON heatwave_events(start_date, end_date);
-CREATE INDEX idx_heatwave_municipality ON heatwave_events(municipality_id);
-CREATE INDEX idx_heatwave_province ON heatwave_events(province_id);
-CREATE INDEX idx_heatwave_intensity ON heatwave_events(intensity_index DESC);
-CREATE INDEX idx_heatwave_threshold ON heatwave_events(heat_threshold);
+CREATE INDEX IF NOT EXISTS idx_heatwave_dates ON heatwave_events(start_date, end_date);
+CREATE INDEX IF NOT EXISTS idx_heatwave_municipality ON heatwave_events(municipality_id);
+CREATE INDEX IF NOT EXISTS idx_heatwave_province ON heatwave_events(province_id);
+CREATE INDEX IF NOT EXISTS idx_heatwave_intensity ON heatwave_events(intensity_index DESC);
+CREATE INDEX IF NOT EXISTS idx_heatwave_threshold ON heatwave_events(heat_threshold);
 
 -- ============================================================================
 -- 5. KPI TABLE (Key Performance Indicators aggregati)
@@ -137,10 +139,10 @@ CREATE TABLE IF NOT EXISTS kpi (
     )
 );
 
-CREATE INDEX idx_kpi_year ON kpi(year);
-CREATE INDEX idx_kpi_municipality_year ON kpi(municipality_id, year);
-CREATE INDEX idx_kpi_province_year ON kpi(province_id, year);
-CREATE INDEX idx_kpi_level ON kpi(level);
+CREATE INDEX IF NOT EXISTS idx_kpi_year ON kpi(year);
+CREATE INDEX IF NOT EXISTS idx_kpi_municipality_year ON kpi(municipality_id, year);
+CREATE INDEX IF NOT EXISTS idx_kpi_province_year ON kpi(province_id, year);
+CREATE INDEX IF NOT EXISTS idx_kpi_level ON kpi(level);
 
 -- ============================================================================
 -- 6. METADATA TABLE (Informazioni di sistema)
@@ -148,7 +150,7 @@ CREATE INDEX idx_kpi_level ON kpi(level);
 
 CREATE TABLE IF NOT EXISTS metadata (
     key VARCHAR(100) PRIMARY KEY,
-    value TEXT NOT NULL,
+    value TEXT,
     data_type VARCHAR(20),  -- 'string', 'number', 'date', 'json'
     last_updated TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     notes TEXT
@@ -177,8 +179,8 @@ WHERE temp_max IS NOT NULL
 GROUP BY municipality_id, province_id, EXTRACT(YEAR FROM date)
 ORDER BY year, municipality_id;
 
-CREATE INDEX idx_kpi_annual_municipality ON kpi_annual_by_municipality(municipality_id, year);
-CREATE INDEX idx_kpi_annual_province ON kpi_annual_by_municipality(province_id, year);
+CREATE INDEX IF NOT EXISTS idx_kpi_annual_municipality ON kpi_annual_by_municipality(municipality_id, year);
+CREATE INDEX IF NOT EXISTS idx_kpi_annual_province ON kpi_annual_by_municipality(province_id, year);
 
 ---
 
@@ -201,7 +203,7 @@ WHERE temp_max IS NOT NULL
 GROUP BY province_id, EXTRACT(YEAR FROM date)
 ORDER BY year, province_id;
 
-CREATE INDEX idx_kpi_annual_province_year ON kpi_annual_by_province(province_id, year);
+CREATE INDEX IF NOT EXISTS idx_kpi_annual_province_year ON kpi_annual_by_province(province_id, year);
 
 -- ============================================================================
 -- 8. FUNCTIONS (Stored Procedures)
@@ -271,7 +273,7 @@ $$ LANGUAGE plpgsql;
 -- ============================================================================
 
 INSERT INTO provinces (name, istat_code, geometry, area_km2, population) VALUES
-('Alessandria', '001', ST_GeomFromText('POINT(8.64 44.91)', 4326), 3559, 427000),
+('Alessandria', '006', ST_GeomFromText('POINT(8.64 44.91)', 4326), 3559, 427000),
 ('Asti', '005', ST_GeomFromText('POINT(8.19 44.90)', 4326), 1511, 206000),
 ('Biella', '096', ST_GeomFromText('POINT(8.06 45.57)', 4326), 913, 175000),
 ('Cuneo', '004', ST_GeomFromText('POINT(7.54 44.39)', 4326), 6903, 585000),

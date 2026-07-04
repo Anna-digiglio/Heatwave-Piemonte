@@ -5,7 +5,7 @@ singleton, dot-notation via `config.get('a.b.c')`).
 
 | Sezione | Contenuto | Note |
 |---|---|---|
-| `database` | host, port, database, user, password, schema, srid | `password` è in chiaro nel file di esempio — **da spostare su variabili d'ambiente** prima di pubblicare il repo (vedi `.env.example`) |
+| `database` | host, port, database, user, password, schema, srid | `password` in `config.yaml` è solo un placeholder (`your_password`) — le variabili d'ambiente (`.env`, non tracciato in git) hanno la precedenza, vedi sotto |
 | `data_sources` | config per Open-Meteo, Copernicus, ARPA, ISTAT, OSM (url, enabled, variabili) | `enabled` per Copernicus è `true` di default ma richiede `CDS_KEY` in env — vedi [Fonti Dati](data-sources.md) |
 | `paths` | raw/processed/external data, sql, output, logs | Path relativi, risolti rispetto alla root progetto in `Config.get_data_paths()` |
 | `processing.temperature_thresholds` | `extreme_heat_1/2/3` = 30/35/40 °C | Soglie usate per KPI "giorni sopra X°C" e per `identify_heatwaves()` |
@@ -27,3 +27,15 @@ root.
 Costruisce l'URL SQLAlchemy `postgresql://user:password@host:port/database`
 (senza password se non impostata). Usato da `src/utils/database.py` per
 creare l'engine.
+
+**Fixato il 2026-07-04**: `config.py` non chiamava mai `load_dotenv()`
+nonostante `python-dotenv` fosse già in `requirements.txt` e `.env.example`
+presente — un `.env` locale non aveva quindi alcun effetto. Inoltre
+`get_database_url()` leggeva `database.password` da `config.yaml` *prima*
+di considerare la variabile d'ambiente `DB_PASSWORD`, quindi anche
+impostando l'env var il placeholder in YAML vinceva comunque sempre (dato
+che `config.yaml` **è tracciato in git**, a differenza di `.env`). Ora:
+`load_dotenv()` viene chiamato all'import del modulo, e `DB_HOST`/`DB_PORT`/
+`DB_USER`/`DB_PASSWORD`/`DB_NAME` da variabili d'ambiente hanno precedenza
+sui valori in `config.yaml`, che restano solo un fallback/placeholder per la
+struttura del file.

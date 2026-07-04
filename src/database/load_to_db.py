@@ -25,8 +25,14 @@ class DatabaseLoader:
         sql_script = self.sql_path.read_text(encoding='utf-8')
 
         with db_manager.engine.begin() as conn:
-            # Usa exec_driver_sql per script multilinea su PostgreSQL
-            conn.exec_driver_sql(sql_script)
+            # Esegue lo script sul cursore DBAPI grezzo, non tramite
+            # exec_driver_sql: quest'ultimo passa sempre un dict di parametri
+            # (anche vuoto) a psycopg2, che quindi prova a interpretare ogni
+            # "%" letterale nello script come segnaposto di parametro
+            # (paramstyle pyformat) e fallisce non appena il testo ne
+            # contiene uno non riconducibile a un placeholder valido.
+            cursor = conn.connection.cursor()
+            cursor.execute(sql_script)
 
         logger.success('Schema database creato/aggiornato con successo')
 
@@ -42,6 +48,64 @@ class DatabaseLoader:
         except Exception as exc:
             logger.error(f'Errore verifica schema: {exc}')
             return None
+
+    def insert_municipalities(self, csv_path: Optional[Path] = None) -> int:
+        """
+        Carica i comuni piemontesi (dati reali ISTAT, vedi
+        `IstatGeodataDownloader.download_municipalities`) nella tabella
+        `municipalities`, risolvendo `province_id` a partire dal codice
+        ISTAT di provincia.
+        """
+        import pandas as pd
+
+        if csv_path is None:
+            csv_path = Path(config.get('paths.external_data')) / 'municipalities.csv'
+        if not csv_path.exists():
+            raise FileNotFoundError(
+                f'{csv_path} non trovato. Esegui prima '
+                'IstatGeodataDownloader.download_municipalities().'
+            )
+
+        # keep_default_na=False evita che pandas trasformi in NaN il nome del
+        # comune "None" (provincia di Torino) o altri valori testuali che
+        # coincidono con le stringhe NA di default di pandas.
+        df = pd.read_csv(
+            csv_path,
+            dtype={'istat_code': str, 'province_istat_code': str},
+            keep_default_na=False,
+            na_values=[''],
+        )
+
+        with db_manager.engine.begin() as conn:
+            province_rows = conn.execute(text('SELECT province_id, istat_code FROM provinces')).fetchall()
+        province_map = {row.istat_code: row.province_id for row in province_rows}
+
+        missing_provinces = set(df['province_istat_code']) - set(province_map)
+        if missing_provinces:
+            raise ValueError(f'Codici provincia ISTAT non trovati in provinces: {missing_provinces}')
+
+        records = [
+            {
+                'province_id': province_map[row.province_istat_code],
+                'name': row.name,
+                'istat_code': row.istat_code,
+                'geometry_wkt': row.geometry_wkt,
+                'area_km2': row.area_km2,
+            }
+            for row in df.itertuples(index=False)
+        ]
+
+        query = text(
+            "INSERT INTO municipalities (province_id, name, istat_code, geometry, area_km2) "
+            "VALUES (:province_id, :name, :istat_code, ST_Multi(ST_GeomFromText(:geometry_wkt, 4326)), :area_km2) "
+            "ON CONFLICT (istat_code) DO NOTHING"
+        )
+
+        with db_manager.engine.begin() as conn:
+            conn.execute(query, records)
+
+        logger.success(f'{len(records)} comuni inseriti/aggiornati in municipalities')
+        return len(records)
 
     def insert_sample_province(self) -> None:
         """Inserisce un record di prova nella tabella provinces."""
@@ -69,11 +133,17 @@ def main():
     loader = DatabaseLoader()
     loader.initialize_schema()
     verification = loader.verify_schema()
-    if verification and 'provinces' in verification['tables']:
-        loader.insert_sample_province()
-        logger.info('Caricamento DB completato.')
-    else:
+    if not verification:
         logger.error('Verifica schema fallita: tabelle mancanti.')
+        return
+
+    if 'municipalities' in verification['tables']:
+        try:
+            loader.insert_municipalities()
+        except FileNotFoundError as e:
+            logger.warning(str(e))
+
+    logger.info('Caricamento DB completato.')
 
 
 if __name__ == '__main__':

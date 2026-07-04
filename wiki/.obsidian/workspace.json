@@ -78,7 +78,7 @@
       }
     ],
     "direction": "horizontal",
-    "width": 300
+    "width": 200
   },
   "right": {
     "id": "d95d3d018bfe499c",
@@ -183,13 +183,25 @@
       "bases:Crea nuova Base": false
     }
   },
-  "active": "d5547cbf4ef82087",
+  "active": "7267d39c82e18fea",
   "lastOpenFiles": [
+    "pages/sql-queries.md",
+    "pages/gis-maps.md",
+    "log.md.tmp.13736.1d5373ed2823",
+    "pages/project-status.md.tmp.13736.882bdcc6519d",
+    "pages/config-reference.md.tmp.13736.6a2923b3df35",
+    "pages/data-sources.md.tmp.13736.be6668c00eb1",
+    "pages/data-sources.md.tmp.13736.06438791a3fd",
+    "pages/etl-pipeline.md.tmp.13736.87d8d03463b7",
+    "pages/data-model.md.tmp.13736.7039ab15ae17",
+    "index.md",
+    "pages/etl-pipeline.md",
+    "pages/config-reference.md",
+    "pages/project-status.md",
+    "pages/architecture.md",
     "log.md.tmp.13736.3105afc9ff6a",
     "pages/project-status.md.tmp.13736.4325ed5b3742",
     "pages/data-sources.md.tmp.13736.6c2432c2e188",
-    "index.md",
-    "pages/project-overview.md",
-    "pages/architecture.md"
+    "pages/project-overview.md"
   ]
 }

@@ -11,10 +11,10 @@ ogni sessione di lavoro rilevante (vedi workflow di ingest in `CLAUDE.md`).
 | Attività | Roadmap | Realtà |
 |---|---|---|
 | Struttura repo | ✅ | ✅ |
-| Schema DB (`01_init_database.sql`) | ✅ | ✅ completo: 6 tabelle, 2 viste, 1 funzione, 25+ indici |
+| Schema DB (`01_init_database.sql`) | ✅ | ✅ completo: 6 tabelle, 2 viste, 1 funzione, 25+ indici. **Eseguito per la prima volta su un DB reale il 2026-07-04** (Postgres 16 + PostGIS locale) — trovati e risolti 4 bug mai emersi finché nessuno l'aveva davvero eseguito (vedi [ETL](etl-pipeline.md) e [Modello Dati](data-model.md)) |
 | Script download (`download_data.py`) | pianificato | ✅ scritto, bug di import **risolto il 2026-07-04** (vedi [Fonti Dati](data-sources.md)); aggiunto anche retry/backoff per rate limit Open-Meteo |
 | Download dati 2000-2026 | ⬜ | ✅ **eseguito il 2026-07-04** — `data/raw/temperature_data.csv`, 75.976 righe, 8 province, 2000-2025 (2026 non incluso, API storica non accetta date future) |
-| Dati geografici (ISTAT comuni/province) | ⬜ | ❌ non scaricati — `municipalities` è vuota |
+| Dati geografici (ISTAT comuni/province) | ⬜ | ✅ **caricati il 2026-07-04** — 1180 comuni reali in `municipalities` (DB Postgres/PostGIS locale), 8 province con codici ISTAT corretti |
 | Python environment / requirements | ⬜ | `.venv` presente, `requirements.txt` presente e dettagliato |
 
 ## Settimana 2 — ETL & Analisi
@@ -41,19 +41,24 @@ ogni sessione di lavoro rilevante (vedi workflow di ingest in `CLAUDE.md`).
 ## Prossimo passo a maggiore impatto
 
 Fatti (2026-07-04): fix bug import `download_data.py`, download reale
-Open-Meteo (75.976 righe, 2000-2025). Nell'ordine, i prossimi sbloccano tutto
-il resto:
+Open-Meteo (75.976 righe, 2000-2025), database Postgres/PostGIS locale
+configurato e raggiungibile (via `.env`, non più placeholder in
+`config.yaml`), schema inizializzato, 8 province + 1180 comuni reali
+caricati. Nell'ordine, i prossimi sbloccano tutto il resto:
 
-1. **Popolare `municipalities`** con dati ISTAT reali (oggi solo `provinces` ha
-   8 record seed)
-2. **Scrivere il pezzo mancante di `load_to_db.py`** che carica
+1. **Scrivere il pezzo mancante di `load_to_db.py`** che carica
    `data/processed/temperature_clean.csv` nella tabella `temperature` a batch
-   — oggi è il buco più grande della pipeline (vedi [ETL](etl-pipeline.md))
-3. Solo dopo (2), tutto il resto (KPI, mappe, dashboard, analisi statistiche)
+   — oggi è il buco più grande della pipeline (vedi [ETL](etl-pipeline.md)).
+   Il DB è ora pronto a riceverli (schema + FK verso `municipalities`/
+   `provinces` già popolate).
+2. Solo dopo (1), tutto il resto (KPI, mappe, dashboard, analisi statistiche)
    ha dati reali su cui lavorare
-4. **(minore, non bloccante)** correggere `logging.format` in `config.yaml`
+3. **(minore, non bloccante)** correggere `logging.format` in `config.yaml`
    per la sintassi loguru — oggi console e file di log sono illeggibili
    (vedi [Fonti Dati](data-sources.md))
+4. **(minore, non bloccante)** popolare `population`/`elevation_m` dei
+   comuni con un dataset ISTAT demografico separato (oggi `NULL`, lo
+   shapefile dei confini non li include — vedi [Modello Dati](data-model.md))
 
 ## Discrepanze da tenere a mente quando si presenta il progetto
 

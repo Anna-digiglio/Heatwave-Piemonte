@@ -20,6 +20,7 @@ Output:
 import argparse
 import json
 import os
+import zipfile
 from datetime import datetime, timedelta
 from io import BytesIO, StringIO
 from pathlib import Path
@@ -283,7 +284,60 @@ class IstatGeodataDownloader:
         self.provinces_url = config.get('data_sources.istat.provinces_url')
 
     def download_municipalities(self) -> Path:
-        return self._download_geo_file(self.municipalities_url, 'istat_municipalities.geojson')
+        """
+        Scarica lo shapefile ISTAT dei confini comunali (zip), filtra i comuni
+        piemontesi (COD_REG == 1) e salva i risultati in GeoJSON + CSV
+        (quest'ultimo pronto per il caricamento in `municipalities`).
+        """
+        if not self.municipalities_url:
+            raise ValueError('URL ISTAT non configurato per i comuni')
+
+        import geopandas as gpd
+
+        confini_dir = self.external_path / 'istat_confini'
+        confini_dir.mkdir(parents=True, exist_ok=True)
+        zip_path = confini_dir / Path(self.municipalities_url).name
+
+        if not zip_path.exists():
+            logger.info(f'Download ISTAT da {self.municipalities_url}')
+            response = requests.get(self.municipalities_url, timeout=120)
+            response.raise_for_status()
+            zip_path.write_bytes(response.content)
+        else:
+            logger.info(f'File ISTAT già presente: {zip_path}')
+
+        with zipfile.ZipFile(zip_path) as z:
+            z.extractall(confini_dir)
+
+        shp_candidates = list(confini_dir.rglob('Com*_WGS84.shp'))
+        if not shp_candidates:
+            raise RuntimeError(f'Shapefile comuni non trovato in {confini_dir}')
+
+        # I file ISTAT non includono un .cpg; l'attribute table (.dbf) è
+        # codificata in cp1252, non UTF-8 (senza specificarlo esplicitamente
+        # i nomi con accenti risultano corrotti, es. "Agliè" -> "AgliÃ¨").
+        gdf = gpd.read_file(shp_candidates[0], encoding='cp1252')
+        piemonte = gdf[gdf['COD_REG'] == 1].copy()
+
+        # Area calcolata nel CRS proiettato originale (UTM32, metri) prima
+        # di riproiettare in 4326, dove i gradi non sono unità di superficie.
+        piemonte['area_km2'] = piemonte.geometry.area / 1_000_000
+        piemonte = piemonte.to_crs(epsg=4326)
+        piemonte['istat_code'] = piemonte['PRO_COM'].apply(lambda x: f'{int(x):06d}')
+        piemonte['province_istat_code'] = piemonte['COD_PROV'].apply(lambda x: f'{int(x):03d}')
+        piemonte = piemonte.rename(columns={'COMUNE': 'name'})
+
+        output_columns = ['istat_code', 'province_istat_code', 'name', 'area_km2', 'geometry']
+        geojson_path = self.external_path / 'istat_municipalities.geojson'
+        piemonte[output_columns].to_file(geojson_path, driver='GeoJSON')
+
+        csv_path = self.external_path / 'municipalities.csv'
+        csv_df = piemonte[['istat_code', 'province_istat_code', 'name', 'area_km2']].copy()
+        csv_df['geometry_wkt'] = piemonte.geometry.to_wkt()
+        csv_df.to_csv(csv_path, index=False, encoding='utf-8')
+
+        logger.info(f'✓ {len(piemonte)} comuni piemontesi salvati: {geojson_path}, {csv_path}')
+        return csv_path
 
     def download_provinces(self) -> Path:
         return self._download_geo_file(self.provinces_url, 'istat_provinces.geojson')

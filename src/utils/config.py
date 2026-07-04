@@ -14,7 +14,10 @@ import os
 import yaml
 from pathlib import Path
 from typing import Dict, Any
+from dotenv import load_dotenv
 from loguru import logger
+
+load_dotenv()
 
 
 class Config:
@@ -113,11 +116,14 @@ class Config:
         Returns:
             str: SQLAlchemy database URL
         """
-        host = self.get('database.host', 'localhost')
-        port = self.get('database.port', 5432)
-        user = self.get('database.user', os.getenv('DB_USER', 'postgres'))
-        password = self.get('database.password', os.getenv('DB_PASSWORD', ''))
-        database = self.get('database.database', 'heatwave_piemonte')
+        # Le variabili d'ambiente (es. da .env, non tracciato in git) hanno
+        # precedenza su config.yaml, che è tracciato in git e non deve
+        # contenere segreti reali.
+        host = os.getenv('DB_HOST') or self.get('database.host', 'localhost')
+        port = os.getenv('DB_PORT') or self.get('database.port', 5432)
+        user = os.getenv('DB_USER') or self.get('database.user', 'postgres')
+        password = os.getenv('DB_PASSWORD') or self.get('database.password', '')
+        database = os.getenv('DB_NAME') or self.get('database.database', 'heatwave_piemonte')
         
         if password:
             return f"postgresql://{user}:{password}@{host}:{port}/{database}"
