@@ -4,17 +4,17 @@
     "type": "split",
     "children": [
       {
-        "id": "02da2ba056a0a248",
+        "id": "d7c48d6ae3224625",
         "type": "tabs",
         "children": [
           {
-            "id": "23e2d5b8587c6d49",
+            "id": "0e9c54878e5e8b1f",
             "type": "leaf",
             "state": {
-              "type": "graph",
+              "type": "empty",
               "state": {},
-              "icon": "lucide-git-fork",
-              "title": "Vista grafo"
+              "icon": "lucide-file",
+              "title": "Nuova scheda"
             }
           }
         ]
@@ -70,8 +70,7 @@
               "title": "Segnalibri"
             }
           }
-        ],
-        "currentTab": 1
+        ]
       }
     ],
     "direction": "horizontal",
@@ -177,8 +176,10 @@
       "bases:Crea nuova Base": false
     }
   },
-  "active": "fb63d547c83b6a61",
+  "active": "bc3fdf3628f13bd5",
   "lastOpenFiles": [
-    "Benvenuto.md"
+    "2026-07-11.md",
+    "Benvenuto.md",
+    "Senza nome.canvas"
   ]
 }
