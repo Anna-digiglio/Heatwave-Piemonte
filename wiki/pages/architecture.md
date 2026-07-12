@@ -60,6 +60,17 @@ Per il dettaglio di cosa è realmente pronto vs pianificato, vedi
 - **Connection pooling** per il database (`src/utils/database.py`,
   `DatabaseManager`): engine SQLAlchemy con `pool_pre_ping`, `pool_recycle`,
   context manager `get_session()`.
+  **Attenzione (trovato il 2026-07-12)**: `execute_query()` usa
+  `engine.connect()` **senza `conn.commit()`** — corretto per le `SELECT`
+  pure, ma se ci esegui una funzione con effetti collaterali (es.
+  `SELECT * FROM identify_heatwaves();`), SQLAlchemy 2.0 fa rollback
+  automatico delle modifiche non committate alla chiusura della
+  connessione, silenziosamente (nessun errore, la funzione "riesce" ma non
+  scrive nulla). `execute_update()` invece chiama `conn.commit()`
+  esplicitamente ed è corretto. Per chiamare funzioni PL/pgSQL con side
+  effect, usare `with db_manager.engine.begin() as conn: conn.execute(...)`
+  (commit automatico a fine blocco se non ci sono eccezioni), non
+  `execute_query()`.
 - **Classi downloader dedicate** per fonte dati (`WeatherDataDownloader`,
   `CopernicusERA5Downloader`, `ArpaPiemonteDownloader`, `IstatGeodataDownloader`,
   `OpenStreetMapDownloader`) orchestrate da `ReferenceDataManager` in
