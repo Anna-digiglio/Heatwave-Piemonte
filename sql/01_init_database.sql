@@ -229,42 +229,62 @@ DECLARE
     v_current_streak INT := 0;
     v_streak_start DATE;
     v_max_temp FLOAT;
+    v_municipality_id INTEGER;
+    v_province_id INTEGER;
 BEGIN
     FOR rec IN
-        SELECT 
-            municipality_id,
-            province_id,
-            date,
-            temp_max
-        FROM temperature
-        WHERE temp_max > p_heat_threshold
-        ORDER BY municipality_id, date
+        SELECT
+            t.municipality_id,
+            t.province_id,
+            t.date,
+            t.temp_max
+        FROM temperature t
+        WHERE t.temp_max > p_heat_threshold
+        ORDER BY t.municipality_id, t.date
     LOOP
-        IF v_current_streak = 0 THEN
+        IF v_current_streak > 0
+           AND rec.municipality_id = v_municipality_id
+           AND rec.date = v_streak_start + (v_current_streak || ' days')::INTERVAL THEN
+            -- La sequenza continua per lo stesso comune
+            v_current_streak := v_current_streak + 1;
+            v_max_temp := GREATEST(v_max_temp, rec.temp_max);
+        ELSE
+            -- La sequenza si interrompe (buco di date o cambio comune):
+            -- salva l'eventuale ondata precedente PRIMA di iniziarne una
+            -- nuova, usando i valori del comune a cui l'ondata appartiene
+            -- davvero (non quelli della riga corrente, che può già
+            -- appartenere al comune successivo).
+            IF v_current_streak >= p_min_duration THEN
+                INSERT INTO heatwave_events
+                (municipality_id, province_id, start_date, end_date,
+                 duration_days, max_temp, heat_threshold, threshold_type)
+                VALUES
+                (v_municipality_id, v_province_id, v_streak_start,
+                 v_streak_start + ((v_current_streak - 1) || ' days')::INTERVAL,
+                 v_current_streak, v_max_temp, p_heat_threshold,
+                 'GT_' || CAST(CAST(p_heat_threshold AS INT) AS VARCHAR));
+            END IF;
             v_streak_start := rec.date;
             v_max_temp := rec.temp_max;
+            v_municipality_id := rec.municipality_id;
+            v_province_id := rec.province_id;
             v_current_streak := 1;
-        ELSE
-            IF rec.date = v_streak_start + (v_current_streak || ' days')::INTERVAL THEN
-                v_current_streak := v_current_streak + 1;
-                v_max_temp := GREATEST(v_max_temp, rec.temp_max);
-            ELSE
-                IF v_current_streak >= p_min_duration THEN
-                    INSERT INTO heatwave_events
-                    (municipality_id, province_id, start_date, end_date, 
-                     duration_days, max_temp, heat_threshold, threshold_type)
-                    VALUES
-                    (rec.municipality_id, rec.province_id, v_streak_start,
-                     v_streak_start + ((v_current_streak - 1) || ' days')::INTERVAL,
-                     v_current_streak, v_max_temp, p_heat_threshold,
-                     'GT_' || CAST(CAST(p_heat_threshold AS INT) AS VARCHAR));
-                END IF;
-                v_streak_start := rec.date;
-                v_max_temp := rec.temp_max;
-                v_current_streak := 1;
-            END IF;
         END IF;
     END LOOP;
+
+    -- Flush finale: l'ultima sequenza (dell'ultimo comune elaborato) non
+    -- viene mai interrotta da un cambio di data/comune dentro il loop,
+    -- quindi va salvata esplicitamente qui se soddisfa la durata minima.
+    IF v_current_streak >= p_min_duration THEN
+        INSERT INTO heatwave_events
+        (municipality_id, province_id, start_date, end_date,
+         duration_days, max_temp, heat_threshold, threshold_type)
+        VALUES
+        (v_municipality_id, v_province_id, v_streak_start,
+         v_streak_start + ((v_current_streak - 1) || ' days')::INTERVAL,
+         v_current_streak, v_max_temp, p_heat_threshold,
+         'GT_' || CAST(CAST(p_heat_threshold AS INT) AS VARCHAR));
+    END IF;
 END;
 $$ LANGUAGE plpgsql;
 
