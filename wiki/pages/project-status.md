@@ -1,7 +1,8 @@
 # Stato del progetto (pianificato vs implementato)
 
 **Sorgenti**: confronto diretto tra `docs/ROADMAP.md`/`PROJECT_SUMMARY.md`
-(pianificazione) e stato reale delle cartelle/codice al 2026-07-04.
+(pianificazione) e stato reale delle cartelle/codice, aggiornato al
+2026-07-12.
 
 Questa pagina è quella con la scadenza più breve nella wiki: va aggiornata a
 ogni sessione di lavoro rilevante (vedi workflow di ingest in `CLAUDE.md`).
@@ -23,8 +24,8 @@ ogni sessione di lavoro rilevante (vedi workflow di ingest in `CLAUDE.md`).
 |---|---|---|
 | `DataCleaner` completo | pianificato | ✅ scritto, **ma non era mai stato eseguibile** fino al 2026-07-04 (`SyntaxError` da newline letterali corrotte + bug che scartava il 99,9% dei dati — vedi [ETL](etl-pipeline.md)). Ora eseguito su dati reali: 75.976/75.976 righe mantenute |
 | Caricamento `temperature` nel DB | pianificato | ✅ **eseguito il 2026-07-04** — 75.976 righe reali (8 comuni capoluogo, 2000-2025) in `temperature`, batch insert (vedi [ETL](etl-pipeline.md)) |
-| `identify_heatwaves()` eseguita | pianificato | Funzione SQL scritta, non ancora eseguita — ora possibile, `temperature` è popolata |
-| KPI calcolati | pianificato | Solo via viste materializzate SQL, non ancora refreshate contro i dati reali appena caricati |
+| `identify_heatwaves()` eseguita | pianificato | ✅ **eseguita il 2026-07-12** su dati reali — 51 ondate identificate (2000-2025), 2 bug di attribuzione/flush risolti (vedi [Modello Dati](data-model.md)) |
+| KPI calcolati | pianificato | ✅ viste materializzate **rinfrescate il 2026-07-12** con dati reali — 208 righe ciascuna (8 comuni/province × 26 anni) |
 | Query SQL (10+) | pianificato | 3 query scritte in `02_common_queries.sql` |
 
 ## Settimana 3 — Visualizzazione & Deployment
@@ -51,22 +52,30 @@ Nota di granularità: `temperature` copre solo gli **8 comuni capoluogo di
 provincia** (unica granularità realmente misurata da Open-Meteo), non tutti
 i 1180 comuni — scelta deliberata, vedi [ETL](etl-pipeline.md).
 
+Aggiornamento 2026-07-12: `identify_heatwaves()` eseguita su dati reali (51
+ondate, 2000-2025) e viste materializzate KPI rinfrescate (208 righe
+ciascuna). **Tutta la catena dati → schema → KPI/ondate è ora reale e
+verificata**: `temperature`, `heatwave_events`, `kpi_annual_by_municipality`,
+`kpi_annual_by_province` hanno tutte contenuto vero su cui costruire
+analisi/mappe/dashboard.
+
 Prossimi passi, in ordine:
 
-1. **Eseguire `identify_heatwaves()`** sui dati reali appena caricati e
-   verificare/refreshare le viste materializzate KPI (vedi
-   [Modello Dati](data-model.md))
-2. Costruire `src/analysis/`, mappe GIS, dashboard — ora con dati reali
-   (8 serie storiche comunali, 2000-2025) invece che vuoti
-3. **(minore, non bloccante)** correggere `logging.format` in `config.yaml`
+1. Costruire `src/analysis/` (statistica, spaziale, temporale), mappe GIS,
+   dashboard — ora con dati reali (8 serie storiche comunali, 51 ondate,
+   2000-2025) invece che vuoti
+2. **(minore, non bloccante)** correggere `logging.format` in `config.yaml`
    per la sintassi loguru — oggi console e file di log sono illeggibili
    (vedi [Fonti Dati](data-sources.md))
-4. **(minore, non bloccante)** popolare `population`/`elevation_m` dei
+3. **(minore, non bloccante)** popolare `population`/`elevation_m` dei
    comuni con un dataset ISTAT demografico separato (oggi `NULL`, lo
    shapefile dei confini non li include — vedi [Modello Dati](data-model.md))
-5. **(minore, non bloccante)** riavviare `postgresql-x64-16` come vero
+4. **(minore, non bloccante)** riavviare `postgresql-x64-16` come vero
    servizio Windows (oggi gira via `pg_ctl` manuale — il servizio in sé
    risulta "Stopped" e non ripartirebbe da solo dopo un riavvio del PC)
+5. **(minore, non bloccante)** ricordarsi di rifare `REFRESH MATERIALIZED
+   VIEW` dopo ogni futuro caricamento di `temperature` — le viste KPI non
+   si aggiornano da sole (vedi [Modello Dati](data-model.md))
 
 ## Discrepanze da tenere a mente quando si presenta il progetto
 
