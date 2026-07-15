@@ -10,7 +10,7 @@ from pathlib import Path
 
 import pandas as pd
 import streamlit as st
-from sqlalchemy import text
+from sqlalchemy import bindparam, text
 
 from . import PROJECT_ROOT  # noqa: F401 (side effect: aggiunge la root al sys.path)
 from src.utils.config import config
@@ -66,6 +66,35 @@ def get_daily_temperature(municipality_name: str) -> pd.DataFrame:
     """)
     with db_manager.engine.connect() as conn:
         df = pd.read_sql(query, conn, params={'name': municipality_name})
+    df['date'] = pd.to_datetime(df['date'])
+    return df
+
+
+@st.cache_data(ttl=600)
+def get_daily_temperature_aggregate(municipality_names: tuple) -> pd.DataFrame:
+    """
+    Media giornaliera di temperatura sui comuni indicati - usata per
+    l'opzione "Piemonte / media dei comuni filtrati" nella pagina Analisi
+    Temporale. È una media aritmetica non pesata per popolazione/superficie
+    dei soli comuni con dati reali passati in `municipality_names`, non una
+    stima ufficiale della temperatura regionale (vedi
+    wiki/pages/etl-pipeline.md per la granularità reale dei dati: 44 dei
+    1180 comuni piemontesi).
+    """
+    query = text("""
+        SELECT t.date,
+               AVG(t.temp_mean)::float AS temp_mean,
+               AVG(t.temp_max)::float AS temp_max,
+               AVG(t.temp_min)::float AS temp_min,
+               AVG(t.precipitation)::float AS precipitation
+        FROM temperature t
+        JOIN municipalities m ON t.municipality_id = m.municipality_id
+        WHERE m.name IN :names
+        GROUP BY t.date
+        ORDER BY t.date
+    """).bindparams(bindparam('names', expanding=True))
+    with db_manager.engine.connect() as conn:
+        df = pd.read_sql(query, conn, params={'names': list(municipality_names)})
     df['date'] = pd.to_datetime(df['date'])
     return df
 
@@ -163,6 +192,29 @@ def get_seasonal_decomposition(municipality_name: str) -> pd.DataFrame:
     df = pd.read_csv(path)
     df['date'] = pd.to_datetime(df['date'])
     return df
+
+
+@st.cache_data(ttl=600)
+def get_seasonal_decomposition_aggregate(municipality_names: tuple) -> pd.DataFrame:
+    """
+    STL decomposition calcolata al volo sulla media giornaliera dei comuni
+    indicati (a differenza di `get_seasonal_decomposition`, che legge un
+    CSV precalcolato per comune - qui non esiste un precalcolato per
+    l'aggregato "Piemonte", quindi si ricalcola con la stessa funzione
+    `decompose()` di `src/analysis/seasonal_analysis.py`).
+    """
+    from src.analysis.seasonal_analysis import decompose
+
+    daily = get_daily_temperature_aggregate(municipality_names)
+    if daily.empty:
+        return pd.DataFrame()
+
+    series = daily.set_index('date')['temp_mean'].asfreq('D')
+    if series.isna().any():
+        series = series.interpolate(method='linear')
+
+    decomposed = decompose(series).reset_index()
+    return decomposed
 
 
 @st.cache_data(ttl=600)
