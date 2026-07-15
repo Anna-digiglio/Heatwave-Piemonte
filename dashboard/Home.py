@@ -38,14 +38,10 @@ st.caption("Analisi spazio-temporale delle ondate di calore in Piemonte (2000-20
 year_start, year_end, provinces = render_sidebar_filters()
 
 st.markdown(
-    "Questo progetto studia **come sta cambiando il clima in Piemonte** "
-    "usando dati meteorologici reali degli ultimi 26 anni: le temperature "
-    "stanno davvero salendo? Quanto spesso arrivano ondate di calore "
-    "intense? Ci sono zone della regione più colpite di altre? "
-    "I filtri **anni/provincia** nella sidebar restano impostati anche "
-    "cambiando pagina. Ogni pagina ha in cima un riquadro "
-    "**\"Come si legge questa pagina\"** per capire cosa stai guardando "
-    "anche senza background statistico."
+     "Questo progetto analizza **26 anni di dati meteorologici reali** per "
+    "capire come sta cambiando il clima in Piemonte: le temperature stanno "
+    "davvero salendo? Ci sono zone della regione più colpite di altre? E "
+    "quanto sono diventate più frequenti e intense le **ondate di calore**?"
 )
 
 st.subheader("Esplora la dashboard")
@@ -78,14 +74,14 @@ with card3:
 
 st.divider()
 
-with st.expander("ℹ️ Cos'è un'ondata di calore, in questo progetto?"):
+with st.expander("ℹ️ Cos'è un'ondata di calore?"):
     st.markdown(
         "Definiamo **ondata di calore** una sequenza di **almeno 3 giorni "
         "consecutivi** in cui la temperatura massima supera i **35°C**. "
         "È una definizione semplificata (i climatologi spesso usano soglie "
         "che variano località per località, non un numero fisso), scelta "
         "qui per essere facile da capire e da verificare. Il calcolo è "
-        "fatto da una funzione nel database (`identify_heatwaves()`) che "
+        "fatto da una funzione che "
         "scandisce anno per anno le temperature di ogni comune."
     )
 
@@ -94,8 +90,7 @@ st.warning(
     "1180 comuni piemontesi** — gli 8 capoluoghi di provincia più 36 comuni "
     "scelti per coprire bene il territorio (zone di montagna, pianura, "
     "collina), non un censimento completo. Ogni grafico e mappa di questo "
-    "sito riflette solo questi 44 comuni. Vedi la wiki "
-    "(`etl-pipeline.md`) per il dettaglio."
+    "sito riflette solo questi 44 comuni. "
 )
 
 stats = get_overview_stats()
