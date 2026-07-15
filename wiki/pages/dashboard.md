@@ -39,21 +39,39 @@ Configurazione da `config.yaml`: titolo (`dashboard.title`) passato a
 
 ## Contenuto delle pagine (dati reali)
 
-- **Home**: metriche generali (righe di temperatura, periodo, comuni con
-  dati reali, ondate identificate), mappa dei 8 comuni capoluogo, tabella
-  trend di riscaldamento.
-- **Analisi Temporale**: selezione comune, serie giornaliera
-  max/media/min, scomposizione STL (trend/stagionalità/residuo).
-- **Analisi Spaziale**: mappa dei cluster climatici (K-means, k=3),
-  indice di Moran con avviso esplicito sul limite campionario (8 unità
-  spaziali).
-- **Ondate di Calore**: frequenza per anno, statistiche per comune,
-  elenco filtrabile delle 51 ondate.
-- **Download Dati**: bottoni di export per i CSV di `data/processed/`,
-  `data/external/` e `output/`.
+- **Home**: intro in linguaggio semplice su cosa fa il progetto, spiegazione
+  di cosa conta come "ondata di calore" in un riquadro espandibile, metriche
+  generali (righe di temperatura, periodo, comuni con dati reali, ondate
+  identificate) con didascalie, mappa dei 8 comuni capoluogo, tabella trend
+  di riscaldamento.
+- **Analisi Temporale**: riquadro "come si legge questa pagina" (Mann-Kendall
+  vs regressione lineare, cosa mostra la STL), selezione comune, serie
+  giornaliera max/media/min, scomposizione STL (trend/stagionalità/residuo)
+  con didascalia che spiega ciascuna componente.
+- **Analisi Spaziale**: riquadro esplicativo su K-means e indice di Moran in
+  linguaggio semplice, mappa dei cluster climatici (K-means, k=3), indice di
+  Moran con interpretazione discorsiva (`st.success`/`st.info` a seconda
+  della significatività) oltre al numero, avviso esplicito sul limite
+  campionario (8 unità spaziali).
+- **Ondate di Calore**: riquadro esplicativo su durata/intensità, frequenza
+  per anno con didascalia interpretativa, statistiche per comune, elenco
+  filtrabile delle 51 ondate.
+- **Download Dati**: ogni file ha una descrizione in linguaggio semplice di
+  cosa contiene, non solo il nome, oltre al bottone di export per i CSV di
+  `data/processed/`, `data/external/` e `output/`.
 
 Tutte le pagine mostrano avvisi (`st.warning`) sulla granularità limitata
 (8 comuni capoluogo su 1180) dove rilevante, invece di lasciarla implicita.
+
+**Aggiornamento 2026-07-15 (leggibilità per non addetti ai lavori)**: su
+richiesta esplicita dell'utente, aggiunto un riquadro `st.expander("ℹ️ Come
+si legge questa pagina")` a inizio di ogni pagina di analisi, con
+spiegazioni in linguaggio semplice dei metodi statistici usati (senza
+richiedere che il visitatore conosca già Mann-Kendall, STL o Moran's I),
+più didascalie (`st.caption`) sotto ogni grafico/metrica principale che ne
+riassumono il significato pratico. Obiettivo: rendere il sito comprensibile
+anche a chi non conosce il progetto (es. un recruiter), non solo a chi ha
+già letto la wiki.
 
 ## Come verificare senza aprire un browser
 
