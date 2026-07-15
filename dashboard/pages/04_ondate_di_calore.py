@@ -30,7 +30,7 @@ with st.expander("ℹ️ Come si legge questa pagina"):
         "dei 35°C, moltiplicato per la durata — un'ondata lunga e/o molto "
         "calda ha un'intensità più alta di una breve e appena sopra soglia\n\n"
         "Il grafico a barre mostra **quante ondate sono state rilevate ogni anno**, "
-        "sommando tutti gli 8 comuni: è un modo rapido per vedere se gli anni "
+        "sommando tutti i 44 comuni: è un modo rapido per vedere se gli anni "
         "recenti sono peggiori di quelli passati."
     )
 
