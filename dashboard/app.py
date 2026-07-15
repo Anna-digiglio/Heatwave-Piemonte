@@ -87,6 +87,7 @@ col_map, col_trend = st.columns([3, 2])
 
 with col_map:
     st.subheader("Comuni con dati di temperatura reali")
+    st.caption("Le 8 città (in rosso) da cui vengono tutti i numeri di questo sito. Passa il mouse per il nome.")
     geo_df = get_municipality_geometries_wkt()
 
     m = folium.Map(location=[45.0, 8.0], zoom_start=8, tiles='CartoDB positron')
@@ -101,6 +102,7 @@ with col_map:
 
 with col_trend:
     st.subheader("Trend di riscaldamento (2000-2025)")
+    st.caption("La temperatura media di ogni comune sta salendo, scendendo, o restando stabile?")
     trend_df = get_trend_analysis()
     if trend_df.empty:
         st.info("Esegui `python -m src.analysis.trend_analysis` per generare questi risultati.")
