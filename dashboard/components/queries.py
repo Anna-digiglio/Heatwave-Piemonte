@@ -167,7 +167,7 @@ def get_seasonal_decomposition(municipality_name: str) -> pd.DataFrame:
 
 @st.cache_data(ttl=600)
 def get_municipality_names_with_data() -> list:
-    """Nomi degli 8 comuni con dati di temperatura reali, ordinati alfabeticamente."""
+    """Nomi dei comuni con dati di temperatura reali, ordinati alfabeticamente."""
     query = """
         SELECT DISTINCT m.name
         FROM temperature t
