@@ -284,6 +284,7 @@ def build_evolution_animation(db: dict) -> None:
         QgsFillSymbol.createSimple({'outline_color': '#555555', 'outline_width': '0.3'}), ramp,
     )
     temporal_layer.setRenderer(renderer)
+    add_labels(temporal_layer, "\"name\" || ' (' || round(\"temp_mean_annual\", 1) || '°C)'")
 
     temporal_props = temporal_layer.temporalProperties()
     temporal_props.setMode(QgsVectorLayerTemporalProperties.ModeFeatureDateTimeStartAndEndFromFields)
