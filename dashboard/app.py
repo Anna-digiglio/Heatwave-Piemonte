@@ -18,6 +18,7 @@ import folium
 import streamlit as st
 from streamlit_folium import st_folium
 
+from components.filters import render_sidebar_filters
 from components.maps import wkt_to_geojson
 from components.queries import (
     get_municipality_geometries_wkt,
@@ -34,16 +35,48 @@ st.set_page_config(
 st.title("🌡️ Heatwave Piemonte")
 st.caption("Analisi spazio-temporale delle ondate di calore in Piemonte (2000-2025)")
 
+year_start, year_end, provinces = render_sidebar_filters()
+
 st.markdown(
     "Questo progetto studia **come sta cambiando il clima in Piemonte** "
     "usando dati meteorologici reali degli ultimi 26 anni: le temperature "
     "stanno davvero salendo? Quanto spesso arrivano ondate di calore "
     "intense? Ci sono zone della regione più colpite di altre? "
-    "Le pagine nel menu a sinistra rispondono a queste domande, ognuna con "
-    "un metodo diverso — usa il riquadro **\"Come si legge questa pagina\"** "
-    "in cima a ciascuna per capire cosa stai guardando anche senza "
-    "background statistico."
+    "I filtri **anni/provincia** nella sidebar restano impostati anche "
+    "cambiando pagina. Ogni pagina ha in cima un riquadro "
+    "**\"Come si legge questa pagina\"** per capire cosa stai guardando "
+    "anche senza background statistico."
 )
+
+st.subheader("Esplora la dashboard")
+card1, card2, card3 = st.columns(3)
+with card1:
+    with st.container(border=True):
+        st.markdown("### 📈 Analisi Temporale")
+        st.caption(
+            "Le temperature stanno davvero salendo? Trend, anomalie, "
+            "confronto tra stagioni e variabilità nel tempo, comune per comune."
+        )
+        st.page_link("pages/02_analisi_temporale.py", label="Vai alla pagina →")
+with card2:
+    with st.container(border=True):
+        st.markdown("### 🗺️ Analisi Spaziale")
+        st.caption(
+            "Quali zone del Piemonte sono più calde o si scaldano più in "
+            "fretta? Mappe per provincia, fascia altitudinale, isola di "
+            "calore urbana."
+        )
+        st.page_link("pages/03_analisi_spaziale.py", label="Vai alla pagina →")
+with card3:
+    with st.container(border=True):
+        st.markdown("### 🔥 Ondate di Calore")
+        st.caption(
+            "Quando, dove e quanto intense sono state le ondate di calore "
+            "dal 2000 a oggi, e se il fenomeno sta accelerando."
+        )
+        st.page_link("pages/04_ondate_di_calore.py", label="Vai alla pagina →")
+
+st.divider()
 
 with st.expander("ℹ️ Cos'è un'ondata di calore, in questo progetto?"):
     st.markdown(
@@ -87,11 +120,12 @@ col_map, col_trend = st.columns([3, 2])
 
 with col_map:
     st.subheader("Comuni con dati di temperatura reali")
-    st.caption("I 44 comuni (in rosso) da cui vengono tutti i numeri di questo sito. Passa il mouse per il nome.")
+    st.caption("I comuni (in rosso, filtrati per provincia nella sidebar) da cui vengono i numeri di questo sito. Passa il mouse per il nome.")
     geo_df = get_municipality_geometries_wkt()
+    geo_df_f = geo_df[geo_df['province_name'].isin(provinces)]
 
     m = folium.Map(location=[45.0, 8.0], zoom_start=8, tiles='CartoDB positron')
-    for _, row in geo_df.iterrows():
+    for _, row in geo_df_f.iterrows():
         folium.GeoJson(
             wkt_to_geojson(row['geometry_wkt']),
             name=row['municipality_name'],
@@ -107,7 +141,9 @@ with col_trend:
     if trend_df.empty:
         st.info("Esegui `python -m src.analysis.trend_analysis` per generare questi risultati.")
     else:
-        display_df = trend_df[['municipality_name', 'mk_trend', 'lr_slope_per_decade', 'lr_p_value']].copy()
+        trend_df_f = trend_df.merge(geo_df[['municipality_name', 'province_name']], on='municipality_name')
+        trend_df_f = trend_df_f[trend_df_f['province_name'].isin(provinces)]
+        display_df = trend_df_f[['municipality_name', 'mk_trend', 'lr_slope_per_decade', 'lr_p_value']].copy()
         display_df.columns = ['Comune', 'Trend (Mann-Kendall)', '°C/decade', 'p-value']
         display_df['°C/decade'] = display_df['°C/decade'].round(2)
         display_df['p-value'] = display_df['p-value'].round(4)
