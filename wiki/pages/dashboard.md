@@ -27,11 +27,15 @@ dashboard/
 │   └── 05_download_dati.py         # export CSV (dati puliti + risultati di analisi)
 └── components/
     ├── __init__.py                 # bootstrap sys.path (vedi bug sotto)
-    ├── constants.py                # palette colori, soglie fasce altitudinali, capoluoghi, riferimenti letteratura (2026-07-15)
+    ├── constants.py                # palette colori, soglie fasce altitudinali, capoluoghi, riferimenti letteratura, etichette Mann-Kendall (2026-07-15)
     ├── filters.py                  # sidebar comune (intervallo anni + provincia), persistita via st.session_state (2026-07-15)
     ├── heatwave_definitions.py     # definizione alternativa (percentile) di ondata di calore, solo per confronto metodologico (2026-07-15)
+    ├── styling.py                  # CSS condiviso, iniettato in ogni pagina (2026-07-15)
     ├── queries.py                  # accesso dati (DB + CSV di output), cache_data
     └── maps.py                     # conversione WKT → GeoJSON per folium
+
+.streamlit/
+└── config.toml                     # tema Streamlit nativo (colori, font, raggio angoli) — 2026-07-15
 ```
 
 **Scostamento deliberato dal piano**: niente `pages/01_home.py` separato —
@@ -175,6 +179,67 @@ linguaggio semplice dei metodi statistici usati, più didascalie
 successivo, ogni nuovo grafico ha ricevuto lo stesso trattamento (2-3 righe
 di "cosa guardare" sopra ciascuno, non solo sui grafici preesistenti).
 
+## Etichette leggibili per l'esito di Mann-Kendall (2026-07-15)
+
+`pymannkendall` restituisce testualmente `'increasing'`/`'decreasing'`/
+`'no trend'`. Mostrato così in dashboard, `'no trend'` viene facilmente
+letto come "il clima è stabile qui", mentre significa "con 26 anni di dati
+non c'è abbastanza evidenza statistica per dire se c'è un trend" — un
+limite del test, non un'affermazione sul clima. Aggiunta
+`components/constants.py::format_mk_trend()` (dizionario
+`MK_TREND_LABELS`) che traduce l'esito in etichette con icona:
+`📈 In aumento` / `📉 In diminuzione` / `🔍 Nessun trend chiaro`. Applicata
+ovunque compare `mk_trend`: metrica in alto e tab "Dettaglio tecnico" di
+`02_analisi_temporale.py`, tabella comparativa in `Home.py`.
+
+## Tema e rifiniture estetiche (2026-07-15)
+
+Su segnalazione esplicita dell'utente ("estetica bruttissima", testo delle
+etichette lunghe come "🔍 Nessun trend chiaro" tagliato a metà dentro
+`st.metric`):
+
+- **`.streamlit/config.toml`** (nuovo): tema nativo Streamlit invece di CSS
+  sparso — palette coerente (blu `#2563eb` come colore primario, sfondi e
+  bordi neutri), supporto sia chiaro che scuro (`[theme]`/`[theme.dark]`,
+  con sezioni `[theme.sidebar]`/`[theme.dark.sidebar]` dedicate), angoli
+  arrotondati (`baseRadius`), bordo sui widget (`showWidgetBorder`), e una
+  `chartCategoricalColors` allineata alla palette già usata nei grafici
+  (`components/constants.py`). **Le chiavi non sono state copiate a
+  memoria**: verificate una per una contro
+  `.venv/Lib/site-packages/streamlit/config.py` della versione
+  effettivamente installata (1.58.0), perché alcune (`baseRadius`,
+  `showWidgetBorder`, `chartCategoricalColors`, le sezioni `[theme.dark]`)
+  sono relativamente recenti e non esistono in versioni più vecchie di
+  Streamlit.
+- **`components/styling.py`** (nuovo, `inject_custom_css()`): la causa
+  reale del testo tagliato è che `st.metric` applica `white-space: nowrap`
+  + `text-overflow: ellipsis` al valore — pensato per numeri corti, non per
+  etichette testuali come "Nessun trend chiaro" o nomi di comune lunghi
+  come "Verbano-Cusio-Ossola". Il tema da solo non tocca questo dettaglio
+  (è CSS applicato dal componente, non un colore/font del tema), quindi
+  serve un piccolo override mirato: `white-space: normal` sul selettore
+  `[data-testid="stMetricValue"]` (verificato — grep nei bundle JS di
+  Streamlit installati, non un selettore indovinato — che questo
+  `data-testid` esiste davvero in questa versione), così il testo va a
+  capo su due righe invece di sparire. Chiamata una volta per pagina,
+  subito dopo `st.set_page_config()`, in `Home.py` e in tutte le pagine di
+  `pages/`.
+- **Deliberatamente non fatto**: non sono stati cercati selettori CSS per
+  "abbellire" i riquadri di `st.container(border=True)` (card della home) —
+  Streamlit li renderizza con classi generate dinamicamente
+  (`st-emotion-cache-*`), non con un `data-testid` stabile; un selettore
+  indovinato si sarebbe rotto al primo aggiornamento di Streamlit. Il loro
+  aspetto (angoli arrotondati, bordo) viene comunque dal nuovo
+  `baseRadius`/`borderColor` del tema, che si applica "alla maggior parte
+  degli elementi UI" a livello di framework, senza bisogno di CSS fragile.
+
+**Verifica**: tutte le pagine compilate (`py_compile`) e ri-verificate con
+`AppTest` (nessuna eccezione) dopo l'aggiunta di `inject_custom_css()`;
+server live riavviato (i cambi a `.streamlit/config.toml` richiedono un
+riavvio completo, non bastano l'hot-reload di Streamlit) e verificato con
+un solo processo in ascolto sulla porta 8501 (vedi bug dei processi
+duplicati sotto).
+
 ## Come verificare senza aprire un browser
 
 `streamlit.testing.v1.AppTest` esegue davvero lo script Streamlit
@@ -210,6 +275,20 @@ markup HTML iniziale e va verificato con `AppTest` o un browser reale.
 - **`use_container_width` deprecato**: la versione di Streamlit installata
   (1.58.0) l'ha già superato come data di rimozione annunciata — sostituito
   con `width='stretch'` in tutte le occorrenze.
+- **Processi Streamlit residui dopo la rinomina `app.py` → `Home.py`**: dopo
+  il rename, l'utente continuava a vedere in browser
+  `FileNotFoundError: dashboard\app.py` nonostante il server fosse stato
+  riavviato puntando a `Home.py`. Causa: sessioni di verifica precedenti
+  avevano lasciato **4 processi Streamlit avviati in background** ancora
+  vivi sulla stessa porta 8501 (due dei quali puntavano ancora al vecchio
+  `app.py`, cancellato) — il tentativo di stop di un turno precedente aveva
+  chiuso solo un PID, non tutti. Diagnosticato con
+  `Get-CimInstance Win32_Process | Where CommandLine -match streamlit`
+  (mostra la riga di comando completa per PID, non solo il nome immagine),
+  non riproducibile con `AppTest` (che non avvia un vero server HTTP).
+  Risolto terminando tutti i processi trovati e riavviandone uno solo,
+  verificato con `Get-NetTCPConnection -LocalPort 8501` che un solo PID
+  fosse in ascolto.
 
 ## Dipendenze
 

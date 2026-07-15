@@ -632,3 +632,78 @@ Log cronologico append-only. Ogni riga: data, azione, pagine toccate.
 
   Pagina aggiornata: `dashboard.md` (percorsi, nota sulla rinomina,
   chiarimento sulla staleness dei documenti di pianificazione).
+
+- **2026-07-15** — PULIZIA PROCESSI STREAMLIT RESIDUI. Dopo il rename
+  `app.py` → `Home.py`, l'utente segnalava di vedere ancora in browser
+  `FileNotFoundError: dashboard\app.py` nonostante il server fosse stato
+  riavviato. Diagnosticato con `Get-CimInstance Win32_Process | Where
+  CommandLine -match streamlit` (mostra la command line completa per PID):
+  **4 processi Streamlit** erano rimasti vivi sulla porta 8501 da sessioni
+  di verifica precedenti, due dei quali puntavano ancora al vecchio
+  `app.py` — un tentativo di stop precedente ne aveva chiuso solo uno.
+  Windows permetteva a più processi di restare "in ascolto" sulla stessa
+  porta contemporaneamente (visibile con più righe `LISTENING` in
+  `netstat`), quindi il browser si collegava a caso a uno dei quattro.
+  Risolto terminando tutti i PID trovati e avviandone uno solo pulito,
+  verificato con `Get-NetTCPConnection -LocalPort 8501` (un solo
+  `OwningProcess`).
+
+  Pagina aggiornata: `dashboard.md` (nuovo bug documentato nella lista).
+
+- **2026-07-15** — ETICHETTE MANN-KENDALL LEGGIBILI + TEMA/RIFINITURE
+  ESTETICHE. Due richieste in sequenza dell'utente sulla stessa area:
+  prima "perché no trend?" (la stringa grezza `'no trend'` di
+  `pymannkendall` si legge come "clima stabile", mentre significa "il test
+  non trova abbastanza evidenza di un trend con 26 anni di dati" — un
+  limite del test, non un fatto sul clima), poi "estetica bruttissima,
+  non si vede nemmeno per intero 'nessun trend chiaro', viene tagliato".
+
+  **Etichette leggibili**: aggiunta `format_mk_trend()` +
+  `MK_TREND_LABELS` in `components/constants.py`
+  (`increasing`→"📈 In aumento", `decreasing`→"📉 In diminuzione",
+  `no trend`→"🔍 Nessun trend chiaro"), applicata ovunque appare
+  `mk_trend`: metrica in alto e tab Dettaglio tecnico di
+  `02_analisi_temporale.py`, tabella comparativa in `Home.py`. Bug in
+  corso d'opera: dimenticato l'import di `format_mk_trend` in `Home.py`
+  (`NameError` alla prima esecuzione, segnalato dall'IDE) — l'utente ha
+  chiesto di fermarsi per capire cosa stessi facendo (interruzione
+  legittima, non un errore da correggere silenziosamente); spiegato lo
+  stato e, con l'ok esplicito a continuare, sistemato l'import mancante.
+
+  **Causa reale del testo tagliato**: non un limite delle etichette
+  scelte, ma CSS di `st.metric` (`white-space: nowrap` + `text-overflow:
+  ellipsis` sul valore, pensato per numeri corti) che troncava qualunque
+  valore testuale più lungo della colonna — capitava anche a nomi di
+  comune come "Verbano-Cusio-Ossola" nelle metriche della pagina Analisi
+  Spaziale, non solo alle nuove etichette. Fix mirato in nuovo
+  `components/styling.py::inject_custom_css()`: `white-space: normal` sul
+  selettore `[data-testid="stMetricValue"]`, così il testo va a capo
+  invece di sparire. Il selettore è stato **verificato esistere davvero**
+  in Streamlit 1.58.0 (grep nei bundle JS installati in
+  `.venv/Lib/site-packages/streamlit/static/`), non indovinato dalla
+  documentazione generica.
+
+  **Tema**: creato `.streamlit/config.toml` (nuovo, prima assente) con un
+  tema Streamlit nativo invece di CSS sparso — palette coerente (blu
+  `#2563eb` primario), supporto chiaro/scuro, angoli arrotondati
+  (`baseRadius`), bordo sui widget, `chartCategoricalColors` allineata a
+  `components/constants.py`. Tutte le chiavi usate sono state verificate
+  una per una contro `.venv/Lib/site-packages/streamlit/config.py`
+  dell'installazione reale (alcune, come `baseRadius`/`showWidgetBorder`/
+  `chartCategoricalColors`/`[theme.dark]`, sono relativamente recenti e
+  non garantite in versioni più vecchie di Streamlit). Deliberatamente
+  **non** cercati selettori CSS per le card della home
+  (`st.container(border=True)`): Streamlit le renderizza con classi
+  generate dinamicamente (`st-emotion-cache-*`), non un `data-testid`
+  stabile — il loro stile arriva comunque dal tema (`baseRadius`/
+  `borderColor`), senza bisogno di CSS fragile.
+
+  **Verifica**: `py_compile` + `AppTest` su tutte le pagine (nessuna
+  eccezione); server riavviato per far effetto (i cambi a
+  `config.toml` richiedono un riavvio completo, non li applica l'hot
+  reload di Streamlit) e verificato un solo processo in ascolto sulla
+  porta 8501.
+
+  Pagina aggiornata: `dashboard.md` (nuove sezioni "Etichette leggibili
+  per l'esito di Mann-Kendall" e "Tema e rifiniture estetiche", struttura
+  cartelle aggiornata con `styling.py` e `.streamlit/config.toml`).
