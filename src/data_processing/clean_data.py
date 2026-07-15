@@ -163,11 +163,14 @@ class DataCleaner:
             outliers = ((df[col] < lower_bound) | (df[col] > upper_bound)).sum()
             logger.info(f"{col}: {outliers} outlier rilevati")
 
-            # Marca outlier
-            df.loc[
-                (df[col] < lower_bound) | (df[col] > upper_bound),
-                'quality_flag'
-            ] = 1
+            # Marca outlier con flag=1 (suspect), ma solo se la riga non è
+            # già flag=2 (bad, fuori range fisico assegnato da
+            # validate_temperature): altrimenti un valore fisicamente
+            # impossibile che è anche un outlier IQR verrebbe "declassato"
+            # da 2 a 1, sopravvivendo poi ad apply_quality_flags
+            # (che scarta solo flag >= 2).
+            is_outlier = (df[col] < lower_bound) | (df[col] > upper_bound)
+            df.loc[is_outlier & (df['quality_flag'] < 2), 'quality_flag'] = 1
 
         self.stats['outliers_detected'] = df[df['quality_flag'] == 1].shape[0]
         return df
