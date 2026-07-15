@@ -34,22 +34,52 @@ st.set_page_config(
 st.title("🌡️ Heatwave Piemonte")
 st.caption("Analisi spazio-temporale delle ondate di calore in Piemonte (2000-2025)")
 
+st.markdown(
+    "Questo progetto studia **come sta cambiando il clima in Piemonte** "
+    "usando dati meteorologici reali degli ultimi 26 anni: le temperature "
+    "stanno davvero salendo? Quanto spesso arrivano ondate di calore "
+    "intense? Ci sono zone della regione più colpite di altre? "
+    "Le pagine nel menu a sinistra rispondono a queste domande, ognuna con "
+    "un metodo diverso — usa il riquadro **\"Come si legge questa pagina\"** "
+    "in cima a ciascuna per capire cosa stai guardando anche senza "
+    "background statistico."
+)
+
+with st.expander("ℹ️ Cos'è un'ondata di calore, in questo progetto?"):
+    st.markdown(
+        "Definiamo **ondata di calore** una sequenza di **almeno 3 giorni "
+        "consecutivi** in cui la temperatura massima supera i **35°C**. "
+        "È una definizione semplificata (i climatologi spesso usano soglie "
+        "che variano località per località, non un numero fisso), scelta "
+        "qui per essere facile da capire e da verificare. Il calcolo è "
+        "fatto da una funzione nel database (`identify_heatwaves()`) che "
+        "scandisce anno per anno le temperature di ogni comune."
+    )
+
 st.warning(
-    "I dati di temperatura reali coprono solo gli **8 comuni capoluogo di "
-    "provincia** (unica granularità scaricata da Open-Meteo), non tutti i "
-    "1180 comuni piemontesi. Vedi la wiki (`etl-pipeline.md`) per il dettaglio."
+    "**Limite importante dei dati**: le temperature reali coprono solo gli "
+    "**8 comuni capoluogo di provincia** (Torino, Alessandria, Asti, "
+    "Biella, Cuneo, Novara, Verbania, Vercelli) — l'unica granularità "
+    "scaricata dal servizio meteo gratuito Open-Meteo, non tutti i 1180 "
+    "comuni piemontesi. Ogni grafico e mappa di questo sito riflette solo "
+    "queste 8 città. Vedi la wiki (`etl-pipeline.md`) per il dettaglio."
 )
 
 stats = get_overview_stats()
 
+st.subheader("Il progetto in numeri")
 col1, col2, col3, col4 = st.columns(4)
 col1.metric("Righe di temperatura", f"{stats['n_temperature_rows']:,}".replace(',', '.'))
+col1.caption("Una misura al giorno, per comune, dal 2000 a oggi")
 col2.metric(
     "Periodo coperto",
     f"{stats['date_start'].year}–{stats['date_end'].year}",
 )
+col2.caption("26 anni di storia climatica")
 col3.metric("Comuni con dati reali", f"{stats['n_municipalities_with_data']} / {stats['n_municipalities']}")
+col3.caption("Gli 8 capoluoghi di provincia")
 col4.metric("Ondate di calore identificate", stats['n_heatwaves'])
+col4.caption("Sequenze di 3+ giorni sopra i 35°C")
 
 st.divider()
 
