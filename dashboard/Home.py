@@ -18,6 +18,7 @@ import folium
 import streamlit as st
 from streamlit_folium import st_folium
 
+from components.constants import format_mk_trend
 from components.filters import render_sidebar_filters
 from components.maps import wkt_to_geojson
 from components.queries import (
@@ -139,6 +140,7 @@ with col_trend:
         trend_df_f = trend_df.merge(geo_df[['municipality_name', 'province_name']], on='municipality_name')
         trend_df_f = trend_df_f[trend_df_f['province_name'].isin(provinces)]
         display_df = trend_df_f[['municipality_name', 'mk_trend', 'lr_slope_per_decade', 'lr_p_value']].copy()
+        display_df['mk_trend'] = display_df['mk_trend'].apply(format_mk_trend)
         display_df.columns = ['Comune', 'Trend (Mann-Kendall)', '°C/decade', 'p-value']
         display_df['°C/decade'] = display_df['°C/decade'].round(2)
         display_df['p-value'] = display_df['p-value'].round(4)

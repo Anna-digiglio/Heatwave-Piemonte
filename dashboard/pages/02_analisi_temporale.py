@@ -14,7 +14,9 @@ import streamlit as st
 from plotly.subplots import make_subplots
 from scipy import stats
 
-from components.constants import NATIONAL_GLOBAL_REFERENCE, SEASON_BY_MONTH, SEASON_COLORS, SEASON_ORDER
+from components.constants import (
+    NATIONAL_GLOBAL_REFERENCE, SEASON_BY_MONTH, SEASON_COLORS, SEASON_ORDER, format_mk_trend,
+)
 from components.filters import render_sidebar_filters
 from components.queries import (
     get_daily_temperature,
@@ -89,7 +91,7 @@ col2.metric(
 )
 col2.caption("p < 0.05 → il trend non è probabilmente casuale")
 if not trend_row.empty:
-    col3.metric("Trend Mann-Kendall (2000-2025)", trend_row.iloc[0]['mk_trend'])
+    col3.metric("Trend Mann-Kendall (2000-2025)", format_mk_trend(trend_row.iloc[0]['mk_trend']))
     col3.caption("Test di riferimento sull'intero periodo, non filtrato")
 else:
     col3.metric("Trend Mann-Kendall", "n/d")
@@ -235,7 +237,7 @@ with tab_detail:
     else:
         row = trend_row.iloc[0]
         d1, d2, d3, d4 = st.columns(4)
-        d1.metric("Mann-Kendall", row['mk_trend'])
+        d1.metric("Mann-Kendall", format_mk_trend(row['mk_trend']))
         d2.metric("MK p-value", f"{row['mk_p_value']:.4f}")
         d3.metric("Sen's slope", f"{row['mk_sen_slope']:.4f} °C/anno")
         d4.metric("Regressione (°C/decade)", f"{row['lr_slope_per_decade']:+.2f}")

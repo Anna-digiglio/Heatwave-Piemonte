@@ -33,6 +33,24 @@ def elevation_band(elevation_m: float) -> str:
     return "Montagna"
 
 
+# Etichette leggibili per l'output grezzo di pymannkendall
+# (`mann_kendall_trend()` in `src/analysis/trend_analysis.py` restituisce
+# testualmente 'increasing'/'decreasing'/'no trend'), pensate per chi non
+# conosce il test: "nessun trend chiaro" invece di "no trend" chiarisce che
+# è un limite del test (26 anni non bastano per essere sicuri), non
+# un'affermazione che il clima sia stabile.
+MK_TREND_LABELS = {
+    "increasing": "📈 In aumento",
+    "decreasing": "📉 In diminuzione",
+    "no trend": "🔍 Nessun trend chiaro",
+}
+
+
+def format_mk_trend(mk_trend: str) -> str:
+    """Traduce l'esito grezzo di Mann-Kendall in un'etichetta leggibile."""
+    return MK_TREND_LABELS.get(mk_trend, mk_trend)
+
+
 # Stagioni meteorologiche standard (non astronomiche): DJF/MAM/JJA/SON.
 SEASON_BY_MONTH = {
     12: "Inverno", 1: "Inverno", 2: "Inverno",
