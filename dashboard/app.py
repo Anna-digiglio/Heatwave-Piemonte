@@ -57,12 +57,12 @@ with st.expander("ℹ️ Cos'è un'ondata di calore, in questo progetto?"):
     )
 
 st.warning(
-    "**Limite importante dei dati**: le temperature reali coprono solo gli "
-    "**8 comuni capoluogo di provincia** (Torino, Alessandria, Asti, "
-    "Biella, Cuneo, Novara, Verbania, Vercelli) — l'unica granularità "
-    "scaricata dal servizio meteo gratuito Open-Meteo, non tutti i 1180 "
-    "comuni piemontesi. Ogni grafico e mappa di questo sito riflette solo "
-    "queste 8 città. Vedi la wiki (`etl-pipeline.md`) per il dettaglio."
+    "**Limite importante dei dati**: le temperature reali coprono **44 dei "
+    "1180 comuni piemontesi** — gli 8 capoluoghi di provincia più 36 comuni "
+    "scelti per coprire bene il territorio (zone di montagna, pianura, "
+    "collina), non un censimento completo. Ogni grafico e mappa di questo "
+    "sito riflette solo questi 44 comuni. Vedi la wiki "
+    "(`etl-pipeline.md`) per il dettaglio."
 )
 
 stats = get_overview_stats()
@@ -77,7 +77,7 @@ col2.metric(
 )
 col2.caption("26 anni di storia climatica")
 col3.metric("Comuni con dati reali", f"{stats['n_municipalities_with_data']} / {stats['n_municipalities']}")
-col3.caption("Gli 8 capoluoghi di provincia")
+col3.caption("8 capoluoghi + 36 comuni scelti per coprire il territorio")
 col4.metric("Ondate di calore identificate", stats['n_heatwaves'])
 col4.caption("Sequenze di 3+ giorni sopra i 35°C")
 
