@@ -2,7 +2,7 @@
 
 **Sorgenti**: confronto diretto tra `docs/ROADMAP.md`/`PROJECT_SUMMARY.md`
 (pianificazione) e stato reale delle cartelle/codice, aggiornato al
-2026-07-12.
+2026-07-15.
 
 Questa pagina è quella con la scadenza più breve nella wiki: va aggiornata a
 ogni sessione di lavoro rilevante (vedi workflow di ingest in `CLAUDE.md`).
@@ -32,7 +32,7 @@ ogni sessione di lavoro rilevante (vedi workflow di ingest in `CLAUDE.md`).
 
 | Attività | Roadmap | Realtà |
 |---|---|---|
-| `src/analysis/` (statistica, spaziale, temporale) | pianificato | ❌ cartella vuota |
+| `src/analysis/` (statistica, spaziale, temporale) | pianificato | ✅ **implementata ed eseguita su dati reali il 2026-07-15** — trend (Mann-Kendall/regressione), statistiche ondate di calore, STL decomposition, Moran's I + clustering K-means (vedi [Analisi Statistica](statistical-analysis.md)) |
 | `src/visualization/` | pianificato | ❌ cartella vuota |
 | Progetti QGIS | pianificato | ❌ `qgis_projects/` vuota |
 | Dashboard Streamlit | pianificato | ❌ `dashboard/` vuota |
@@ -59,11 +59,19 @@ verificata**: `temperature`, `heatwave_events`, `kpi_annual_by_municipality`,
 `kpi_annual_by_province` hanno tutte contenuto vero su cui costruire
 analisi/mappe/dashboard.
 
+Aggiornamento 2026-07-15: `src/analysis/` scritta ed eseguita su dati
+reali — trend di riscaldamento (7/8 comuni con trend significativo,
++0.4/+1.0 °C/decade), statistiche ondate di calore (intensità/durata
+popolate su tutte le 51 ondate), STL decomposition (ampiezza stagionale
+~28-32°C), Moran's I + clustering climatico (limitati dal campione di
+sole 8 unità spaziali — vedi [Analisi Statistica](statistical-analysis.md)
+per il dettaglio e i caveat). Risultati salvati come CSV in `output/`.
+
 Prossimi passi, in ordine:
 
-1. Costruire `src/analysis/` (statistica, spaziale, temporale), mappe GIS,
-   dashboard — ora con dati reali (8 serie storiche comunali, 51 ondate,
-   2000-2025) invece che vuoti
+1. Mappe GIS (QGIS) e dashboard Streamlit — ora con dati reali E risultati
+   di analisi reali (trend, ondate, cluster climatici) da visualizzare,
+   invece di celle vuote
 2. **(minore, non bloccante)** correggere `logging.format` in `config.yaml`
    per la sintassi loguru — oggi console e file di log sono illeggibili
    (vedi [Fonti Dati](data-sources.md))
@@ -76,6 +84,10 @@ Prossimi passi, in ordine:
 5. **(minore, non bloccante)** ricordarsi di rifare `REFRESH MATERIALIZED
    VIEW` dopo ogni futuro caricamento di `temperature` — le viste KPI non
    si aggiornano da sole (vedi [Modello Dati](data-model.md))
+6. **(minore, non bloccante)** valutare se scaricare temperature reali per
+   un sottoinsieme più ampio di comuni (oggi solo 8), per rendere Moran's I
+   e il clustering climatico statisticamente più robusti (vedi
+   [Analisi Statistica](statistical-analysis.md))
 
 ## Discrepanze da tenere a mente quando si presenta il progetto
 
