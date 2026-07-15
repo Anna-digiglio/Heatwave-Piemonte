@@ -32,6 +32,10 @@ dubbio, la sorgente grezza (codice/SQL/config) prevale sempre sulla wiki.
 - [Mappe GIS](pages/gis-maps.md) — 3 progetti QGIS, **generati via PyQGIS ed eseguiti su dati reali**
 - [Dashboard](pages/dashboard.md) — dashboard Streamlit, **implementata ed eseguita su dati reali** (5 pagine)
 
+## Qualità del codice
+
+- [Test unitari](pages/testing.md) — 31 test pytest, **un bug reale trovato e corretto** in `DataCleaner.detect_outliers()`
+
 ---
 
 Vedi [log.md](log.md) per la cronologia degli aggiornamenti a questa wiki.

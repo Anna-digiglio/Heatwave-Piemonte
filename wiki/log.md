@@ -402,3 +402,129 @@ Log cronologico append-only. Ogni riga: data, azione, pagine toccate.
   `dashboard.md` (nota sul drift dei requirements aggiornata),
   `project-status.md` (entrambe le voci rimosse dalla lista prossimi
   passi, aggiunta nota sul fix).
+
+- **2026-07-15** — ESTENSIONE A 44 COMUNI (RENDERE MORAN'S I/CLUSTERING
+  ROBUSTI). Richiesta esplicita dell'utente: il campione di 8 comuni per
+  le analisi spaziali era troppo piccolo (sotto la soglia comune di 20-30
+  unità). Concordato con l'utente (via domande di scoping): estendere solo
+  le temperature (non i metadati demografici, rimandati), con ~30-40
+  comuni extra.
+
+  **Selezione**: nuovo script `src/data_acquisition/download_extra_municipalities.py`
+  — campionamento "farthest-point" per provincia (sceglie comuni che
+  massimizzano la distanza minima dai punti già presenti, per coprire zone
+  diverse invece di ammassarsi), 36 comuni extra allocati proporzionalmente
+  alla dimensione di ciascuna provincia (9 Torino, 7 Cuneo, 6 Alessandria,
+  4 Asti, 3 Novara, 3 Vercelli, 2 Biella, 2 Verbano-Cusio-Ossola).
+
+  **Download**: refactoring di `WeatherDataDownloader.download_historical_data()`
+  in `download_data.py` — estratta la logica di retry/backoff in un nuovo
+  metodo `download_for_coordinates(name, lat, lon)` che accetta coordinate
+  arbitrarie, non solo gli 8 capoluoghi hardcoded. 31/36 comuni scaricati al
+  primo giro; 5 falliti per `ConnectionResetError`/TLS reset (non un `429`,
+  quindi non coperto dal retry esistente) — ri-scaricati con una seconda
+  passata mirata. Risultato: 36/36, 341.892 righe.
+
+  **Bug di encoding storico scoperto per caso**: durante il download, 2 nomi
+  (Rorà, Cavaglià) sono usciti corrotti. Indagine ha rivelato che il fix di
+  encoding del 2026-07-04 (`encoding='cp1252'` per leggere lo shapefile
+  ISTAT) era **sbagliato fin dall'inizio** — verificato a livello di byte
+  (`nome.encode('utf-8')`) che produceva una doppia codifica UTF-8 per
+  ogni nome accentato, e che la verifica originaria (stampa a terminale)
+  era stata ingannata da un mojibake che sembrava corretto per coincidenza.
+  Il file `.dbf` ISTAT è in realtà UTF-8, non cp1252. Corretti: lo script
+  (`encoding='utf-8'`), i 28 comuni su 1180 già corrotti nel DB (100% di
+  quelli con caratteri accentati, `UPDATE` via `istat_code` come chiave
+  stabile), e `data/external/municipalities.csv` (rigenerato).
+
+  **Pulizia**: `DataCleaner` riusato senza modifiche (raggruppa per
+  colonna `province`, che qui contiene il nome del comune — funziona
+  perché ogni nome è univoco tra i 36 selezionati). 341.892/341.892 righe
+  mantenute, 670 outlier statistici (prevalentemente comuni alpini).
+
+  **Caricamento**: nuovo metodo `insert_temperature_for_municipalities()`
+  in `load_to_db.py` (variante che usa `municipality_id` già noto, non
+  serve risolvere il capoluogo per nome). Temperature totali: 417.868
+  righe, 44 comuni.
+
+  **Ricalcolo a valle**: `identify_heatwaves()` non è idempotente —
+  `TRUNCATE TABLE heatwave_events` prima di rieseguirla (sicuro, dato
+  interamente derivato) per evitare di duplicare le 51 ondate già trovate.
+  Risultato: 145 ondate su 44 comuni. Viste materializzate rinfrescate
+  (`kpi_annual_by_municipality` ora 1144 righe). Rieseguiti tutti e 4 i
+  moduli di `src/analysis/` (nessuna modifica di codice necessaria, tranne
+  aggiornare testo/commenti hardcoded su "8 comuni" in `spatial_analysis.py`).
+
+  **Risultato più significativo**: Moran's I passa da **-0.096 (p=0.732,
+  non significativo, n=8)** a **0.101 (p=0.002, statisticamente
+  significativo, n=44)** — i comuni geograficamente vicini hanno
+  temperature realmente più simili di quanto atteso per caso. Il
+  clustering K-means è ora visivamente nitido: cluster alpino (3.8°C,
+  margini montani nord/sud-ovest), cluster di pianura calda (12.9°C,
+  centro-est), cluster intermedio (11.1°C) — confermato anche visivamente
+  nella mappa QGIS rigenerata.
+
+  **Rigenerato tutto a valle**: i 3 progetti QGIS (`build_maps.py`,
+  verificati con render PNG — pattern geografico dei cluster ora molto più
+  leggibile con 44 punti invece di 8) e tutte e 5 le pagine dashboard
+  (testi con "8 comuni" aggiornati a "44 comuni" in `app.py`,
+  `03_analisi_spaziale.py`, `04_ondate_di_calore.py`,
+  `components/queries.py`; il messaggio di Moran's I ora mostra
+  `st.success` invece di `st.info`, dato che il risultato è diventato
+  significativo). Verificato con `AppTest`, server live riavviato.
+
+  Bug minore incontrato e corretto: `UnicodeEncodeError` ripetuto su
+  console Windows per i caratteri "✓"/"✗" nei log (cp1252 non li supporta)
+  — fix in `src/utils/logger.py` con `sys.stdout.reconfigure(encoding=
+  'utf-8')`.
+
+  Pagine aggiornate: `data-sources.md`, `etl-pipeline.md`, `data-model.md`,
+  `statistical-analysis.md` (riscrittura sostanziale della sezione Moran's
+  I/clustering), `gis-maps.md`, `dashboard.md`, `project-status.md`.
+
+- **2026-07-15** — TEST UNITARI (`tests/`). Su richiesta esplicita
+  dell'utente, creata la prima suite di test del progetto (`tests/` era
+  vuota da inizio wiki). Creati `tests/__init__.py`, `pytest.ini`
+  (`testpaths = tests`), e 3 file di test: `test_data_cleaning.py` (15
+  test su `DataCleaner`, `src/data_processing/clean_data.py`),
+  `test_analysis.py` (11 test sulle funzioni pure di `src/analysis/*.py`:
+  Mann-Kendall, regressione lineare, haversine, pesi spaziali, indice di
+  Moran, clustering K-means, aggregazioni ondate di calore), `test_config.py`
+  (5 test su `Config.get()`/`get_database_url()`, incluso un test di
+  regressione sulla precedenza env-vars/yaml già risolta il 2026-07-04).
+  Scelta deliberata: solo unit test puri, nessuno tocca DB o rete (dati
+  sintetici costruiti a mano) — l'intera suite gira in ~5 secondi.
+
+  **Bug reale trovato dalla suite alla prima esecuzione** (non un test
+  scritto per confermare un comportamento noto, ma uno che ha effettivamente
+  fallito): `test_bad_rows_are_dropped_good_rows_survive`, un dataset
+  sintetico con una riga fuori range fisico (`temp_max=999`), falliva
+  perché quella riga sopravviveva alla pipeline invece di essere scartata.
+  Causa: in `DataCleaner.detect_outliers()`
+  (`src/data_processing/clean_data.py`), che gira *dopo*
+  `validate_temperature()` (la quale aveva già segnato la riga
+  `quality_flag=2`, bad), l'assegnazione del flag IQR (`quality_flag=1`,
+  suspect) era incondizionata — **declassava** a 1 anche righe già a 2,
+  che poi sopravvivevano ad `apply_quality_flags()` (scarta solo `>= 2`).
+  Fix: `df.loc[is_outlier & (df['quality_flag'] < 2), 'quality_flag'] = 1`
+  (declassa solo se il flag attuale è ancora `< 2`). Verificato che il bug
+  non ha mai avuto impatto sui dati reali già caricati (0 righe fuori range
+  fisico sia in `temperature_data.csv` che in `temperature_data_extra.csv`,
+  quindi la precondizione del bug — riga contemporaneamente bad e outlier
+  IQR — non si è mai verificata finora), ma resta un bug di correttezza
+  reale ora corretto e coperto da test di regressione.
+
+  Ri-eseguita l'intera suite dopo il fix: 31/31 test passati. Eseguita
+  anche con `--cov=src.data_processing --cov=src.analysis
+  --cov=src.utils.config --cov-report=term-missing`: 86% di copertura su
+  `clean_data.py`, 57% complessivo sui moduli inclusi nel report (atteso,
+  dato che le funzioni che leggono da DB/rete non sono testate per scelta).
+
+  Creata nuova pagina `testing.md` (cosa è coperto, il bug trovato/corretto
+  in dettaglio, limiti espliciti — nessun test per `load_to_db.py`,
+  `download_data.py`, `seasonal_analysis.py`, `src/visualization/`).
+  Aggiornate `etl-pipeline.md` (sezione Transform, nota su ordine
+  validate/detect_outliers e bug corretto), `index.md` (nuova sezione
+  "Qualità del codice"), `project-status.md` (riga "Test unitari" in
+  Settimana 3 segnata fatta con dettaglio, punto 6 dei prossimi passi
+  segnato fatto).

@@ -67,11 +67,18 @@ Pipeline dentro `DataCleaner.clean_data()`, in ordine:
 
 Output: `data/processed/temperature_clean.csv`.
 
-**Nota di ordine**: `validate_temperature` gira *dopo* `handle_missing_values`
-ma *prima* di `detect_outliers` — quindi un valore fuori range viene comunque
-usato per calcolare i quantili IQR prima di essere eventualmente ri-flaggato.
-Impatto minimo con pochi outlier, ma da tenere a mente se il dataset reale
-mostra codici sentinella (es. `-999` per missing) prima della validazione.
+**Nota di ordine + bug risolto (trovato da un unit test il 2026-07-15)**:
+`validate_temperature` gira *prima* di `detect_outliers` — un valore fuori
+range viene quindi usato per calcolare i quantili IQR prima di essere
+eventualmente ri-flaggato. Peggio: `detect_outliers` sovrascriveva
+**incondizionatamente** il flag a `1` (suspect) per qualunque outlier IQR,
+**declassando** una riga già `quality_flag=2` (bad, fuori range fisico) a
+`1` — che poi sopravviveva ad `apply_quality_flags` (scarta solo `>= 2`).
+Scoperto da un test di regressione sintetico (vedi
+[Test Unitari](testing.md)), non manifestato nei dati reali finora usati
+(0 righe mai fuori range fisico né su `temperature_data.csv` né su
+`temperature_data_extra.csv`) ma un bug di correttezza reale, ora corretto:
+`detect_outliers` declassa a `1` solo se il flag attuale è `< 2`.
 
 **Bug critici risolti il 2026-07-04, scoperti alla prima esecuzione reale
 (il file non era mai stato eseguito prima d'ora):**

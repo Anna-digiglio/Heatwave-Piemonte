@@ -36,7 +36,7 @@ ogni sessione di lavoro rilevante (vedi workflow di ingest in `CLAUDE.md`).
 | `src/visualization/` | pianificato | ❌ cartella vuota |
 | Progetti QGIS | pianificato | ✅ **generati ed eseguiti il 2026-07-15** — 3 progetti `.qgz` (heatmap, hotspot, animazione temporale) via PyQGIS headless, verificati con render PNG (vedi [Mappe GIS](gis-maps.md)); manca solo la mappa "Heatwave Index" |
 | Dashboard Streamlit | pianificato | ✅ **implementata ed eseguita il 2026-07-15** — 5 pagine (home, analisi temporale, analisi spaziale, ondate di calore, download), dati reali, verificata via `AppTest` e avviata live su `localhost:8501` (vedi [Dashboard](dashboard.md)) |
-| Test unitari | pianificato (70%+ coverage) | ❌ `tests/` vuota |
+| Test unitari | pianificato (70%+ coverage) | ✅ **implementati il 2026-07-15** — 31 test pytest (`DataCleaner`, `src/analysis/` funzioni pure, `Config`), 86% di copertura su `clean_data.py`; **1 bug reale trovato e corretto** in `detect_outliers()` (vedi [Test Unitari](testing.md)) |
 | Documentazione | in gran parte fatta | ✅ README, PROJECT_SUMMARY, docs/* molto estesi (a volte più avanti del codice) |
 
 ## Prossimo passo a maggiore impatto
@@ -127,8 +127,9 @@ pianificato del progetto è completo):
    caricamento di `temperature` (vedi [Modello Dati](data-model.md))
 5. Mappa "Heatwave Index" (composito intensità/frequenza ondate) — unica
    mappa pianificata non ancora costruita (vedi [Mappe GIS](gis-maps.md))
-6. Test unitari (`tests/` vuota), documentazione API/tutorial ancora da
-   scrivere
+6. ~~Test unitari (`tests/` vuota)~~ — **fatto il 2026-07-15**, 31 test
+   pytest, vedi [Test Unitari](testing.md); resta da scrivere una
+   documentazione API/tutorial
 7. Retry più generico per errori di rete transitori (non solo `429`) in
    `download_data.py` — scoperto durante il download dei comuni extra
    (vedi [Analisi Statistica](statistical-analysis.md))
