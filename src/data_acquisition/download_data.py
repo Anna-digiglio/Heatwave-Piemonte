@@ -63,27 +63,54 @@ class WeatherDataDownloader:
         end_date: Optional[str] = None
     ) -> pd.DataFrame:
         """
-        Scarica dati storici da Open-Meteo.
-        
+        Scarica dati storici da Open-Meteo per uno degli 8 capoluoghi
+        hardcoded in PIEMONTE_REGIONS.
+
         Args:
             region (str): Regione piemontese
             start_date (str): Data inizio (YYYY-MM-DD)
             end_date (str): Data fine (YYYY-MM-DD)
-            
+
+        Returns:
+            pd.DataFrame: Dataframe con dati temperature
+        """
+        if region not in self.PIEMONTE_REGIONS:
+            logger.error(f"Regione non riconosciuta: {region}")
+            raise ValueError(f"Regione non trovata: {region}")
+
+        latitude, longitude = self.PIEMONTE_REGIONS[region]
+        return self.download_for_coordinates(region, latitude, longitude, start_date, end_date)
+
+    def download_for_coordinates(
+        self,
+        name: str,
+        latitude: float,
+        longitude: float,
+        start_date: str = "2000-01-01",
+        end_date: Optional[str] = None
+    ) -> pd.DataFrame:
+        """
+        Scarica dati storici da Open-Meteo per una coppia di coordinate
+        arbitraria (non limitata agli 8 capoluoghi) — usata per estendere
+        la copertura ad altri comuni, vedi
+        `src/data_acquisition/download_extra_municipalities.py`.
+
+        Args:
+            name (str): Nome del comune (solo per log/colonna 'province')
+            latitude (float): Latitudine
+            longitude (float): Longitudine
+            start_date (str): Data inizio (YYYY-MM-DD)
+            end_date (str): Data fine (YYYY-MM-DD)
+
         Returns:
             pd.DataFrame: Dataframe con dati temperature
         """
         if end_date is None:
             end_date = datetime.now().strftime("%Y-%m-%d")
-        
-        if region not in self.PIEMONTE_REGIONS:
-            logger.error(f"Regione non riconosciuta: {region}")
-            raise ValueError(f"Regione non trovata: {region}")
-        
-        latitude, longitude = self.PIEMONTE_REGIONS[region]
-        
+
+        region = name
         logger.info(f"Download dati {region} ({start_date} - {end_date})")
-        
+
         params = {
             "latitude": latitude,
             "longitude": longitude,
