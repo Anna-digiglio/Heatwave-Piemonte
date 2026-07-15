@@ -327,3 +327,36 @@ Log cronologico append-only. Ogni riga: data, azione, pagine toccate.
   bug + limite del font documentati), `project-status.md` (Settimana 3
   completa su tutti e 3 i pezzi principali — analisi, dashboard, mappe —
   prossimi passi ridotti a voci minori/rifiniture), `index.md`.
+
+- **2026-07-15** — FIX PAGINA BIANCA IN QGIS DESKTOP. L'utente ha aperto i
+  3 `.qgz` in QGIS Desktop e ha segnalato una pagina bianca (il render
+  offscreen delle anteprime PNG non aveva rivelato il problema, perché
+  imposta l'estensione solo su `QgsMapSettings`, transiente, non su ciò
+  che viene effettivamente salvato nel progetto). Causa reale: `QgsProject
+  .write()` non salva alcuna estensione di vista (`DefaultViewExtent`) a
+  meno di impostarla esplicitamente — verificato ispezionando l'XML dentro
+  il `.qgz` (nessun `<mapcanvas>`/`DefaultViewExtent` presente). Fix:
+  nuova funzione `set_project_view_extent()` in `build_maps.py`, che
+  imposta `project.viewSettings().setDefaultViewExtent(...)`
+  sull'estensione combinata dei layer per ciascuno dei 3 progetti, prima
+  di salvarli. Rieseguito `build_maps.py`; verificato che l'XML del
+  `.qgz` ora contenga `DefaultViewExtent` coi confini reali del Piemonte
+  (non più assente); anteprime PNG ri-verificate, invariate/corrette.
+
+  Pagina aggiornata: `gis-maps.md` (nuovo bug documentato nella lista).
+
+- **2026-07-15** — FIX ETICHETTE MANCANTI IN `evolution_animation.qgz`.
+  L'utente ha confermato che i nomi dei comuni si vedono correttamente in
+  `temperature_heatmap.qgz` e `hotspot_analysis.qgz` (font quindi OK in
+  QGIS Desktop reale, il problema visto nelle anteprime era davvero solo
+  dell'ambiente offscreen), ma non nel terzo file. Causa: non un bug di
+  rendering, semplicemente `add_labels()` non era mai stata chiamata sul
+  layer temporale in `build_evolution_animation()` — dimenticanza in fase
+  di scrittura, non un difetto di configurazione. Fix: aggiunta la
+  chiamata con espressione `"name" || ' (' || round("temp_mean_annual", 1)
+  || '°C)'`, così la temperatura in etichetta cambia insieme al colore a
+  ogni anno dell'animazione. Rieseguito `build_maps.py`; verificato
+  leggendo l'XML del `.qgz` salvato che il nodo `<labeling type="simple">`
+  sia ora presente (prima assente).
+
+  Pagina aggiornata: `gis-maps.md`.
