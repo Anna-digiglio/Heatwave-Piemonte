@@ -267,3 +267,63 @@ Log cronologico append-only. Ogni riga: data, azione, pagine toccate.
   metodo di verifica via `AppTest`), `project-status.md` (Settimana 3
   completata salvo QGIS, prossimi passi ridefiniti attorno alle mappe GIS
   come ultimo pezzo pianificato mancante), `index.md`.
+
+- **2026-07-15** — MAPPE QGIS GENERATE ED ESEGUITE (ULTIMO PEZZO DI
+  SETTIMANA 3). Trovato QGIS 3.44.12 già installato
+  (`C:\Program Files\QGIS 3.44.12`), con `python-qgis-ltr.bat` (Python
+  bundled con PyQGIS) e `qgis_process-qgis-ltr.bat` disponibili — quindi,
+  come per la dashboard, non solo scritti i file ciecamente ma costruiti e
+  **verificati con render offscreen** (`QT_QPA_PLATFORM=offscreen` +
+  `QgsMapRendererParallelJob` → PNG), invece di limitarsi a consegnare file
+  mai aperti.
+
+  Scritto `qgis_projects/build_maps.py` (PyQGIS) per generare i 3 progetti
+  pianificati in `PROJECT_SUMMARY.md`: `temperature_heatmap.qgz`,
+  `hotspot_analysis.qgz`, `evolution_animation.qgz`. Sfondo comune: tutti i
+  1180 comuni in grigio (da `municipalities`), con gli 8 comuni capoluogo
+  reali evidenziati a colori sopra — stessa scelta di onestà sulla
+  granularità già adottata in dashboard e analisi.
+
+  **Due bug reali trovati e risolti, entrambi con fallimento silenzioso
+  (nessun errore Python visibile)**:
+  1. Le prime anteprime mostravano solo lo sfondo grigio, nessun comune
+     colorato: il renderer referenziava campi come
+     `spatial_analysis_temp_mean_avg`, assumendo che
+     `QgsVectorLayerJoinInfo` aggiungesse un prefisso — ma con
+     `setPrefix('')` i campi joinati mantengono il nome originale
+     (`temp_mean_avg`). Trovato ispezionando `layer.fields()` prima/dopo
+     il join.
+  2. Il layer temporale (mappa 3, basato su una subquery SQL passata come
+     `table=` in `QgsDataSourceUri`) risultava sempre invalido, con
+     `layer.error()` completamente vuoto — nessun indizio dalle normali
+     API Python. Diagnosticato solo collegando un handler al message log
+     di QGIS (`QgsApplication.messageLog().messageReceived`), che ha
+     rivelato che QGIS mette tra virgolette l'**intera subquery** come se
+     fosse un unico nome di tabella, producendo un errore Postgres
+     (`la relazione "(SELECT ... non esiste`) mai esposto a Python. Fix:
+     creata una vista Postgres reale (`kpi_temporal_view`, script dedicato
+     `qgis_projects/create_temporal_view.py`, eseguito col venv del
+     progetto) invece della subquery inline — una vista in catalogo si
+     comporta come qualunque tabella, senza ambiguità di parsing.
+
+  **Verifica del filtro temporale**: renderizzati due frame (2000 e 2025)
+  e confrontati visivamente — differiscono chiaramente (2025 uniformemente
+  più rosso/caldo), confermando che il time slider funziona davvero e
+  riflette il riscaldamento reale già trovato in `trend_analysis.py`, non
+  solo che il layer esiste.
+
+  **Limite scoperto e non risolvibile in questa sessione**: l'ambiente Qt
+  offscreen non ha alcun font di sistema registrato
+  (`QFontDatabase().families()` vuoto) — le etichette dei comuni appaiono
+  come rettangoli tratteggiati nelle anteprime PNG invece che testo.
+  Isolato il problema con un test `QPainter` puro (stesso risultato senza
+  QGIS coinvolto), quindi non è un bug della configurazione delle
+  etichette nel progetto — è un limite del backend di rendering headless.
+  Le etichette restano correttamente configurate nel file `.qgz`; vanno
+  confermate aprendo i progetti in QGIS Desktop (unico aspetto di questa
+  sessione non verificabile in automatico).
+
+  Pagine aggiornate: `gis-maps.md` (riscritta, stato reale + entrambi i
+  bug + limite del font documentati), `project-status.md` (Settimana 3
+  completa su tutti e 3 i pezzi principali — analisi, dashboard, mappe —
+  prossimi passi ridotti a voci minori/rifiniture), `index.md`.
