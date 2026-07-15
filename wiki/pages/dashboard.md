@@ -98,8 +98,9 @@ significatività, trend Mann-Kendall di riferimento sull'intero 2000-2025,
 temperatura media dell'ultimo anno); serie annuale max/media/min con **retta
 di regressione sovrapposta**, ricalcolata dal vivo sul periodo scelto in
 sidebar (non il CSV precalcolato, che copre sempre tutto il 2000-2025);
-grafico delle **anomalie** rispetto a una baseline configurabile
-dall'utente (default: primo decennio disponibile per il comune); confronto
+grafico delle **anomalie** rispetto a una baseline **fissa** (primo
+decennio disponibile per il comune, non configurabile — vedi nota sotto);
+confronto
 tra le **4 stagioni meteorologiche** (DJF/MAM/JJA/SON) anno per anno, con
 pendenza per stagione, per vedere quale si scalda più in fretta; **boxplot
 per quinquennio** sulla serie giornaliera, per mostrare l'evoluzione della
@@ -144,6 +145,20 @@ statistiche per comune ed elenco ondate.
 Invariata: ogni file ha una descrizione in linguaggio semplice di cosa
 contiene, oltre al bottone di export per i CSV di `data/processed/`,
 `data/external/` e `output/`.
+
+## Baseline delle anomalie: da configurabile a fissa (2026-07-15)
+
+La prima versione lasciava scegliere all'utente inizio/fine della baseline
+tramite due `number_input`. L'utente ha fatto notare che non aveva senso
+lasciarla configurabile (aggiunge un dubbio — "che periodo scelgo?" — senza
+un reale beneficio per chi guarda la pagina per capire il fenomeno, non per
+esplorare scenari) e ha chiesto un parere: d'accordo con l'osservazione,
+rimossi i due widget. Baseline ora **fissa** al primo decennio disponibile
+per il comune selezionato (scelta standard in climatologia quando non è
+disponibile il periodo di riferimento convenzionale 1961-1990/1991-2020 —
+qui i dati partono dal 2000). Il testo sopra il grafico spiega ora
+esplicitamente, in linguaggio semplice: cos'è un'anomalia, come si calcola,
+perché quella baseline (non le altre) e come leggere le barre rosse/blu.
 
 ## Due decisioni di merito prese durante l'ampliamento (2026-07-15)
 

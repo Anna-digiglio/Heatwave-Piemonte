@@ -707,3 +707,28 @@ Log cronologico append-only. Ogni riga: data, azione, pagine toccate.
   Pagina aggiornata: `dashboard.md` (nuove sezioni "Etichette leggibili
   per l'esito di Mann-Kendall" e "Tema e rifiniture estetiche", struttura
   cartelle aggiornata con `styling.py` e `.streamlit/config.toml`).
+
+- **2026-07-15** — BASELINE DELLE ANOMALIE: DA CONFIGURABILE A FISSA +
+  TESTO ESPLICATIVO. L'utente ha chiesto a cosa servissero i due
+  `number_input` "Inizio baseline"/"Fine baseline" nella pagina Analisi
+  Temporale; dopo la spiegazione, ha fatto notare che lasciarla
+  configurabile non ha senso per lo scopo della pagina (capire il
+  fenomeno, non esplorare scenari) e ha chiesto un parere esplicito prima
+  di procedere. Confermato d'accordo con l'osservazione: rimossi i due
+  widget in `02_analisi_temporale.py`, baseline ora fissa al primo
+  decennio disponibile per il comune selezionato (non varia più per
+  scelta dell'utente, resta scelta di continuità coi commenti nel codice
+  già presenti). Sostituita la breve didascalia con un paragrafo esplicito
+  che copre, nell'ordine: cos'è un'anomalia, come si calcola, perché
+  quella baseline e non un'altra (dato che 1961-1990/1991-2020 — i
+  riferimenti convenzionali in climatologia — non sono disponibili, dato
+  che la serie parte dal 2000), come leggere le barre rosse/blu.
+  Aggiornata anche la nota di metodologia nel tab Dettaglio tecnico dello
+  stesso file (non più "modificabile a mano").
+
+  Verificato con `py_compile` + `AppTest` (nessuna eccezione); il server
+  live ha ricaricato la modifica da solo (a differenza del tema, un
+  cambio a un file `.py` non richiede riavvio).
+
+  Pagina aggiornata: `dashboard.md` (nuova sezione "Baseline delle
+  anomalie: da configurabile a fissa").
