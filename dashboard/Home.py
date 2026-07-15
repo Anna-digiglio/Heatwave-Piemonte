@@ -26,12 +26,14 @@ from components.queries import (
     get_overview_stats,
     get_trend_analysis,
 )
+from components.styling import inject_custom_css
 from src.utils.config import config
 
 st.set_page_config(
     page_title=config.get('dashboard.title', 'Heatwave Piemonte'),
     layout='wide',
 )
+inject_custom_css()
 
 st.title("🌡️ Heatwave Piemonte")
 st.caption("Analisi spazio-temporale delle ondate di calore in Piemonte (2000-2025)")
