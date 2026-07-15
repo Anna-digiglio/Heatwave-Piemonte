@@ -341,9 +341,16 @@ class IstatGeodataDownloader:
             raise RuntimeError(f'Shapefile comuni non trovato in {confini_dir}')
 
         # I file ISTAT non includono un .cpg; l'attribute table (.dbf) è
-        # codificata in cp1252, non UTF-8 (senza specificarlo esplicitamente
-        # i nomi con accenti risultano corrotti, es. "Agliè" -> "AgliÃ¨").
-        gdf = gpd.read_file(shp_candidates[0], encoding='cp1252')
+        # codificata in UTF-8, non cp1252. FIX 2026-07-15: la versione
+        # precedente di questo fix usava encoding='cp1252', basata su una
+        # verifica fatta guardando il testo stampato a terminale — ma il
+        # terminale stesso mostrava un mojibake che "sembrava" corretto per
+        # coincidenza. Verificato a livello di byte
+        # (`name.encode('utf-8')`): cp1252 produce una doppia codifica UTF-8
+        # (es. "Agliè" -> b'Agli\xc3\x83\xc2\xa8' invece di
+        # b'Agli\xc3\xa8'), corrompendo 28 dei 1180 nomi di comuni nel DB
+        # reale. utf-8 esplicito dà il risultato corretto.
+        gdf = gpd.read_file(shp_candidates[0], encoding='utf-8')
         piemonte = gdf[gdf['COD_REG'] == 1].copy()
 
         # Area calcolata nel CRS proiettato originale (UTM32, metri) prima
