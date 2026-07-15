@@ -732,3 +732,86 @@ Log cronologico append-only. Ogni riga: data, azione, pagine toccate.
 
   Pagina aggiornata: `dashboard.md` (nuova sezione "Baseline delle
   anomalie: da configurabile a fissa").
+
+- **2026-07-15** — TORINO COME COMUNE DI DEFAULT + FIX `NameError` DA
+  MODIFICA MANUALE. Due interventi rapidi in sequenza sulla pagina Analisi
+  Temporale. (1) L'utente ha chiesto che alla prima apertura della pagina
+  il comune preselezionato fosse Torino invece del primo in ordine
+  alfabetico (Acceglio): aggiunto `index=names.index('Torino')` (con
+  fallback a `0` se assente dal filtro provincia attivo) allo `st.selectbox`
+  — verificato con `AppTest` che `sb.value == 'Torino'`. (2) L'utente ha
+  poi modificato di sua iniziativa il testo esplicativo della baseline
+  (espandendolo, in modo migliore), ma introducendo per errore tre nomi di
+  variabili mai definiti nel file (`anno_inizio_baseline`,
+  `anno_fine_baseline`, `anno_corrente` — copiati probabilmente da una
+  bozza con nomi diversi da quelli usati nel codice reale,
+  `baseline_years_available`/`baseline_end`/`last_year`), causando un
+  `NameError` che impediva l'esecuzione dell'intera pagina. Diagnosticato
+  in un secondo con `AppTest` (traceback completo con numero di riga
+  esatto), corretto sostituendo i tre nomi con quelli reali senza toccare
+  il testo. Verificato che l'intera pagina esegua di nuovo senza eccezioni.
+
+- **2026-07-15** — OPZIONE AGGREGATA "PIEMONTE" NELLA PAGINA ANALISI
+  TEMPORALE. Richiesta esplicita dell'utente: poter calcolare l'intero
+  Piemonte (non solo un comune alla volta) sulla base dei dati già
+  disponibili. Aggiunta una voce in cima al selettore "Comune":
+  `🌍 Piemonte — media di N comuni filtrati` (N riflette il filtro
+  provincia della sidebar, non è fisso a 44) — selezionandola, ogni
+  grafico/metrica della pagina si ricalcola sulla **media aritmetica non
+  pesata** dei comuni filtrati invece che su un singolo comune, con un
+  `st.info` che chiarisce esplicitamente non essere una stima ufficiale
+  della temperatura regionale (mancano pesi per area/popolazione e la
+  copertura è solo 44/1180 comuni).
+
+  **Nuove query** in `components/queries.py`: `get_daily_temperature_aggregate()`
+  (media giornaliera via `AVG()` SQL su `temperature`, filtrata per lista
+  di comuni con `IN` a parametro espandibile — `bindparam(..., expanding=True)`,
+  necessario perché SQLAlchemy non accetta di default una lista Python come
+  singolo parametro `:names` in una clausola `IN`) e
+  `get_seasonal_decomposition_aggregate()` (STL calcolata al volo con la
+  stessa funzione pura `decompose()` di `src/analysis/seasonal_analysis.py`,
+  dato che non esiste un CSV precalcolato per un aggregato che non
+  corrisponde a un singolo comune).
+
+  **Trend canonico per l'aggregato**: `trend_analysis.csv` ha una riga per
+  comune, non per un aggregato arbitrario — per l'opzione Piemonte,
+  Mann-Kendall e regressione sull'intero periodo sono ricalcolati al volo
+  importando direttamente `mann_kendall_trend()`/`linear_trend()` da
+  `src/analysis/trend_analysis.py` (stesse funzioni pure usate per
+  generare il CSV), non reimplementati da capo — garantisce identica
+  metodologia tra CSV precalcolato e calcolo al volo. Introdotto un dict
+  `trend_info`/flag `has_trend_info` che unifica l'accesso ai risultati
+  (proveniente da una riga di CSV o da un calcolo fresco) in tutto il
+  resto della pagina, senza duplicare la logica delle metriche/tab.
+
+  **Verifica**: `AppTest` sia con selezione di default (Torino) sia con
+  l'aggregato Piemonte selezionato (nessuna eccezione in entrambi i casi),
+  ripetuto anche con il filtro provincia sidebar ristretto a una sola
+  provincia (Cuneo, 8 comuni) per controllare che l'aggregato si adatti
+  correttamente al sottoinsieme filtrato (trend Mann-Kendall "in aumento",
+  p=0.0011, pendenza periodo selezionato +0.50°C/decade — risultato
+  plausibile, non verificato però contro un calcolo indipendente esterno).
+
+  Pagina aggiornata: `dashboard.md` (nuova sezione "Opzione aggregata
+  'Piemonte'" dentro la descrizione della pagina Analisi Temporale).
+
+- **2026-07-15** — OPZIONE "PIEMONTE" SPOSTATA IN UNA CHECKBOX SEPARATA.
+  L'utente ha chiesto una casella a parte per selezionare l'intero
+  Piemonte, invece che una voce in cima allo stesso menu a tendina dei
+  comuni. Rimossa la voce `🌍 Piemonte — media di N comuni filtrati` dalle
+  opzioni di `st.selectbox`; aggiunta una `st.checkbox("🌍 Intero
+  Piemonte")` in una colonna a fianco, che quando attiva disabilita (non
+  nasconde) lo `st.selectbox` del comune — scelta per rendere visibile
+  che le due scelte sono mutuamente esclusive, senza far scomparire un
+  controllo che l'utente potrebbe cercare. `is_aggregate` ora viene
+  direttamente dalla checkbox invece che da un confronto testuale con
+  un'etichetta placeholder nella lista. Aggiustato un riferimento residuo
+  alla vecchia costante `AGGREGATE_LABEL` (rimossa) in favore di
+  `subject_label`. Verificato con `AppTest`: selectbox abilitato/Torino
+  selezionato di default, disabilitato e pagina ricalcolata sull'aggregato
+  quando la checkbox viene attivata, nessuna eccezione in nessuno dei due
+  stati.
+
+  Pagina aggiornata: `dashboard.md` (sezione "Opzione aggregata
+  'Piemonte'" corretta per riflettere la checkbox invece della voce nel
+  menu a tendina).

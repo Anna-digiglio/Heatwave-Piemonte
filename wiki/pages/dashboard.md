@@ -111,6 +111,25 @@ non scaricati in tempo reale, solo per dare un contesto di scala. Tab
 **Dettaglio tecnico**: test Mann-Kendall/Sen's slope sull'intero periodo,
 scomposizione STL, nota di metodologia.
 
+**Opzione aggregata "Piemonte"** (2026-07-15): una checkbox `🌍 Intero
+Piemonte` accanto al selettore "Comune" (che si disabilita quando la
+checkbox è attiva, invece di convivere come voce nella stessa lista —
+prima versione scartata su richiesta dell'utente, vedi log). Quando
+attiva, ogni grafico/metrica della pagina (serie annuale, anomalie,
+stagioni, boxplot, STL, Mann-Kendall) viene calcolato sulla **media
+aritmetica non pesata**
+dei comuni con dati reali attualmente filtrati, invece che su un singolo
+comune — con un `st.info` esplicito che chiarisce non essere una stima
+ufficiale della temperatura regionale (richiederebbe pesare per
+area/popolazione e includere tutti i 1180 comuni, non solo i 44
+monitorati). Mann-Kendall/regressione sull'intero periodo per l'aggregato
+sono ricalcolati al volo con le stesse funzioni pure di
+`src/analysis/trend_analysis.py` (`mann_kendall_trend()`/`linear_trend()`),
+non lette da `trend_analysis.csv` (che ha una riga per comune, non per
+l'aggregato); stesso discorso per la STL, ricalcolata al volo con
+`decompose()` di `src/analysis/seasonal_analysis.py` invece di leggere un
+CSV precalcolato inesistente per l'aggregato.
+
 ### Analisi Spaziale (`03_analisi_spaziale.py`) — ampliata il 2026-07-15
 Tab **Panoramica**: 4 metriche (provincia più calda, provincia con trend più
 rapido, comune più in quota, comuni con dati nel filtro attuale); **mappa
