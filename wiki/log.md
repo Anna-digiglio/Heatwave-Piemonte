@@ -360,3 +360,23 @@ Log cronologico append-only. Ogni riga: data, azione, pagine toccate.
   sia ora presente (prima assente).
 
   Pagina aggiornata: `gis-maps.md`.
+
+- **2026-07-15** — DASHBOARD RESA PIÙ LEGGIBILE PER NON ADDETTI AI LAVORI.
+  Richiesta esplicita dell'utente: rendere il sito comprensibile anche a
+  chi non conosce il progetto, non solo a chi ha letto la wiki. Aggiunto
+  a tutte e 5 le pagine un riquadro introduttivo `st.expander("ℹ️ Come si
+  legge questa pagina")` con spiegazioni in linguaggio semplice dei metodi
+  usati (Mann-Kendall, regressione lineare, STL, K-means, indice di Moran,
+  definizione di ondata di calore), più didascalie (`st.caption`) sotto le
+  metriche e i grafici principali che ne riassumono il significato pratico
+  invece di lasciare solo il numero/etichetta tecnica. Nella pagina Analisi
+  Spaziale, l'indice di Moran ora ha anche un'interpretazione discorsiva
+  (`st.success`/`st.info` a seconda della significatività), non solo il
+  valore numerico. Nella pagina Download Dati, ogni file ha una
+  descrizione di cosa contiene, non solo il nome tecnico. Nessuna modifica
+  a query/logica dati — solo testo esplicativo. Verificato con
+  `streamlit.testing.v1.AppTest` che tutte e 5 le pagine eseguano ancora
+  senza eccezioni dopo le modifiche; server live riavviato su
+  `localhost:8501`.
+
+  Pagina aggiornata: `dashboard.md`.

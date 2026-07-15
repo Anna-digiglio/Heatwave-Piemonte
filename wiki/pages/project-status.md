@@ -85,28 +85,40 @@ confermare aprendo i file in QGIS Desktop). **Con questo, tutti e 3 i
 pezzi principali di Settimana 3 (analisi, dashboard, mappe) sono
 implementati ed eseguiti su dati reali.**
 
+Aggiornamento 2026-07-15 (rifiniture): due voci minori risolte su
+richiesta dell'utente:
+- **`logging.format`** in `config.yaml` corretto alla sintassi loguru
+  (`{time:...} | {level} | {name}:{function}:{line} - {message}`, lo
+  stesso formato già usato come default in `src/utils/logger.py` — il
+  valore in `config.yaml` lo sovrascriveva erroneamente con sintassi
+  stdlib `%(...)s`). Console e file di log ora leggibili; verificato con
+  un test diretto (`logger.info(...)` → riga formattata correttamente sia
+  a schermo che in `logs/heatwave_piemonte.log`).
+- **`requirements.txt` allineato** alle versioni effettivamente installate
+  nel `.venv` (drift esistente da inizio progetto — es. pandas 2.1.4→3.0.3,
+  numpy 1.26→2.4, streamlit 1.29→1.58). Verificato `pip check`: nessun
+  conflitto di dipendenze nell'ambiente attuale.
+
 Prossimi passi, in ordine (tutti minori/non bloccanti — il nucleo
 pianificato del progetto è completo):
 
 1. Aprire i 3 `.qgz` in QGIS Desktop per confermare visivamente le
-   etichette (vedi [Mappe GIS](gis-maps.md))
-2. Correggere `logging.format` in `config.yaml` per la sintassi loguru —
-   oggi console e file di log sono illeggibili (vedi [Fonti Dati](data-sources.md))
-3. Popolare `population`/`elevation_m` dei comuni con un dataset ISTAT
+   etichette (vedi [Mappe GIS](gis-maps.md)) — **fatto e confermato
+   dall'utente il 2026-07-15**, incluso un fix successivo per le etichette
+   mancanti in `evolution_animation.qgz`
+2. Popolare `population`/`elevation_m` dei comuni con un dataset ISTAT
    demografico separato (oggi `NULL` — vedi [Modello Dati](data-model.md))
-4. Riavviare `postgresql-x64-16` come vero servizio Windows (oggi gira via
+3. Riavviare `postgresql-x64-16` come vero servizio Windows (oggi gira via
    `pg_ctl` manuale — il servizio in sé risulta "Stopped" e non
    ripartirebbe da solo dopo un riavvio del PC)
-5. Ricordarsi di rifare `REFRESH MATERIALIZED VIEW` dopo ogni futuro
+4. Ricordarsi di rifare `REFRESH MATERIALIZED VIEW` dopo ogni futuro
    caricamento di `temperature` (vedi [Modello Dati](data-model.md))
-6. Valutare se scaricare temperature reali per un sottoinsieme più ampio
+5. Valutare se scaricare temperature reali per un sottoinsieme più ampio
    di comuni (oggi solo 8), per rendere Moran's I e il clustering
    climatico statisticamente più robusti (vedi [Analisi Statistica](statistical-analysis.md))
-7. Allineare `requirements.txt` alle versioni effettivamente installate
-   nel `.venv` (drift preesistente — vedi [Dashboard](dashboard.md))
-8. Mappa "Heatwave Index" (composito intensità/frequenza ondate) — unica
+6. Mappa "Heatwave Index" (composito intensità/frequenza ondate) — unica
    mappa pianificata non ancora costruita (vedi [Mappe GIS](gis-maps.md))
-9. Test unitari (`tests/` vuota), documentazione API/tutorial ancora da
+7. Test unitari (`tests/` vuota), documentazione API/tutorial ancora da
    scrivere
 
 ## Discrepanze da tenere a mente quando si presenta il progetto
