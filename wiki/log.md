@@ -145,3 +145,88 @@ Log cronologico append-only. Ogni riga: data, azione, pagine toccate.
   critici documentati), `project-status.md` (item 4 segnato fatto, righe
   Settimana 2 aggiornate, prossimi passi ridefiniti attorno a
   `identify_heatwaves()`/analisi ora che i dati reali ci sono).
+
+- **2026-07-12** — `identify_heatwaves()` E VISTE KPI SU DATI REALI.
+  Prima di eseguire la funzione sui 75.976 record reali, rilettura attenta
+  del codice PL/pgSQL in `sql/01_init_database.sql` ha rivelato due bug di
+  correttezza mai emersi (la funzione non era mai stata eseguita su dati
+  veri): (1) quando la sequenza di giorni caldi si interrompeva per
+  **cambio comune** (non solo buco di date), l'`INSERT` usava
+  `municipality_id`/`province_id` della riga **nuova** invece che di quella
+  a cui l'ondata conclusa apparteneva; (2) **nessun flush finale** — se
+  l'ultimo comune elaborato terminava la serie durante un'ondata attiva,
+  quell'ultima ondata non veniva mai salvata. Corretti entrambi con
+  variabili di tracking dedicate (`v_municipality_id`/`v_province_id`) e un
+  controllo esplicito dopo il loop.
+
+  Il fix ha introdotto temporaneamente un terzo bug: le nuove variabili si
+  chiamavano quasi come le colonne selezionate, causando
+  `ERRORE: riferimento a colonna ambiguo` — risolto aggiungendo un alias di
+  tabella esplicito nella query interna (`FROM temperature t`).
+
+  Prima esecuzione "riuscita" (nessun errore) ma con **0 righe inserite**
+  in `heatwave_events`, nonostante 406 giorni reali sopra i 35°C nel
+  dataset. Causa: la funzione era stata invocata via
+  `db_manager.execute_query()`, che usa `engine.connect()` **senza
+  `commit()`** — side effect (gli `INSERT` fatti dalla funzione) annullati
+  silenziosamente alla chiusura della connessione (comportamento di
+  SQLAlchemy 2.0 senza transazione esplicita). Fix: invocata dentro
+  `with db_manager.engine.begin() as conn: ...` (commit automatico).
+  Verificato con un conteggio indipendente via SQL (window function
+  `ROW_NUMBER()` per individuare i gap di date): 51 ondate reali attese, 51
+  trovate — coincidenza esatta, inclusa la storica ondata dell'agosto 2003.
+  Documentato il gotcha `execute_query`-non-committa in `architecture.md`
+  per evitare di ripeterlo con altre funzioni PL/pgSQL in futuro.
+
+  Rinfrescate anche le viste materializzate `kpi_annual_by_municipality` e
+  `kpi_annual_by_province` (erano vuote, calcolate quando `temperature` non
+  aveva ancora dati): 208 righe ciascuna (8 comuni/province × 26 anni).
+
+  **Risultato finale verificato nel DB**: `heatwave_events` 51 righe,
+  `kpi_annual_by_municipality`/`kpi_annual_by_province` 208 righe ciascuna.
+  Tutta la catena dati → schema → KPI/ondate è ora reale e verificata.
+
+  Pagine aggiornate: `data-model.md` (sezione `heatwave_events`, viste
+  materializzate, bug della funzione documentati), `architecture.md`
+  (gotcha `execute_query`/commit), `project-status.md` (Settimana 2
+  completata, prossimi passi ridefiniti attorno a analisi/dashboard).
+
+- **2026-07-15** — `src/analysis/` IMPLEMENTATA ED ESEGUITA SU DATI REALI
+  (PUNTO 1 DELLA ROADMAP POST-ETL). Prima esecuzione mai fatta di analisi
+  statistica/spaziale sui dati reali caricati nelle sessioni precedenti.
+  Installate nuove dipendenze non ancora presenti (`pymannkendall`,
+  `scikit-learn`, `statsmodels`), aggiunte a `requirements.txt`.
+
+  Scritti ed eseguiti 4 moduli:
+  - `trend_analysis.py` — Mann-Kendall + regressione lineare per comune su
+    `temp_mean_annual`. Risultato: 7/8 comuni con trend di riscaldamento
+    significativo (p<0.05), +0.4/+1.0 °C/decade; Asti borderline (p=0.098).
+  - `heatwave_stats.py` — backfill di `heatwave_events.intensity_index`/
+    `mean_temp` (lasciati `NULL` da `identify_heatwaves()`, mai calcolati
+    finora) + statistiche aggregate per comune/anno. 2003 e 2019 emergono
+    come gli anni con più ondate (11 e 9), coerente con le ondate di
+    calore europee note di quegli anni.
+  - `seasonal_analysis.py` — STL decomposition (statsmodels) sulla serie
+    giornaliera per comune. Ampiezza stagionale reale ~28-32°C.
+  - `spatial_analysis.py` — Moran's I (implementato a mano, no
+    `libpysal`/`esda`, con test di significatività via permutazione) +
+    clustering K-means in zone climatiche. Documentato esplicitamente il
+    limite: solo 8 unità spaziali disponibili (i comuni capoluogo) è sotto
+    la soglia comunemente considerata minima per un'analisi spaziale
+    robusta — risultati (I=-0.096, p=0.73; 3 cluster geograficamente
+    sensati) presentati come illustrativi, non conclusivi.
+
+  Due bug minori trovati e corretti durante l'esecuzione: (1) `AVG()` di
+  PostgreSQL su colonne intere restituisce `NUMERIC`/`Decimal`, in
+  conflitto con le colonne `float` nelle operazioni pandas — fix: cast
+  `::float` nella query SQL; (2) una bozza iniziale di
+  `seasonal_analysis.py` interpolava il nome del comune in un f-string
+  SQL (valore comunque fidato, da una query interna, ma pattern da
+  evitare) — corretto in query parametrizzata.
+
+  Creata nuova pagina `statistical-analysis.md` con il dettaglio di tutti
+  e 4 i moduli, risultati reali e caveat statistici. Aggiornate anche
+  `concepts.md` (ogni concetto ora marcato "implementato" con il
+  risultato reale), `kpi-catalog.md`, `index.md`, `project-status.md`
+  (Settimana 3 aggiornata, prossimi passi ridefiniti attorno a mappe
+  GIS/dashboard).
