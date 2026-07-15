@@ -30,8 +30,10 @@ from components.queries import (
     get_spatial_analysis,
     get_trend_analysis,
 )
+from components.styling import inject_custom_css
 
 st.set_page_config(page_title='Analisi Spaziale — Heatwave Piemonte', layout='wide')
+inject_custom_css()
 st.title("🗺️ Analisi Spaziale")
 st.caption("Ci sono zone del Piemonte più calde di altre? Il riscaldamento è uguale ovunque? La quota conta?")
 
