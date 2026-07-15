@@ -157,6 +157,16 @@ pianificato del progetto è completo):
    boxplot per quinquennio, mappe coropletiche per provincia, fasce
    altitudinali, isola di calore urbana, heatmap calendario delle ondate,
    sidebar filtri globali) — vedi [Dashboard](dashboard.md)
+9. **Valutare il deploy pubblico gratuito della dashboard** (Streamlit
+   Community Cloud) — discusso il 2026-07-15, rimandato. Blocco tecnico
+   noto: la dashboard si connette a Postgres/PostGIS su `localhost`, non
+   raggiungibile da un server remoto. Due strade possibili da valutare:
+   (a) database Postgres/PostGIS gratuito in cloud (es. Supabase/Neon,
+   verificare supporto PostGIS nel piano free) con credenziali spostate in
+   `st.secrets`; (b) far leggere la dashboard solo dai CSV già in
+   `output/`/`data/processed/` (nessuna connessione DB dal vivo, ma niente
+   aggiornamento automatico se in futuro si ricaricano dati nuovi). Vedi
+   [Dashboard](dashboard.md).
 
 ## Discrepanze da tenere a mente quando si presenta il progetto
 

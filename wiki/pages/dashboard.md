@@ -1,6 +1,6 @@
 # Dashboard Streamlit
 
-**Sorgenti**: `dashboard/app.py`, `dashboard/pages/*.py`, `dashboard/components/*.py`,
+**Sorgenti**: `dashboard/Home.py`, `dashboard/pages/*.py`, `dashboard/components/*.py`,
 `config.yaml` (sezione `dashboard`)
 
 Stato: **implementata ed eseguita il 2026-07-15**, su dati reali. Costruita
@@ -11,13 +11,15 @@ stesso giorno a 44 comuni (417.868 righe, 145 ondate — vedi
 dell'utente di un contenuto molto più ricco per ciascuna pagina più una
 sidebar di filtri globali. Verificata senza browser reale via
 `streamlit.testing.v1.AppTest` (vedi sotto) e poi avviata live
-(`streamlit run dashboard/app.py`), raggiungibile su `http://localhost:8501`.
+(`streamlit run dashboard/Home.py`), raggiungibile su `http://localhost:8501`.
+**Rinominata da `app.py` a `Home.py` il 2026-07-15** su richiesta
+dell'utente (vedi sotto).
 
 ## Struttura reale
 
 ```
 dashboard/
-├── app.py                          # entry point = pagina Home (overview, KPI, card di navigazione)
+├── Home.py                         # entry point = pagina Home (overview, KPI, card di navigazione)
 ├── pages/
 │   ├── 02_analisi_temporale.py     # trend, anomalie, stagionalità, boxplot per quinquennio, STL
 │   ├── 03_analisi_spaziale.py      # coropletiche per provincia, trend per comune, fasce altitudinali, isola di calore, cluster, Moran's I
@@ -33,10 +35,22 @@ dashboard/
 ```
 
 **Scostamento deliberato dal piano**: niente `pages/01_home.py` separato —
-`app.py` stesso è la home page, che è la convenzione standard di Streamlit
-(l'entry point mostra già il contenuto della prima pagina). Niente
-`components/charts.py` separato — i grafici Plotly sono scritti
-direttamente nelle pagine che li usano.
+`Home.py` stesso è la home page, che è la convenzione standard di Streamlit
+(l'entry point mostra già il contenuto della prima pagina; il nome
+`Home.py`, non `app.py`, è la convenzione più diffusa nelle app Streamlit
+multipage — vedi nota sotto). Niente `components/charts.py` separato — i
+grafici Plotly sono scritti direttamente nelle pagine che li usano.
+
+**Rinominato `app.py` → `Home.py` il 2026-07-15**, su richiesta esplicita
+dell'utente ("dobbiamo trovare un altro nome per la pagina principale, non
+si può chiamare app"). Rinominato con `git mv` (storia Git preservata),
+aggiornati i riferimenti nei docstring (`dashboard/Home.py`,
+`dashboard/components/__init__.py`) e in questa pagina. **Non toccati**
+`README.md`/`PROJECT_SUMMARY.md`/`docs/*.md`: per `CLAUDE.md` sono sorgenti
+di pianificazione immutabili, quindi citano ancora il comando
+`streamlit run dashboard/app.py` — ormai stale, il comando corretto è
+`streamlit run dashboard/Home.py`. Verificato con `AppTest` sul nuovo path
+(nessuna eccezione) e riavviato il server live sulla nuova entry point.
 
 Configurazione da `config.yaml`: titolo (`dashboard.title`) passato a
 `st.set_page_config`; porta 8501 passata da riga di comando
@@ -168,7 +182,7 @@ in-process e permette di ispezionare eccezioni ed elementi renderizzati:
 
 ```python
 from streamlit.testing.v1 import AppTest
-at = AppTest.from_file('dashboard/app.py', default_timeout=30)
+at = AppTest.from_file('dashboard/Home.py', default_timeout=30)
 at.run()
 assert not list(at.exception)
 ```
@@ -184,8 +198,9 @@ markup HTML iniziale e va verificato con `AppTest` o un browser reale.
   esegue gli script con `exec()`, non con l'invocazione standard
   `python script.py` — quindi la cartella dello script **non** viene
   aggiunta automaticamente a `sys.path` come farebbe l'interprete normale.
-  Fix: bootstrap esplicito (`sys.path.insert(0, ...)`) in cima a `app.py` e
-  a ogni pagina in `pages/`, prima di importare da `components`.
+  Fix: bootstrap esplicito (`sys.path.insert(0, ...)`) in cima a `Home.py`
+  (allora `app.py`) e a ogni pagina in `pages/`, prima di importare da
+  `components`.
 - **`folium.GeoJson()` non accetta WKT grezzo**: passargli direttamente la
   stringa WKT letta dal DB fa sì che `folium`/`branca` provino ad aprirla
   come se fosse un percorso file (`OSError: Invalid argument`). Fix:

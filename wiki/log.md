@@ -608,3 +608,27 @@ Log cronologico append-only. Ogni riga: data, azione, pagine toccate.
   (`elevation_m` popolato per i 44 comuni), `data-sources.md` (nuovo
   endpoint Open-Meteo Elevation API), `statistical-analysis.md`
   (`frequency_by_year()` estesa), `project-status.md`.
+
+- **2026-07-15** — RINOMINATA LA PAGINA PRINCIPALE `app.py` → `Home.py`.
+  Richiesta esplicita dell'utente: "dobbiamo trovare un altro nome per la
+  pagina principale, non si può chiamare app". Rinominato con `git mv`
+  (storia Git preservata) `dashboard/app.py` → `dashboard/Home.py`, che è
+  anche la convenzione più diffusa nelle app Streamlit multipage (più
+  descrittivo di un generico "app"). Aggiornati i riferimenti nel
+  docstring del file stesso e in `dashboard/components/__init__.py`.
+
+  **Non toccati** `README.md`/`PROJECT_SUMMARY.md`/`docs/*.md`: per
+  `CLAUDE.md` sono sorgenti di pianificazione immutabili, quindi citano
+  ancora `streamlit run dashboard/app.py` — ora stale, comando corretto
+  `streamlit run dashboard/Home.py`. Le voci storiche di questo stesso log
+  che citano `app.py` (2026-07-15, sessioni precedenti) non sono state
+  riscritte: erano corrette nel momento in cui sono state scritte (il file
+  si chiamava davvero così), coerente con la natura append-only di questo
+  log.
+
+  Verificato con `streamlit.testing.v1.AppTest` sul nuovo path (nessuna
+  eccezione), server live riavviato su `dashboard/Home.py`
+  (`/_stcore/health` → 200).
+
+  Pagina aggiornata: `dashboard.md` (percorsi, nota sulla rinomina,
+  chiarimento sulla staleness dei documenti di pianificazione).
