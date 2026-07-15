@@ -27,7 +27,14 @@ def setup_logger() -> None:
     
     # Rimuovi handler di default
     _logger.remove()
-    
+
+    # Su Windows, sys.stdout usa di default la codepage della console
+    # (es. cp1252), che non sa codificare caratteri come "✓" nei
+    # messaggi di log — causa UnicodeEncodeError silenziosamente
+    # recuperato da loguru (log "perso" invece di stampato). Forza UTF-8.
+    if hasattr(sys.stdout, 'reconfigure'):
+        sys.stdout.reconfigure(encoding='utf-8')
+
     # Ottieni configurazione
     log_level = config.get('logging.level', 'INFO')
     log_format = config.get('logging.format', 
