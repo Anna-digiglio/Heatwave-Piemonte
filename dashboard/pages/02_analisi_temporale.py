@@ -20,13 +20,16 @@ from components.constants import (
 from components.filters import render_sidebar_filters
 from components.queries import (
     get_daily_temperature,
+    get_daily_temperature_aggregate,
     get_kpi_annual,
     get_municipality_metadata,
     get_municipality_names_with_data,
     get_seasonal_decomposition,
+    get_seasonal_decomposition_aggregate,
     get_trend_analysis,
 )
 from components.styling import inject_custom_css
+from src.analysis.trend_analysis import linear_trend, mann_kendall_trend
 
 st.set_page_config(page_title='Analisi Temporale — Heatwave Piemonte', layout='wide')
 inject_custom_css()
@@ -38,8 +41,27 @@ year_start, year_end, provinces = render_sidebar_filters()
 metadata = get_municipality_metadata()
 names_in_provinces = sorted(metadata[metadata['province_name'].isin(provinces)]['municipality_name'])
 names = names_in_provinces or get_municipality_names_with_data()
-default_index = names.index('Torino') if 'Torino' in names else 0
-municipality = st.selectbox("Comune", names, index=default_index)
+
+col_check, col_select = st.columns([1, 2])
+with col_check:
+    is_aggregate = st.checkbox(
+        "🌍 Intero Piemonte",
+        help="Calcola tutta la pagina sulla media dei comuni attualmente filtrati, invece che su un singolo comune.",
+    )
+with col_select:
+    default_index = names.index('Torino') if 'Torino' in names else 0
+    municipality = st.selectbox("Comune", names, index=default_index, disabled=is_aggregate)
+
+subject_label = f"Piemonte (media di {len(names)} comuni filtrati)" if is_aggregate else municipality
+
+if is_aggregate:
+    st.info(
+        "Stai guardando la **media aritmetica** (non pesata per popolazione o "
+        "superficie) dei comuni attualmente filtrati con dati reali — non una "
+        "stima ufficiale della temperatura media del Piemonte, che "
+        "richiederebbe pesare per area/popolazione e includere tutti i 1180 "
+        "comuni (qui solo 44 hanno dati reali, vedi Home)."
+    )
 
 with st.expander("ℹ️ Come si legge questa pagina"):
     st.markdown(
@@ -59,11 +81,36 @@ with st.expander("ℹ️ Come si legge questa pagina"):
     )
 
 annual = get_kpi_annual()
-annual_m = annual[annual['municipality_name'] == municipality].sort_values('year')
+if is_aggregate:
+    annual_m = (
+        annual[annual['municipality_name'].isin(names)]
+        .groupby('year', as_index=False)
+        .agg(
+            temp_mean_annual=('temp_mean_annual', 'mean'),
+            temp_max_annual=('temp_max_annual', 'mean'),
+            temp_min_annual=('temp_min_annual', 'mean'),
+        )
+        .sort_values('year')
+    )
+else:
+    annual_m = annual[annual['municipality_name'] == municipality].sort_values('year')
 annual_range = annual_m[(annual_m['year'] >= year_start) & (annual_m['year'] <= year_end)]
 
-trend_df = get_trend_analysis()
-trend_row = trend_df[trend_df['municipality_name'] == municipality]
+# trend_info: risultato canonico di Mann-Kendall + regressione sull'intero
+# periodo disponibile (non sul filtro anni). Per un singolo comune viene dal
+# CSV precalcolato (`trend_analysis.csv`); per l'aggregato "Piemonte" non
+# esiste un precalcolato, quindi si ricalcola al volo con le stesse funzioni
+# pure usate da `src/analysis/trend_analysis.py`, per coerenza metodologica.
+if is_aggregate:
+    trend_info = {'municipality_name': subject_label}
+    trend_info.update(mann_kendall_trend(annual_m['temp_mean_annual']))
+    trend_info.update(linear_trend(annual_m['year'], annual_m['temp_mean_annual']))
+    has_trend_info = True
+else:
+    trend_df = get_trend_analysis()
+    trend_row = trend_df[trend_df['municipality_name'] == municipality]
+    has_trend_info = not trend_row.empty
+    trend_info = trend_row.iloc[0].to_dict() if has_trend_info else None
 
 # Regressione lineare ricalcolata sul periodo selezionato (non il CSV
 # precalcolato, che copre sempre 2000-2025) — così il coefficiente in
@@ -93,8 +140,8 @@ col2.metric(
     delta_color="off",
 )
 col2.caption("p < 0.05 → il trend non è probabilmente casuale")
-if not trend_row.empty:
-    col3.metric("Trend Mann-Kendall (2000-2025)", format_mk_trend(trend_row.iloc[0]['mk_trend']))
+if has_trend_info:
+    col3.metric("Trend Mann-Kendall (intero periodo)", format_mk_trend(trend_info['mk_trend']))
     col3.caption("Test di riferimento sull'intero periodo, non filtrato")
 else:
     col3.metric("Trend Mann-Kendall", "n/d")
@@ -102,12 +149,12 @@ col4.metric(
     f"Temp. media {last_year}",
     f"{last_year_temp.iloc[0]:.1f} °C" if not last_year_temp.empty else "n/d",
 )
-col4.caption("Ultimo anno disponibile per questo comune")
+col4.caption(f"Ultimo anno disponibile per {subject_label}")
 
 tab_overview, tab_detail = st.tabs(["📊 Panoramica", "🔬 Dettaglio tecnico / metodologia"])
 
 with tab_overview:
-    st.subheader(f"Serie annuale con trend — {municipality}")
+    st.subheader(f"Serie annuale con trend — {subject_label}")
     st.caption(
         "Le tre linee sono la temperatura **massima, media e minima annuale**. "
         "La linea tratteggiata è la retta di regressione sulla temperatura media, "
@@ -178,7 +225,7 @@ with tab_overview:
         "ripida delle altre, quella stagione si sta scaldando più velocemente "
         "delle altre — non è scontato che sia l'estate."
     )
-    daily = get_daily_temperature(municipality)
+    daily = get_daily_temperature_aggregate(tuple(names)) if is_aggregate else get_daily_temperature(municipality)
     daily['year'] = daily['date'].dt.year
     daily['season'] = daily['date'].dt.month.map(SEASON_BY_MONTH)
     daily_range = daily[(daily['year'] >= year_start) & (daily['year'] <= year_end)]
@@ -235,18 +282,18 @@ with tab_overview:
     )
     ref_cols = st.columns(len(NATIONAL_GLOBAL_REFERENCE) + 1)
     ref_cols[0].metric(
-        f"{municipality} (periodo selezionato)",
+        f"{subject_label} (periodo selezionato)",
         f"{slope_decade:+.2f} °C/decade" if slope_decade is not None else "n/d",
     )
     for i, (label, value) in enumerate(NATIONAL_GLOBAL_REFERENCE.items(), start=1):
         ref_cols[i].metric(label, f"+{value:.2f} °C/decade")
 
 with tab_detail:
-    st.subheader("Test statistici sull'intero periodo (2000-2025)")
-    if trend_row.empty:
+    st.subheader("Test statistici sull'intero periodo disponibile")
+    if not has_trend_info:
         st.info("Nessun risultato di trend disponibile — esegui `python -m src.analysis.trend_analysis`.")
     else:
-        row = trend_row.iloc[0]
+        row = trend_info
         d1, d2, d3, d4 = st.columns(4)
         d1.metric("Mann-Kendall", format_mk_trend(row['mk_trend']))
         d2.metric("MK p-value", f"{row['mk_p_value']:.4f}")
@@ -257,16 +304,18 @@ with tab_detail:
             "pendenze tra tutte le coppie di punti), meno sensibile agli outlier "
             "della regressione lineare classica — qui usata solo come test di "
             "riferimento, non ricalcolata sul filtro anni."
+            + (" Per l'aggregato \"Piemonte\" ricalcolato al volo sulla media dei "
+               "comuni filtrati, non letto da un CSV precalcolato." if is_aggregate else "")
         )
 
-    st.subheader(f"Scomposizione STL (trend / stagionalità / residuo) — {municipality}")
+    st.subheader(f"Scomposizione STL (trend / stagionalità / residuo) — {subject_label}")
     st.caption(
         "La **STL decomposition** scompone la serie giornaliera in tre pezzi: "
         "l'andamento di lungo periodo (**trend**), il ciclo estate/inverno che "
         "si ripete ogni anno (**stagionalità**), e ciò che resta — rumore "
         "giornaliero non spiegato dagli altri due (**residuo**)."
     )
-    stl = get_seasonal_decomposition(municipality)
+    stl = get_seasonal_decomposition_aggregate(tuple(names)) if is_aggregate else get_seasonal_decomposition(municipality)
     if stl.empty:
         st.info("Nessuna decomposizione disponibile — esegui `python -m src.analysis.seasonal_analysis`.")
     else:
