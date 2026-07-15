@@ -230,3 +230,40 @@ Log cronologico append-only. Ogni riga: data, azione, pagine toccate.
   risultato reale), `kpi-catalog.md`, `index.md`, `project-status.md`
   (Settimana 3 aggiornata, prossimi passi ridefiniti attorno a mappe
   GIS/dashboard).
+
+- **2026-07-15** — DASHBOARD STREAMLIT IMPLEMENTATA ED ESEGUITA. Scritta
+  la dashboard (`dashboard/app.py` + 4 pagine in `pages/` + componenti
+  condivisi in `components/`) sui dati reali già caricati e sui risultati
+  di `src/analysis/`. Scostamento deliberato dal piano
+  (`PROJECT_SUMMARY.md`): niente `pages/01_home.py` separato — `app.py`
+  stesso è la home (convenzione standard Streamlit); niente
+  `components/charts.py` — grafici scritti direttamente nelle pagine.
+
+  Scoperti e risolti 3 bug reali alla prima esecuzione:
+  1. `ModuleNotFoundError: No module named 'components'` — Streamlit
+     esegue gli script con `exec()`, non con l'invocazione standard di
+     Python, quindi la cartella dello script non finisce automaticamente
+     in `sys.path`. Fix: bootstrap esplicito (`sys.path.insert`) in cima a
+     `app.py` e a ogni pagina.
+  2. `folium.GeoJson()` non accetta WKT grezzo — tentava di aprirlo come
+     percorso file (`OSError: Invalid argument`). Fix:
+     `components/maps.py::wkt_to_geojson()` (shapely WKT → dict GeoJSON).
+  3. `use_container_width` deprecato nella versione di Streamlit installata
+     (1.58.0, già oltre la data di rimozione annunciata) — sostituito con
+     `width='stretch'` in tutte le occorrenze.
+
+  **Verifica end-to-end senza browser**: un `curl` sulla porta 8501
+  restituiva 200 OK ma non prova nulla (Streamlit è un'app client-rendered,
+  il markup HTML iniziale è solo il "guscio" statico). Usato invece
+  `streamlit.testing.v1.AppTest`, che esegue davvero lo script in-process:
+  tutte e 5 le pagine eseguite senza eccezioni, contenuto reale verificato
+  (metriche home: 75.976 righe, 2000-2025, 8/1180 comuni, 51 ondate;
+  tabella trend con valori coincidenti con `output/trend_analysis.csv`).
+  Infine avviata live (`streamlit run dashboard/app.py --server.headless
+  true --server.port 8501`), raggiungibile su `http://localhost:8501`
+  (health check `/_stcore/health` → 200).
+
+  Pagine aggiornate: `dashboard.md` (riscritta, struttura reale + bug +
+  metodo di verifica via `AppTest`), `project-status.md` (Settimana 3
+  completata salvo QGIS, prossimi passi ridefiniti attorno alle mappe GIS
+  come ultimo pezzo pianificato mancante), `index.md`.
