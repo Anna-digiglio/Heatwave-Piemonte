@@ -2,14 +2,14 @@
 spatial_analysis.py - Analisi Spaziale
 
 Indice di Moran (autocorrelazione spaziale) e clustering K-means per zone
-climatiche, sugli 8 comuni capoluogo con dati di temperatura reali.
+climatiche, sui comuni con dati di temperatura reali (44 dal 2026-07-15: 8
+capoluoghi + 36 comuni extra selezionati per copertura spaziale, vedi
+src/data_acquisition/download_extra_municipalities.py).
 
-ATTENZIONE — limite campionario: con solo 8 unità spaziali (i comuni
-capoluogo, unica granularità con dati di temperatura reali, vedi
-wiki/pages/etl-pipeline.md) questi risultati sono illustrativi, non
-statisticamente robusti in senso stretto. Un vero studio di autocorrelazione
-spaziale richiederebbe dati per un numero di comuni ben maggiore (idealmente
-un sottoinsieme dei 1180 comuni piemontesi, non ancora disponibile).
+Nota campionaria: anche con 44 unità spaziali (sopra la soglia comune di
+20-30 per un'analisi di autocorrelazione spaziale) restano solo una
+frazione dei 1180 comuni piemontesi — i risultati sono più robusti che con
+gli 8 capoluoghi originali, ma non coprono l'intera regione.
 
 Usage:
     python -m src.analysis.spatial_analysis
@@ -35,8 +35,9 @@ RANDOM_SEED = 42
 
 def load_municipality_features() -> pd.DataFrame:
     """
-    Carica, per gli 8 comuni capoluogo, coordinate del centroide e feature
-    climatiche aggregate (2000-2025) da usare per Moran's I e clustering.
+    Carica, per tutti i comuni con dati di temperatura reali, coordinate
+    del centroide e feature climatiche aggregate (2000-2025) da usare per
+    Moran's I e clustering.
 
     Returns:
         pd.DataFrame: municipality_name, lon, lat, temp_mean_avg,
@@ -130,7 +131,7 @@ def climate_clustering(df: pd.DataFrame, k: int = 3) -> pd.Series:
 
     Args:
         df (pd.DataFrame): feature per comune
-        k (int): numero di cluster (default 3, scelta ragionevole con n=8)
+        k (int): numero di cluster (default 3)
 
     Returns:
         pd.Series: etichetta di cluster per riga
@@ -147,12 +148,9 @@ def main():
     logger.info("=" * 70)
     logger.info("ANALISI SPAZIALE (Moran's I + clustering climatico)")
     logger.info("=" * 70)
-    logger.warning(
-        "Solo 8 unità spaziali disponibili (comuni capoluogo) — risultati "
-        "illustrativi, non statisticamente robusti in senso stretto."
-    )
 
     df = load_municipality_features()
+    logger.info(f"{len(df)} unità spaziali disponibili (comuni con dati di temperatura reali)")
     w = build_inverse_distance_weights(df)
 
     mi_result = morans_i_permutation_test(df['temp_mean_avg'].to_numpy(), w)
