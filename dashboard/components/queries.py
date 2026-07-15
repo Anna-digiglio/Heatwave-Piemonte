@@ -175,3 +175,62 @@ def get_municipality_names_with_data() -> list:
         ORDER BY m.name
     """
     return [row[0] for row in db_manager.execute_query(query)]
+
+
+@st.cache_data(ttl=600)
+def get_municipality_metadata() -> pd.DataFrame:
+    """
+    Metadati (provincia, elevazione, centroide) dei 44 comuni con dati
+    reali - usato per filtri sidebar, fasce altitudinali, mappe.
+    """
+    query = """
+        SELECT DISTINCT m.name AS municipality_name, p.name AS province_name,
+               m.elevation_m,
+               ST_Y(ST_Centroid(m.geometry)) AS lat,
+               ST_X(ST_Centroid(m.geometry)) AS lon
+        FROM temperature t
+        JOIN municipalities m ON t.municipality_id = m.municipality_id
+        JOIN provinces p ON m.province_id = p.province_id
+        ORDER BY m.name
+    """
+    rows = db_manager.execute_query(query)
+    return pd.DataFrame(
+        rows, columns=['municipality_name', 'province_name', 'elevation_m', 'lat', 'lon']
+    )
+
+
+@st.cache_data(ttl=600)
+def get_province_geometries_wkt() -> pd.DataFrame:
+    """
+    Confine reale di ciascuna provincia, ottenuto aggregando via PostGIS
+    (`ST_Union`) le geometrie di tutti i 1180 comuni ISTAT che appartengono
+    a quella provincia (non solo i 44 con dati di temperatura) - usato per
+    la mappa coropletica a livello provinciale.
+    """
+    query = """
+        SELECT p.name AS province_name, ST_AsText(ST_Union(m.geometry)) AS geometry_wkt
+        FROM municipalities m
+        JOIN provinces p ON m.province_id = p.province_id
+        GROUP BY p.name
+    """
+    rows = db_manager.execute_query(query)
+    return pd.DataFrame(rows, columns=['province_name', 'geometry_wkt'])
+
+
+@st.cache_data(ttl=600)
+def get_kpi_annual_by_province() -> pd.DataFrame:
+    """Serie annuale di KPI per provincia (vista kpi_annual_by_province)."""
+    query = """
+        SELECT p.name AS province_name, k.year, k.total_days,
+               k.temp_mean_annual, k.temp_max_annual, k.temp_min_annual,
+               k.days_gt_30c, k.days_gt_35c, k.days_gt_40c
+        FROM kpi_annual_by_province k
+        JOIN provinces p ON k.province_id = p.province_id
+        ORDER BY p.name, k.year
+    """
+    rows = db_manager.execute_query(query)
+    columns = ['province_name', 'year', 'total_days', 'temp_mean_annual',
+               'temp_max_annual', 'temp_min_annual', 'days_gt_30c', 'days_gt_35c', 'days_gt_40c']
+    return pd.DataFrame(rows, columns=columns)
+
+
