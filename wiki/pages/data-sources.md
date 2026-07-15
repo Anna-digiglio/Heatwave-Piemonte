@@ -26,17 +26,22 @@ opzionale — `-> Optional["cdsapi.Client"]` (il metodo può restituire `None`
 se `cdsapi` non è installato). Nessun nuovo import necessario (`Optional`
 era già importato).
 
-## Bug noto: formato di logging incompatibile con loguru
+## Bug risolto: formato di logging incompatibile con loguru
 
-`config.yaml` (`logging.format`) usa la sintassi `%(asctime)s - %(name)s -
-%(levelname)s - %(message)s`, tipica del modulo `logging` di Python standard.
-Ma `src/utils/logger.py` usa **loguru**, che si aspetta placeholder in stile
-`{time} {level} {message}`. Loguru non solleva errori: stampa la stringa di
-formato letteralmente, su ogni riga, senza sostituire nulla — quindi sia la
-console che `logs/heatwave_piemonte.log` sono oggi illeggibili (nessun
-messaggio reale, solo la stringa di formato ripetuta). Non blocca
-l'esecuzione degli script ma nasconde tutti i log/errori reali. Da correggere
-in `config.yaml` (sezione `logging.format`) usando la sintassi loguru.
+**Fixato il 2026-07-15.** `config.yaml` (`logging.format`) usava la sintassi
+`%(asctime)s - %(name)s - %(levelname)s - %(message)s`, tipica del modulo
+`logging` di Python standard. Ma `src/utils/logger.py` usa **loguru**, che
+si aspetta placeholder in stile `{time} {level} {message}`. Loguru non
+sollevava errori: stampava la stringa di formato letteralmente, su ogni
+riga, senza sostituire nulla — quindi sia la console che
+`logs/heatwave_piemonte.log` sono stati illeggibili per gran parte del
+progetto (nessun messaggio reale, solo la stringa di formato ripetuta),
+nascondendo log/errori reali durante il debug di molte sessioni precedenti.
+Fix: `logging.format` in `config.yaml` allineato alla sintassi loguru
+(`{time:YYYY-MM-DD HH:mm:ss} | {level: <8} | {name}:{function}:{line} -
+{message}`), lo stesso formato già usato come fallback di default in
+`logger.py` — quindi ora config e codice sono coerenti. Verificato con un
+test diretto: messaggi formattati correttamente sia a schermo sia su file.
 
 ## Bug noto/gestito: rate limit "al minuto" di Open-Meteo
 
