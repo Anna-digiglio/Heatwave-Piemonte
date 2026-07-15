@@ -20,6 +20,21 @@ from components.queries import (
 
 st.set_page_config(page_title='Analisi Spaziale — Heatwave Piemonte', layout='wide')
 st.title("🗺️ Analisi Spaziale")
+st.caption("Ci sono zone del Piemonte climaticamente simili tra loro? Il caldo si concentra in alcune aree?")
+
+with st.expander("ℹ️ Come si legge questa pagina"):
+    st.markdown(
+        "- **Cluster climatici**: raggruppiamo gli 8 comuni in **zone simili** "
+        "guardando temperatura media e giorni di caldo intenso, usando un "
+        "algoritmo chiamato **K-means** — in pratica, mette nello stesso "
+        "gruppo i comuni che si somigliano di più, senza che nessuno decida "
+        "a priori i confini dei gruppi. Qui abbiamo scelto 3 gruppi (\"cluster\").\n"
+        "- **Indice di Moran**: misura se i comuni **vicini geograficamente** "
+        "hanno anche temperature **simili** — un valore positivo e alto "
+        "significherebbe \"il caldo si concentra in zone precise\", un valore "
+        "vicino a zero (o negativo) significa \"non c'è un pattern "
+        "geografico chiaro, sembra più casuale\"."
+    )
 
 st.warning(
     "Solo **8 unità spaziali** disponibili (i comuni capoluogo, unica "
@@ -64,14 +79,24 @@ else:
                 f"({', '.join(group['municipality_name'])}) — "
                 f"{group['temp_mean_avg'].mean():.1f}°C media"
             )
+        st.caption("Comuni nello stesso cluster hanno un profilo climatico simile (temperatura media e giorni di caldo intenso).")
 
         st.subheader("Indice di Moran (autocorrelazione spaziale)")
         mi_df = get_morans_i_summary()
         if not mi_df.empty:
             mi = mi_df.iloc[0]
             st.metric("Moran's I", mi['morans_i'])
+            is_significant = mi['p_value_permutation'] < 0.05
             st.caption(
                 f"Atteso sotto casualità: {mi['expected_i_random']} — "
                 f"p-value (permutazione): {mi['p_value_permutation']} "
-                f"({'significativo' if mi['p_value_permutation'] < 0.05 else 'non significativo'})"
+                f"({'significativo' if is_significant else 'non significativo'})"
             )
+            if is_significant:
+                st.success("Il caldo sembra concentrarsi in zone specifiche del Piemonte, non distribuirsi a caso.")
+            else:
+                st.info(
+                    "Con questo campione (solo 8 comuni) non emerge un pattern geografico "
+                    "statisticamente chiaro — non vuol dire che non ci sia, solo che questi "
+                    "dati non bastano per dimostrarlo con sicurezza."
+                )
