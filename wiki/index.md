@@ -27,10 +27,10 @@ dubbio, la sorgente grezza (codice/SQL/config) prevale sempre sulla wiki.
 - [Query SQL](pages/sql-queries.md) — catalogo query di `sql/02_common_queries.sql`
 - [Glossario concetti](pages/concepts.md) — Mann-Kendall, Moran's I, STL, IQR, K-means, definizione di ondata di calore
 
-## Visualizzazione (pianificate, non ancora costruite)
+## Visualizzazione
 
-- [Mappe GIS](pages/gis-maps.md) — mappe QGIS previste e prerequisiti mancanti
-- [Dashboard](pages/dashboard.md) — struttura Streamlit prevista
+- [Mappe GIS](pages/gis-maps.md) — mappe QGIS previste, non ancora costruite
+- [Dashboard](pages/dashboard.md) — dashboard Streamlit, **implementata ed eseguita su dati reali** (5 pagine)
 
 ---
 
