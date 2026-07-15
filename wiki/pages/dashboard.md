@@ -111,6 +111,7 @@ markup HTML iniziale e va verificato con `AppTest` o un browser reale.
 ## Dipendenze
 
 Tutte già in `requirements.txt` (`streamlit`, `streamlit-folium`, `folium`,
-`plotly`). Versioni effettivamente installate nel venv più recenti di
-quelle pinnate nel file (es. streamlit 1.58.0 vs 1.29.0 pinnato) — drift
-preesistente, non ancora risolto in questa sessione.
+`plotly`). **Allineate il 2026-07-15** alle versioni effettivamente
+installate nel `.venv` (streamlit 1.58.0, non più 1.29.0 pinnato — vedi
+[Stato del Progetto](project-status.md) per l'elenco completo del drift
+risolto in tutto `requirements.txt`, non solo per la dashboard).
