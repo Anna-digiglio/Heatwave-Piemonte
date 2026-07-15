@@ -87,7 +87,7 @@ col_map, col_trend = st.columns([3, 2])
 
 with col_map:
     st.subheader("Comuni con dati di temperatura reali")
-    st.caption("Le 8 città (in rosso) da cui vengono tutti i numeri di questo sito. Passa il mouse per il nome.")
+    st.caption("I 44 comuni (in rosso) da cui vengono tutti i numeri di questo sito. Passa il mouse per il nome.")
     geo_df = get_municipality_geometries_wkt()
 
     m = folium.Map(location=[45.0, 8.0], zoom_start=8, tiles='CartoDB positron')
