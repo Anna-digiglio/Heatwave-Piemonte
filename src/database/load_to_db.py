@@ -187,6 +187,60 @@ class DatabaseLoader:
         logger.success(f'{len(records)} righe inserite in temperature')
         return len(records)
 
+    def insert_temperature_for_municipalities(self, csv_path: Path, page_size: int = 5000) -> int:
+        """
+        Carica un CSV di temperature (già pulito da `DataCleaner`) che
+        contiene già `municipality_id` per riga — a differenza di
+        `insert_temperature()`, non serve risolvere il comune capoluogo per
+        nome: usato per estendere la copertura oltre gli 8 capoluoghi (vedi
+        `src/data_acquisition/download_extra_municipalities.py`).
+        """
+        import pandas as pd
+        from psycopg2.extras import execute_values
+
+        if not csv_path.exists():
+            raise FileNotFoundError(f'{csv_path} non trovato.')
+
+        df = pd.read_csv(csv_path, parse_dates=['date'])
+
+        with db_manager.engine.begin() as conn:
+            municipality_rows = conn.execute(
+                text('SELECT municipality_id, province_id FROM municipalities')
+            ).fetchall()
+        province_by_municipality = {row.municipality_id: row.province_id for row in municipality_rows}
+
+        missing = set(df['municipality_id']) - set(province_by_municipality)
+        if missing:
+            raise ValueError(f'municipality_id non trovati in municipalities: {missing}')
+
+        records = [
+            (
+                int(row.municipality_id),
+                province_by_municipality[row.municipality_id],
+                row.date.date(),
+                float(row.temp_mean),
+                float(row.temp_max),
+                float(row.temp_min),
+                float(row.precipitation),
+                row.data_source,
+                int(row.quality_flag),
+            )
+            for row in df.itertuples(index=False)
+        ]
+
+        insert_sql = (
+            "INSERT INTO temperature "
+            "(municipality_id, province_id, date, temp_mean, temp_max, temp_min, "
+            "precipitation, data_source, quality_flag) VALUES %s"
+        )
+
+        with db_manager.engine.begin() as conn:
+            cursor = conn.connection.cursor()
+            execute_values(cursor, insert_sql, records, page_size=page_size)
+
+        logger.success(f'{len(records)} righe inserite in temperature (comuni extra)')
+        return len(records)
+
     def insert_sample_province(self) -> None:
         """Inserisce un record di prova nella tabella provinces."""
         query = text(
