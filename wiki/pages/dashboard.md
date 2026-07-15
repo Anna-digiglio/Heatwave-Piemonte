@@ -3,11 +3,12 @@
 **Sorgenti**: `dashboard/app.py`, `dashboard/pages/*.py`, `dashboard/components/*.py`,
 `config.yaml` (sezione `dashboard`)
 
-Stato: **implementata ed eseguita il 2026-07-15**, su dati reali (75.976
-righe di temperatura, 51 ondate di calore, risultati di `src/analysis/`).
-Verificata senza browser reale via `streamlit.testing.v1.AppTest` (vedi
-sotto) e poi avviata live (`streamlit run dashboard/app.py`), raggiungibile
-su `http://localhost:8501`.
+Stato: **implementata ed eseguita il 2026-07-15**, su dati reali. Costruita
+inizialmente su 8 comuni (75.976 righe di temperatura, 51 ondate), poi
+aggiornata lo stesso giorno dopo l'estensione a 44 comuni (417.868 righe,
+145 ondate — vedi [ETL](etl-pipeline.md)). Verificata senza browser reale
+via `streamlit.testing.v1.AppTest` (vedi sotto) e poi avviata live
+(`streamlit run dashboard/app.py`), raggiungibile su `http://localhost:8501`.
 
 ## Struttura reale
 
@@ -42,26 +43,29 @@ Configurazione da `config.yaml`: titolo (`dashboard.title`) passato a
 - **Home**: intro in linguaggio semplice su cosa fa il progetto, spiegazione
   di cosa conta come "ondata di calore" in un riquadro espandibile, metriche
   generali (righe di temperatura, periodo, comuni con dati reali, ondate
-  identificate) con didascalie, mappa dei 8 comuni capoluogo, tabella trend
+  identificate) con didascalie, mappa dei 44 comuni, tabella trend
   di riscaldamento.
 - **Analisi Temporale**: riquadro "come si legge questa pagina" (Mann-Kendall
-  vs regressione lineare, cosa mostra la STL), selezione comune, serie
-  giornaliera max/media/min, scomposizione STL (trend/stagionalità/residuo)
+  vs regressione lineare, cosa mostra la STL), selezione comune (44 disponibili),
+  serie giornaliera max/media/min, scomposizione STL (trend/stagionalità/residuo)
   con didascalia che spiega ciascuna componente.
 - **Analisi Spaziale**: riquadro esplicativo su K-means e indice di Moran in
   linguaggio semplice, mappa dei cluster climatici (K-means, k=3), indice di
   Moran con interpretazione discorsiva (`st.success`/`st.info` a seconda
-  della significatività) oltre al numero, avviso esplicito sul limite
-  campionario (8 unità spaziali).
+  della significatività) oltre al numero — ora mostra `st.success` dato che
+  con 44 comuni il risultato è statisticamente significativo (vedi
+  [Analisi Statistica](statistical-analysis.md)).
 - **Ondate di Calore**: riquadro esplicativo su durata/intensità, frequenza
   per anno con didascalia interpretativa, statistiche per comune, elenco
-  filtrabile delle 51 ondate.
+  filtrabile delle 145 ondate.
 - **Download Dati**: ogni file ha una descrizione in linguaggio semplice di
   cosa contiene, non solo il nome, oltre al bottone di export per i CSV di
   `data/processed/`, `data/external/` e `output/`.
 
-Tutte le pagine mostrano avvisi (`st.warning`) sulla granularità limitata
-(8 comuni capoluogo su 1180) dove rilevante, invece di lasciarla implicita.
+Tutte le pagine mostrano avvisi/info (`st.warning`/`st.info`) sulla
+granularità limitata (44 comuni su 1180) dove rilevante, invece di
+lasciarla implicita. Aggiornati tutti i testi che citavano "8 comuni" dopo
+l'estensione a 44 (2026-07-15).
 
 **Aggiornamento 2026-07-15 (leggibilità per non addetti ai lavori)**: su
 richiesta esplicita dell'utente, aggiunto un riquadro `st.expander("ℹ️ Come

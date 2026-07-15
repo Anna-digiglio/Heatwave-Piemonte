@@ -7,11 +7,13 @@ Implementata ed eseguita per la prima volta su dati reali il 2026-07-15,
 dopo che la pipeline ETL (vedi [ETL](etl-pipeline.md)) aveva reso disponibili
 75.976 righe di temperatura, 51 ondate di calore e le viste KPI popolate.
 
-**Granularità**: tutte le analisi lavorano sugli **8 comuni capoluogo di
-provincia**, unica granularità con dati di temperatura reali (vedi
-[ETL](etl-pipeline.md) per la motivazione). Dove il campione è
-particolarmente piccolo per il tipo di analisi (statistiche spaziali), è
-segnalato esplicitamente sotto.
+**Granularità**: inizialmente sugli 8 comuni capoluogo di provincia, poi
+**estesa a 44 comuni lo stesso giorno** (8 capoluoghi + 36 comuni scelti
+per copertura spaziale — vedi [ETL](etl-pipeline.md)), su richiesta
+esplicita dell'utente per rendere Moran's I e il clustering
+statisticamente più robusti. Tutti i numeri qui sotto sono aggiornati alla
+versione a 44 comuni; dove rilevante è indicato anche il risultato
+precedente a 8 per confronto.
 
 ## `trend_analysis.py` — trend di riscaldamento
 
@@ -25,10 +27,12 @@ CLI: `python -m src.analysis.trend_analysis`
   la pendenza in °C/anno e °C/decade
 - Output: `output/trend_analysis.csv`
 
-**Risultato reale (2000-2025)**: 7 comuni su 8 mostrano un trend crescente
-statisticamente significativo (p<0.05), tra +0.4 e +1.0 °C/decade. Asti è
-borderline (p=0.098, non significativo al livello 0.05). Coerente con il
-segnale di riscaldamento osservato nel Nord Italia.
+**Risultato reale (2000-2025, 44 comuni)**: 38 comuni su 44 mostrano un
+trend crescente statisticamente significativo (p<0.05), tra +0.3 e +1.4
+°C/decade (Bagnolo Piemonte il più ripido). Coerente con il segnale di
+riscaldamento osservato nel Nord Italia — e ora osservato in modo diffuso
+su tutto il territorio piemontese, non solo negli 8 capoluoghi (risultato
+originario a 8 comuni: 7/8 significativi, +0.4/+1.0 °C/decade).
 
 ## `heatwave_stats.py` — statistiche sulle ondate di calore
 
@@ -45,12 +49,14 @@ CLI: `python -m src.analysis.heatwave_stats`
 - Output: `output/heatwave_stats_by_municipality.csv`,
   `output/heatwave_frequency_by_year.csv`
 
-**Risultato reale**: 2003 (11 ondate) e 2019 (9 ondate) sono gli anni con
-più ondate rilevate — coerente con le note ondate di calore europee di
-quegli anni. Frequenza in crescita negli anni recenti (2022: 5, 2023: 5,
-2025: 3) rispetto al primo decennio (2000-2010: solo 2003 e 2006 con
-ondate). Biella e Verbania non hanno mai raggiunto 3 giorni consecutivi
-sopra i 35°C nel periodo (0 ondate).
+**Risultato reale (44 comuni)**: 145 ondate totali (51 sugli 8 capoluoghi
+originari + 94 sui 36 comuni extra). Alessandria resta il comune con più
+ondate (14), seguita dal nuovo comune Casalnoceto (13) e Asti (11).
+Diversi comuni alpini tra i 36 extra (Formazza, Macugnaga, Acceglio,
+Alagna Valsesia, Bardonecchia, Ceresole Reale, Rorà, Aisone) non hanno mai
+raggiunto 3 giorni consecutivi sopra i 35°C nel periodo (0 ondate),
+coerente con la loro quota/clima alpino — lo stesso vale per Biella e
+Verbania tra gli 8 capoluoghi originari.
 
 ## `seasonal_analysis.py` — scomposizione stagionale (STL)
 
@@ -64,14 +70,16 @@ CLI: `python -m src.analysis.seasonal_analysis`
 - Output: `output/seasonal_decomposition/{comune}_stl.csv` (serie completa
   giorno per giorno), `output/seasonal_trend_summary.csv` (riepilogo)
 
-**Risultato reale**: ampiezza stagionale ~28-32°C in tutti i comuni
-(coerente con un clima continentale, inverni freddi ed estati calde);
-componente di trend in aumento in tutti gli 8 comuni (dal confronto tra
-media del primo e dell'ultimo anno della componente di trend smussata),
-direzione coerente con Mann-Kendall/regressione lineare (l'entità numerica
-differisce leggermente per via della metodologia diversa: STL confronta due
-medie annuali sulla componente smussata, la regressione lineare usa tutti i
-26 anni).
+**Risultato reale (44 comuni)**: ampiezza stagionale 27-34°C, più ampia nei
+comuni alpini/di alta quota (Bardonecchia 34.3°C, Macugnaga 33.4°C,
+Formazza 32.6°C — inverni più rigidi) e più contenuta nei comuni di
+pianura vicino ai laghi/pedemontani (Verbania 27.8°C, Ghemme 27.9°C).
+Componente di trend in aumento in 43 comuni su 44 (unica eccezione:
+Carrega Ligure, -0.04°C, sostanzialmente piatta), direzione coerente con
+Mann-Kendall/regressione lineare (l'entità numerica differisce
+leggermente per via della metodologia diversa: STL confronta due medie
+annuali sulla componente smussata, la regressione lineare usa tutti i 26
+anni).
 
 ## `spatial_analysis.py` — Moran's I e clustering climatico
 
@@ -88,24 +96,40 @@ CLI: `python -m src.analysis.spatial_analysis`
   >30°C, giorni >35°C standardizzati
 - Output: `output/spatial_analysis.csv`, `output/morans_i_summary.csv`
 
-**⚠️ Limite campionario**: solo 8 unità spaziali disponibili (i comuni
-capoluogo). Questo è **sotto la soglia comunemente considerata minima per
-un'analisi di autocorrelazione spaziale robusta** (tipicamente si vogliono
-almeno 20-30 unità). I risultati sono illustrativi:
+**Aggiornamento 2026-07-15 — da 8 a 44 comuni**: il campione iniziale di 8
+unità spaziali (i soli capoluoghi) era sotto la soglia comunemente citata
+come minima per un'analisi di autocorrelazione spaziale robusta
+(tipicamente 20-30 unità), e infatti dava un risultato non significativo.
+Estesa la copertura a 44 comuni (vedi [ETL](etl-pipeline.md) per come sono
+stati scelti) su richiesta esplicita dell'utente, proprio per superare
+questo limite. Risultato:
 
-- Moran's I = -0.096 (atteso sotto casualità: -0.140), p=0.732 —
-  nessuna autocorrelazione spaziale significativa rilevabile con questo
-  campione.
-- Clustering K-means (k=3): {Alessandria, Asti, Vercelli} (pianura, più
-  caldo) / {Biella, Cuneo} (pedemontano, più fresco) / {Novara, Torino,
-  Verbania} (intermedio) — geograficamente sensato, ma con n=8 va
-  presentato come indicativo, non come risultato statisticamente
-  conclusivo.
+- **Moran's I = 0.1006** (atteso sotto casualità: -0.0244), **p=0.002 su
+  999 permutazioni — statisticamente significativo** (era -0.096, p=0.732,
+  non significativo, con 8 comuni). I comuni geograficamente vicini hanno
+  temperature realmente più simili tra loro di quanto ci si aspetterebbe
+  per caso: il segnale climatico ha una struttura spaziale reale, non è
+  rumore geografico. Con 44 unità il test ha ora la sensibilità per
+  rilevarlo.
+- Clustering K-means (k=3), ora molto più nitido geograficamente:
+  - **Cluster alpino** (3.8°C medi): Acceglio, Aisone, Alagna Valsesia,
+    Bardonecchia, Ceresole Reale, Formazza, Macugnaga, Rorà — tutti comuni
+    di alta quota, ai margini montani nord e sud-ovest della regione.
+  - **Cluster di pianura calda** (12.9°C medi): Alessandria, Asti, Torino,
+    Vercelli e altri comuni della pianura centro-orientale.
+  - **Cluster intermedio** (11.1°C medi): comuni pedemontani/collinari
+    (Biella, Cuneo, Verbania, ecc.).
+  
+  Verificato visivamente anche nelle mappe QGIS (`hotspot_analysis.qgz`,
+  vedi [Mappe GIS](gis-maps.md)): il pattern geografico è visibilmente
+  coerente (verde=alpino ai margini montani, rosso=pianura calda al
+  centro-est), non più solo un'etichetta statistica.
 
-Un'analisi spaziale realmente robusta richiederebbe temperature per un
-sottoinsieme più ampio dei 1180 comuni piemontesi (oggi non disponibili,
-vedi [ETL](etl-pipeline.md) — Open-Meteo è stato interrogato solo per gli
-8 capoluoghi).
+Restano comunque solo 44 dei 1180 comuni piemontesi — un'analisi ancora
+più esaustiva richiederebbe temperature per un sottoinsieme più ampio
+(vedi [ETL](etl-pipeline.md)), ma il salto qualitativo da "campione troppo
+piccolo per dire qualcosa" a "risultato statisticamente significativo" è
+già stato fatto.
 
 ## Dipendenze aggiunte
 
@@ -126,10 +150,41 @@ il campione ridotto.
   con parametri), anche se il valore veniva comunque da una query interna
   fidata, non da input utente: pattern da evitare comunque.
 
+## Bug incontrati estendendo a 44 comuni (2026-07-15)
+
+- **`identify_heatwaves()` non è idempotente**: ri-eseguirla dopo aver
+  aggiunto i 36 comuni extra avrebbe duplicato le 51 ondate già trovate
+  per gli 8 capoluoghi (nessun controllo di esistenza prima dell'`INSERT`).
+  Fix operativo: `TRUNCATE TABLE heatwave_events` prima di ri-eseguirla —
+  sicuro perché è dato interamente derivato/ricalcolabile da `temperature`.
+- **Bug di encoding storico scoperto per caso**: durante il download dei
+  comuni extra, 2 nomi (Rorà, Cavaglià) sono usciti corrotti nel CSV. La
+  causa non era nel nuovo codice, ma in un bug del 2026-07-04 mai notato
+  prima (`encoding='cp1252'` invece di `'utf-8'` nella lettura dello
+  shapefile ISTAT, che corrompeva il 100% dei nomi con caratteri accentati
+  nel database — 28 comuni su 1180). Vedi [Fonti Dati](data-sources.md) per
+  il dettaglio completo del fix.
+- **Errore di connessione TLS non gestito dal retry esistente**: 5 dei 36
+  comuni extra sono falliti al primo download per
+  `ConnectionResetError`/`ProtocolError` (non un `429`) — il retry-on-429
+  di `download_for_coordinates()` non copre questo caso, l'eccezione si
+  propaga e la provincia/comune viene solo loggato e saltato. Risolto
+  ri-scaricando manualmente i 5 comuni mancanti in una seconda passata,
+  non ancora corretto nel codice (nessun retry generico su errori di rete
+  transitori — voce aperta per il futuro).
+- **`UnicodeEncodeError` ripetuto su console Windows**: ogni messaggio di
+  log contenente "✓"/"✗" falliva silenziosamente sulla console (cp1252 di
+  Windows non ha questi caratteri), con loguru che stampava un traceback di
+  errore invece del messaggio — non bloccante ma molto rumoroso su run
+  lunghi. Fix in `src/utils/logger.py`: `sys.stdout.reconfigure(encoding=
+  'utf-8')` prima di configurare l'handler console.
+
 ## Prossimi passi
 
-Queste analisi producono CSV in `output/` — il passo successivo naturale è
-usarli in mappe GIS (QGIS) e nella dashboard Streamlit (vedi
-[Mappe GIS](gis-maps.md), [Dashboard](dashboard.md)), oppure popolare la
-tabella `kpi` (che ha `annual_anomaly`, non ancora calcolabile senza una
-baseline 1961-1990 — vedi [Catalogo KPI](kpi-catalog.md)).
+Queste analisi producono CSV in `output/` — usati in mappe GIS (QGIS) e
+nella dashboard Streamlit (vedi [Mappe GIS](gis-maps.md),
+[Dashboard](dashboard.md)), entrambe già aggiornate ai 44 comuni. Resta
+aperta la tabella `kpi` (che ha `annual_anomaly`, non ancora calcolabile
+senza una baseline 1961-1990 — vedi [Catalogo KPI](kpi-catalog.md)), e un
+retry più generico per errori di rete transitori in `download_data.py`
+(vedi bug sopra).

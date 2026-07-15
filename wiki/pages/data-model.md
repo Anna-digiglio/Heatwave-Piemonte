@@ -41,9 +41,10 @@ può divergere leggermente, in caso di conflitto fidati dello script SQL).
   range fisico `-50..60 °C`
 - Indici: `date`, `(municipality_id, date)`, `(province_id, date)`,
   parziale su `temp_max > 30`, `data_source`
-- **Popolata il 2026-07-04**: 75.976 righe reali (8 comuni capoluogo di
-  provincia, 2000-2025). Vedi [ETL](etl-pipeline.md) per la nota sulla
-  granularità (solo capoluoghi, non tutti i 1180 comuni).
+- **Popolata il 2026-07-04, estesa il 2026-07-15**: 417.868 righe reali —
+  **44 comuni** (8 capoluoghi + 36 extra selezionati per copertura
+  spaziale), 2000-2025. Vedi [ETL](etl-pipeline.md) per la nota sulla
+  granularità (44 comuni, non tutti i 1180).
 
 ### `heatwave_events` — ondate di calore identificate
 - PK `heatwave_id BIGSERIAL`, FK `municipality_id`, `province_id`
@@ -60,6 +61,10 @@ può divergere leggermente, in caso di conflitto fidati dello script SQL).
   capoluogo, 2000-2025 — inclusa la storica ondata dell'agosto 2003.
   Verificate contro un conteggio indipendente via window function SQL
   (`ROW_NUMBER()`-based gap detection): coincidenza esatta, 51/51.
+- **Rieseguita il 2026-07-15** dopo l'estensione a 44 comuni (`TRUNCATE` +
+  ri-esecuzione, dato che la funzione non è idempotente — ri-eseguirla
+  senza svuotare prima la tabella duplicherebbe le ondate già trovate):
+  **145 ondate totali** su 44 comuni.
 
 ### `kpi` — aggregati annuali/mensili a 3 livelli
 - PK `kpi_id BIGSERIAL`, FK opzionali `municipality_id`/`province_id`
@@ -89,6 +94,8 @@ può divergere leggermente, in caso di conflitto fidati dello script SQL).
   da quando create (calcolate quando `temperature` non aveva ancora dati) —
   **non si aggiornano da sole quando la tabella sottostante cambia**, va
   rifatto il refresh esplicitamente dopo ogni nuovo caricamento.
+- **Rinfrescate di nuovo il 2026-07-15** dopo l'estensione a 44 comuni:
+  `kpi_annual_by_municipality` ora 1144 righe (44 comuni × 26 anni).
 
 Nota: queste viste **duplicano concettualmente** la tabella `kpi`. La tabella
 `kpi` sembra pensata per KPI calcolati/persistiti dalla pipeline Python,

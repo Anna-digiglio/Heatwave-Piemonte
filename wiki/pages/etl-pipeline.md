@@ -1,7 +1,8 @@
 # Pipeline ETL
 
-**Sorgenti**: `src/data_acquisition/download_data.py`, `src/data_processing/clean_data.py`,
-`src/database/load_to_db.py`, `docs/ETL.md`
+**Sorgenti**: `src/data_acquisition/download_data.py`,
+`src/data_acquisition/download_extra_municipalities.py`,
+`src/data_processing/clean_data.py`, `src/database/load_to_db.py`, `docs/ETL.md`
 
 ## Extract — `download_data.py`
 
@@ -18,6 +19,29 @@ CLI: `python src/data_acquisition/download_data.py --years 2000:2026 --regions a
   [Fonti Dati](data-sources.md) per stato/bug di ciascuno).
 - **Eseguito realmente il 2026-07-04**: `data/raw/temperature_data.csv`
   popolato con 75.976 righe (8 province, 2000-2025, nessun nullo).
+
+### Estensione a 44 comuni — `download_extra_municipalities.py` (2026-07-15)
+
+Per rendere Moran's I e il clustering K-means (vedi
+[Analisi Statistica](statistical-analysis.md)) statisticamente robusti
+(n=8 era sotto la soglia comune di 20-30), aggiunto un secondo script:
+
+- `select_extra_municipalities()` — campionamento "farthest-point" per
+  provincia: sceglie comuni che massimizzano la distanza minima dai punti
+  già scelti (partendo dal capoluogo), per coprire zone diverse (montagna,
+  pianura, confini) invece di ammassarsi vicino a ciò che già c'è. 36 comuni
+  extra, allocati proporzionalmente alla dimensione di ciascuna provincia.
+- `WeatherDataDownloader.download_for_coordinates()` — refactoring di
+  `download_historical_data()`: la logica di retry/backoff sui `429` è stata
+  estratta in un metodo che accetta coordinate arbitrarie, non solo gli 8
+  capoluoghi hardcoded in `PIEMONTE_REGIONS`.
+- Output: `data/raw/temperature_data_extra.csv` (341.892 righe, 36 comuni).
+
+**Bug reale scoperto in esecuzione**: 5 comuni su 36 sono falliti al primo
+giro per `ConnectionResetError` (TLS reset, non un `429`) — il retry
+esistente copre solo il rate limit, non errori di connessione generici.
+Diagnosticato confrontando `municipality_id` scaricati vs selezionati;
+risolto ri-scaricando miratamente solo i 5 mancanti.
 
 ## Transform — `clean_data.py`
 
@@ -70,6 +94,14 @@ mostra codici sentinella (es. `-999` per missing) prima della validazione.
   del febbraio 2012, non errori — `temp_min <= temp_mean <= temp_max`
   sempre rispettato).
 
+**Riusato invariato il 2026-07-15** per `data/raw/temperature_data_extra.csv`
+(i 36 comuni extra): `DataCleaner` raggruppa per la colonna `province`, che
+in questo file contiene il nome del comune (non della provincia) — poiché
+ogni nome è univoco tra i 36 selezionati, il raggruppamento funziona
+correttamente come "per comune" senza modifiche al codice. 341.892/341.892
+righe mantenute, 670 outlier statistici flaggati (prevalentemente nei comuni
+alpini come Formazza/Macugnaga).
+
 ## Load — `load_to_db.py`
 
 CLI: `python -m src.database.load_to_db` → `DatabaseLoader`
@@ -92,10 +124,15 @@ CLI: `python -m src.database.load_to_db` → `DatabaseLoader`
   associata al **comune capoluogo di provincia** (unico comune per cui
   esiste davvero una misura — scelta confermata con l'utente, alternativa
   scartata era rendere `municipality_id` nullable e trattare i dati come
-  "di livello provinciale"). Gli altri 1172 comuni restano senza dati di
-  temperatura. Mappatura nome-capoluogo per provincia coincide col nome
-  provincia in 7 casi su 8; eccezione: "Verbano-Cusio-Ossola" (nome
-  dell'ente) ha come capoluogo il comune di "Verbania".
+  "di livello provinciale"). Mappatura nome-capoluogo per provincia
+  coincide col nome provincia in 7 casi su 8; eccezione:
+  "Verbano-Cusio-Ossola" (nome dell'ente) ha come capoluogo il comune di
+  "Verbania".
+- `insert_temperature_for_municipalities()` (2026-07-15) — variante per
+  CSV che hanno già `municipality_id` per riga (non serve risolvere il
+  capoluogo per nome): usata per caricare i 36 comuni extra da
+  `data/processed/temperature_clean_extra.csv`. **Copertura totale ora: 44
+  comuni, 417.868 righe** in `temperature`.
 
 **Bug risolti il 2026-07-04, scoperti eseguendo il caricamento reale:**
 - `exec_driver_sql` passa sempre un dict di parametri (anche vuoto) a
@@ -113,12 +150,13 @@ CLI: `python -m src.database.load_to_db` → `DatabaseLoader`
   script su un DB parzialmente inizializzato — aggiunto `IF NOT EXISTS`
   a tutti (24 occorrenze).
 
-**Stato attuale (2026-07-04)**: pipeline Extract → Transform → Load
-completa ed eseguita end-to-end su dati reali per la prima volta. Non esiste
-ancora un orchestratore unico `etl_pipeline.py` (si lanciano i 3 script
-separatamente, in ordine); i `models.py` menzionati in `PROJECT_SUMMARY.md`
-non esistono. Il "Load" reale oggi copre: schema + 8 province + 1180 comuni
-+ 75.976 righe di temperatura (8 comuni capoluogo, 2000-2025).
+**Stato attuale (2026-07-15)**: pipeline Extract → Transform → Load
+completa ed eseguita end-to-end su dati reali. Non esiste ancora un
+orchestratore unico `etl_pipeline.py` (si lanciano gli script separatamente,
+in ordine); i `models.py` menzionati in `PROJECT_SUMMARY.md` non esistono.
+Il "Load" reale oggi copre: schema + 8 province + 1180 comuni + 417.868
+righe di temperatura per **44 comuni** (8 capoluoghi + 36 extra selezionati
+per copertura spaziale, 2000-2025).
 
 ## Passaggi pianificati ma non ancora scritti
 

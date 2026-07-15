@@ -4,7 +4,7 @@
 
 | Fonte | Stato codice | Abilitata di default | Note |
 |---|---|---|---|
-| **Open-Meteo** | Implementata (`WeatherDataDownloader`) | Sì | Nessuna API key. Endpoint `archive-api.open-meteo.com/v1/archive`. Scarica `temperature_2m_max/min/mean` e `precipitation_sum` giornalieri per gli 8 capoluoghi di provincia (coordinate hardcoded in `PIEMONTE_REGIONS`). |
+| **Open-Meteo** | Implementata (`WeatherDataDownloader`) | Sì | Nessuna API key. Endpoint `archive-api.open-meteo.com/v1/archive`. Scarica `temperature_2m_max/min/mean` e `precipitation_sum` giornalieri. Due modalità: `download_historical_data(region)` per gli 8 capoluoghi hardcoded in `PIEMONTE_REGIONS`, e (dal 2026-07-15) `download_for_coordinates(name, lat, lon)` per coordinate arbitrarie — usata per estendere la copertura ad altri comuni, vedi sotto. |
 | **Copernicus ERA5** | Implementata (`CopernicusERA5Downloader`) | Sì (in `config.yaml`) | Richiede libreria `cdsapi` (in `requirements.txt`) e variabile d'ambiente `CDS_KEY`. Vedi bug noto sotto. |
 | **ARPA Piemonte** | Implementata (`ArpaPiemonteDownloader`) | No | Download CSV da URL configurato in `config.yaml`, per validazione/calibrazione locale. |
 | **ISTAT** | Implementata (`IstatGeodataDownloader`) | No | Confini amministrativi comuni in shapefile (zip), via `geopandas`. `download_municipalities()` riscritto il 2026-07-04 (vedi sotto); `download_provinces()`/`provinces_url` non ancora verificati (province già seedate come punti in `sql/01_init_database.sql`). |
@@ -62,16 +62,32 @@ una pagina HTML di archivio (`istat.it/it/archivio/222527`), non a un file
 scaricabile. Trovato (via ricerca web, verificato con richiesta HTTP diretta)
 l'URL reale del dataset ufficiale ISTAT dei confini amministrativi:
 `https://www.istat.it/storage/cartografia/confini_amministrativi/generalizzati/2026/Limiti01012026_g.zip`
-(shapefile, ~10MB, aggiornato al 01/01/2026). Il metodo ora: scarica lo zip
+(shapefile, ~10MB, aggiornato al 01/01/2026). Il metodo: scarica lo zip
 (con cache locale in `data/external/istat_confini/`), lo estrae, legge
-`Com*_WGS84.shp` con `geopandas` (**`encoding='cp1252'`** esplicito — i file
-ISTAT non hanno `.cpg` e senza specificarlo i nomi accentati si corrompono,
-es. "Agliè" → "AgliÃ¨), filtra `COD_REG == 1` (Piemonte, 1180 comuni),
-calcola `area_km2` nel CRS proiettato originale (UTM32, metri — non dopo la
-riproiezione in 4326, dove i gradi non sono unità di superficie), riproietta
-in EPSG:4326, e salva sia `data/external/istat_municipalities.geojson` sia
-`data/external/municipalities.csv` (quest'ultimo con geometria in WKT, pronto
-per `DatabaseLoader.insert_municipalities`, vedi [ETL](etl-pipeline.md)).
+`Com*_WGS84.shp` con `geopandas`, filtra `COD_REG == 1` (Piemonte, 1180
+comuni), calcola `area_km2` nel CRS proiettato originale (UTM32, metri — non
+dopo la riproiezione in 4326, dove i gradi non sono unità di superficie),
+riproietta in EPSG:4326, e salva sia `data/external/istat_municipalities.geojson`
+sia `data/external/municipalities.csv` (quest'ultimo con geometria in WKT,
+pronto per `DatabaseLoader.insert_municipalities`, vedi [ETL](etl-pipeline.md)).
+
+**Bug di encoding, introdotto il 2026-07-04 e corretto solo il 2026-07-15**:
+i file ISTAT non hanno un `.cpg` che dichiari l'encoding del `.dbf`. Il fix
+originario usava `encoding='cp1252'`, verificato all'epoca stampando un nome
+a terminale ("Agliè" sembrava corretto) — ma quella verifica era ingannevole:
+il terminale stava mostrando un doppio mojibake che *sembrava* giusto per
+coincidenza. Verificando a livello di byte
+(`nome.encode('utf-8')`) si è scoperto che **`cp1252` produceva una doppia
+codifica UTF-8** per ogni nome con lettere accentate (es. "Agliè" diventava
+`b'Agli\xc3\x83\xc2\xa8'` invece del corretto `b'Agli\xc3\xa8'`), corrompendo
+**28 dei 1180 comuni piemontesi** nel database reale (tutti quelli con
+caratteri non-ASCII nel nome, il 100% di essi). Il file `.dbf` è in realtà
+codificato in **UTF-8**: `encoding='utf-8'` esplicito dà il risultato
+corretto. Corretti sia lo script (`download_data.py`) sia i 28 nomi già
+presenti nel database (via `UPDATE ... WHERE istat_code = ...`, chiave
+stabile non affetta dal bug) sia `data/external/municipalities.csv`
+(rigenerato). Lezione: **non fidarsi della resa a terminale per verificare
+encoding** — controllare sempre i byte espliciti.
 
 **Curiosità/trappola**: uno dei 1180 comuni (istat_code `001168`, provincia
 di Torino) si chiama letteralmente **"None"** (Pinerolese, noto per
@@ -79,17 +95,46 @@ l'asparago). Chi rilegge `municipalities.csv` con `pandas.read_csv` di
 default lo trasforma in `NaN` (pandas tratta la stringa `"None"` come valore
 mancante) — va sempre letto con `keep_default_na=False`.
 
-## Dati realmente scaricati/caricati oggi (2026-07-04)
+## `download_extra_municipalities.py` — copertura estesa a 44 comuni (2026-07-15)
+
+Motivazione: Moran's I e il clustering K-means (vedi
+[Analisi Statistica](statistical-analysis.md)) erano statisticamente deboli
+con solo 8 unità spaziali. `src/data_acquisition/download_extra_municipalities.py`:
+
+1. **Selezione spaziale**: per ciascuna delle 8 province, campionamento
+   "farthest-point" (greedy, massimizza la distanza minima dai punti già
+   scelti) a partire dal capoluogo già scaricato — sceglie comuni che
+   coprono aree diverse della provincia (montagna, pianura, confini),
+   non i più vicini al capoluogo. 36 comuni extra selezionati (proporzionali
+   alla dimensione di ciascuna provincia: 9 per Torino, 7 per Cuneo, ...,
+   2 per Biella/Verbano-Cusio-Ossola).
+2. **Download**: `WeatherDataDownloader.download_for_coordinates()`
+   (nuovo metodo, refactoring di `download_historical_data()` per accettare
+   coordinate arbitrarie, non solo gli 8 capoluoghi hardcoded).
+3. Salvataggio in `data/raw/temperature_data_extra.csv`.
+
+**Esecuzione reale**: 31/36 comuni scaricati al primo tentativo; 5 falliti
+per un errore di connessione TLS transitorio (`ConnectionResetError`,
+non un `429` — il retry-on-429 esistente non copriva questo caso), riscaricati
+con una seconda passata mirata. Risultato finale: 36/36 comuni, 341.892
+righe, nessun dato mancante.
+
+## Dati realmente scaricati/caricati (2026-07-04 → 2026-07-15)
 
 - `data/raw/temperature_data.csv`: 75.976 righe — 8 province × 9.497 giorni
   (2000-01-01 → 2025-12-31), nessun valore nullo. Il 2026 non è incluso
   (l'API storica non accetta date future oltre il giorno corrente). I numeri
   "1.7M record" citati in README/PROJECT_SUMMARY restano una stima
   pianificata (verosimilmente basata su dati orari, non giornalieri).
+- `data/raw/temperature_data_extra.csv` (2026-07-15): 341.892 righe — 36
+  comuni extra × 9.497 giorni, stesso periodo.
 - `data/external/municipalities.csv` + tabella `municipalities` nel DB:
   1180 comuni piemontesi reali, geometrie tutte valide (`ST_IsValid`),
-  caricati nel database Postgres/PostGIS locale. `population` ed
+  nomi corretti (encoding fix del 2026-07-15). `population` ed
   `elevation_m` restano `NULL` (non presenti nello shapefile dei confini,
-  serve un dataset ISTAT demografico separato).
+  serve un dataset ISTAT demografico separato — non fatto in questa
+  sessione, l'utente ha dato priorità all'estensione delle temperature).
+- Tabella `temperature`: **417.868 righe, 44 comuni** (8 capoluoghi +
+  36 extra), 2000-2025.
 
 Vedi [Stato del Progetto](project-status.md).

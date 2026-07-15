@@ -14,7 +14,7 @@ ogni sessione di lavoro rilevante (vedi workflow di ingest in `CLAUDE.md`).
 | Struttura repo | ✅ | ✅ |
 | Schema DB (`01_init_database.sql`) | ✅ | ✅ completo: 6 tabelle, 2 viste, 1 funzione, 25+ indici. **Eseguito per la prima volta su un DB reale il 2026-07-04** (Postgres 16 + PostGIS locale) — trovati e risolti 4 bug mai emersi finché nessuno l'aveva davvero eseguito (vedi [ETL](etl-pipeline.md) e [Modello Dati](data-model.md)) |
 | Script download (`download_data.py`) | pianificato | ✅ scritto, bug di import **risolto il 2026-07-04** (vedi [Fonti Dati](data-sources.md)); aggiunto anche retry/backoff per rate limit Open-Meteo |
-| Download dati 2000-2026 | ⬜ | ✅ **eseguito il 2026-07-04** — `data/raw/temperature_data.csv`, 75.976 righe, 8 province, 2000-2025 (2026 non incluso, API storica non accetta date future) |
+| Download dati 2000-2026 | ⬜ | ✅ **eseguito il 2026-07-04, esteso il 2026-07-15** — 417.868 righe reali, **44 comuni** (8 capoluoghi + 36 extra), 2000-2025 (2026 non incluso, API storica non accetta date future) |
 | Dati geografici (ISTAT comuni/province) | ⬜ | ✅ **caricati il 2026-07-04** — 1180 comuni reali in `municipalities` (DB Postgres/PostGIS locale), 8 province con codici ISTAT corretti |
 | Python environment / requirements | ⬜ | `.venv` presente, `requirements.txt` presente e dettagliato |
 
@@ -22,10 +22,10 @@ ogni sessione di lavoro rilevante (vedi workflow di ingest in `CLAUDE.md`).
 
 | Attività | Roadmap | Realtà |
 |---|---|---|
-| `DataCleaner` completo | pianificato | ✅ scritto, **ma non era mai stato eseguibile** fino al 2026-07-04 (`SyntaxError` da newline letterali corrotte + bug che scartava il 99,9% dei dati — vedi [ETL](etl-pipeline.md)). Ora eseguito su dati reali: 75.976/75.976 righe mantenute |
-| Caricamento `temperature` nel DB | pianificato | ✅ **eseguito il 2026-07-04** — 75.976 righe reali (8 comuni capoluogo, 2000-2025) in `temperature`, batch insert (vedi [ETL](etl-pipeline.md)) |
-| `identify_heatwaves()` eseguita | pianificato | ✅ **eseguita il 2026-07-12** su dati reali — 51 ondate identificate (2000-2025), 2 bug di attribuzione/flush risolti (vedi [Modello Dati](data-model.md)) |
-| KPI calcolati | pianificato | ✅ viste materializzate **rinfrescate il 2026-07-12** con dati reali — 208 righe ciascuna (8 comuni/province × 26 anni) |
+| `DataCleaner` completo | pianificato | ✅ scritto, **ma non era mai stato eseguibile** fino al 2026-07-04 (`SyntaxError` da newline letterali corrotte + bug che scartava il 99,9% dei dati — vedi [ETL](etl-pipeline.md)). Eseguito su 75.976 righe (8 comuni) e poi su altre 341.892 (36 comuni extra, 2026-07-15), senza modifiche al codice |
+| Caricamento `temperature` nel DB | pianificato | ✅ **eseguito il 2026-07-04, esteso il 2026-07-15** — **417.868 righe reali, 44 comuni**, in `temperature`, batch insert (vedi [ETL](etl-pipeline.md)) |
+| `identify_heatwaves()` eseguita | pianificato | ✅ eseguita il 2026-07-12 su 8 comuni (51 ondate), **rieseguita il 2026-07-15** su 44 comuni dopo `TRUNCATE` (non idempotente) — **145 ondate totali** (vedi [Modello Dati](data-model.md)) |
+| KPI calcolati | pianificato | ✅ viste materializzate rinfrescate il 2026-07-12 (208 righe, 8 comuni), **rinfrescate di nuovo il 2026-07-15** — `kpi_annual_by_municipality` ora 1144 righe (44 comuni × 26 anni) |
 | Query SQL (10+) | pianificato | 3 query scritte in `02_common_queries.sql` |
 
 ## Settimana 3 — Visualizzazione & Deployment
@@ -99,13 +99,25 @@ richiesta dell'utente:
   numpy 1.26→2.4, streamlit 1.29→1.58). Verificato `pip check`: nessun
   conflitto di dipendenze nell'ambiente attuale.
 
+**Aggiornamento 2026-07-15 (estensione a 44 comuni)**: su richiesta
+dell'utente ("rendere Moran's I/clustering più robusti"), estesa la
+copertura reale da 8 a **44 comuni** (36 extra selezionati con
+campionamento "farthest-point" per massimizzare la copertura spaziale per
+provincia — vedi [ETL](etl-pipeline.md)). Rieseguita l'intera catena a
+valle: `identify_heatwaves()` (145 ondate), viste KPI, tutti e 4 i moduli
+di `src/analysis/`, i 3 progetti QGIS, tutte le pagine dashboard. Risultato
+più significativo: **Moran's I passa da non significativo (p=0.732, n=8) a
+statisticamente significativo (I=0.101, p=0.002, n=44)** — vedi
+[Analisi Statistica](statistical-analysis.md). Nel farlo, scoperto e
+risolto un bug di encoding vecchio di 11 giorni (28 comuni su 1180 con nomi
+corrotti nel DB, mai notato prima — vedi [Fonti Dati](data-sources.md)).
+
 Prossimi passi, in ordine (tutti minori/non bloccanti — il nucleo
 pianificato del progetto è completo):
 
-1. Aprire i 3 `.qgz` in QGIS Desktop per confermare visivamente le
-   etichette (vedi [Mappe GIS](gis-maps.md)) — **fatto e confermato
-   dall'utente il 2026-07-15**, incluso un fix successivo per le etichette
-   mancanti in `evolution_animation.qgz`
+1. ~~Aprire i 3 `.qgz` in QGIS Desktop per confermare visivamente le
+   etichette~~ — **fatto e confermato dall'utente il 2026-07-15**, incluso
+   un fix successivo per le etichette mancanti in `evolution_animation.qgz`
 2. Popolare `population`/`elevation_m` dei comuni con un dataset ISTAT
    demografico separato (oggi `NULL` — vedi [Modello Dati](data-model.md))
 3. Riavviare `postgresql-x64-16` come vero servizio Windows (oggi gira via
@@ -113,13 +125,13 @@ pianificato del progetto è completo):
    ripartirebbe da solo dopo un riavvio del PC)
 4. Ricordarsi di rifare `REFRESH MATERIALIZED VIEW` dopo ogni futuro
    caricamento di `temperature` (vedi [Modello Dati](data-model.md))
-5. Valutare se scaricare temperature reali per un sottoinsieme più ampio
-   di comuni (oggi solo 8), per rendere Moran's I e il clustering
-   climatico statisticamente più robusti (vedi [Analisi Statistica](statistical-analysis.md))
-6. Mappa "Heatwave Index" (composito intensità/frequenza ondate) — unica
+5. Mappa "Heatwave Index" (composito intensità/frequenza ondate) — unica
    mappa pianificata non ancora costruita (vedi [Mappe GIS](gis-maps.md))
-7. Test unitari (`tests/` vuota), documentazione API/tutorial ancora da
+6. Test unitari (`tests/` vuota), documentazione API/tutorial ancora da
    scrivere
+7. Retry più generico per errori di rete transitori (non solo `429`) in
+   `download_data.py` — scoperto durante il download dei comuni extra
+   (vedi [Analisi Statistica](statistical-analysis.md))
 
 ## Discrepanze da tenere a mente quando si presenta il progetto
 

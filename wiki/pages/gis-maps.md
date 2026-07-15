@@ -10,16 +10,18 @@ di consegnarle, dato che aprirle visivamente richiede QGIS Desktop
 
 | Mappa | Descrizione | Stato |
 |---|---|---|
-| `temperature_heatmap.qgz` | Coropletica della temperatura media 2000-2025 sugli 8 comuni capoluogo | ✅ generata e verificata |
-| `hotspot_analysis.qgz` | Cluster climatici K-means (k=3, da `spatial_analysis.py`) | ✅ generata e verificata |
+| `temperature_heatmap.qgz` | Coropletica della temperatura media 2000-2025 sui 44 comuni con dati reali | ✅ generata e verificata |
+| `hotspot_analysis.qgz` | Cluster climatici K-means (k=3, da `spatial_analysis.py`) | ✅ generata e verificata — pattern geografico ora nitido (alpino/pianura/intermedio) |
 | `evolution_animation.qgz` | Animazione temporale 2000-2025 (controllo temporale nativo QGIS) | ✅ generata e verificata (frame 2000 vs 2025 confermano il riscaldamento) |
 | Heatwave Index (composito intensità/frequenza) | Non implementata | ⬜ pianificata, non fatta in questa sessione |
 
-**Nota di granularità**: tutte le mappe mostrano gli **8 comuni capoluogo
-con dati reali** a colori, sopra uno sfondo grigio con tutti i 1180 comuni
+**Nota di granularità**: tutte le mappe mostrano i **44 comuni con dati
+reali** a colori (8 capoluoghi + 36 extra, dal 2026-07-15 — vedi
+[ETL](etl-pipeline.md)), sopra uno sfondo grigio con tutti i 1180 comuni
 piemontesi (da `data/external/istat_municipalities.geojson`/tabella
 `municipalities`), per essere onesti sulla copertura reale invece di
-nasconderla. Vedi [ETL](etl-pipeline.md) per la motivazione.
+nasconderla. Rigenerate lo stesso giorno dopo l'estensione dei dati (erano
+inizialmente costruite sugli 8 capoluoghi soltanto).
 
 ## Come sono state generate
 
@@ -105,9 +107,10 @@ non ho potuto verificare end-to-end.
 
 ## Prossimi passi
 
-- Aprire i 3 `.qgz` in QGIS Desktop per confermare visivamente le
-  etichette (unico aspetto non verificabile in modo automatico)
+- ~~Aprire i 3 `.qgz` in QGIS Desktop per confermare visivamente le
+  etichette~~ — **fatto e confermato dall'utente il 2026-07-15**
 - Eventualmente costruire la mappa "Heatwave Index" (non fatta in questa
   sessione)
-- Se si vuole coprire più degli 8 comuni capoluogo, serve prima scaricare
-  temperature reali per altri comuni (vedi [Analisi Statistica](statistical-analysis.md))
+- Se si vuole coprire più dei 44 comuni attuali, servirebbe scaricare
+  temperature reali per un sottoinsieme ancora più ampio (vedi
+  [Analisi Statistica](statistical-analysis.md))
