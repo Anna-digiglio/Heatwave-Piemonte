@@ -81,6 +81,27 @@ non ho potuto verificare end-to-end.
   `qgis_projects/create_temporal_view.py`) invece di una subquery inline —
   una vista in catalogo si comporta come qualunque tabella, senza ambiguità.
 - **Nessun font nell'ambiente offscreen**: vedi sopra.
+- **Pagina bianca aprendo i `.qgz` in QGIS Desktop** (segnalato dall'utente
+  dopo aver aperto i file): `QgsProject.write()` non salva alcuna
+  estensione di vista (`<mapcanvas>`/`DefaultViewExtent`) a meno di
+  impostarla esplicitamente — il render offscreen usato per le anteprime
+  imposta l'estensione solo su `QgsMapSettings` (transiente, non salvata
+  nel progetto), quindi i progetti salvati aprivano senza sapere su quale
+  area centrare la mappa. Fix: `set_project_view_extent()` in
+  `build_maps.py` imposta `project.viewSettings().setDefaultViewExtent(...)`
+  sull'estensione combinata dei layer prima di salvare, per ciascuno dei 3
+  progetti. Verificato leggendo l'XML del `.qgz` salvato (`DefaultViewExtent`
+  ora presente coi confini reali del Piemonte).
+- **Etichette mancanti in `evolution_animation.qgz`** (segnalato
+  dall'utente dopo aver aperto tutti e 3 i file — le etichette si vedevano
+  correttamente nelle prime due mappe ma non nella terza): non un problema
+  di rendering, semplicemente `add_labels()` non era mai stata chiamata
+  sul layer temporale in `build_evolution_animation()` — dimenticata,
+  non un bug di configurazione. Fix: aggiunta con espressione
+  `"name" || ' (' || round("temp_mean_annual", 1) || '°C)'`, così la
+  temperatura mostrata in etichetta cambia insieme al colore a ogni anno
+  dell'animazione. Verificato leggendo l'XML del `.qgz` salvato (nodo
+  `<labeling type="simple">` ora presente, prima assente).
 
 ## Prossimi passi
 
