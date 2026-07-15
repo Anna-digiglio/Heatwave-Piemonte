@@ -29,8 +29,10 @@ from components.queries import (
     get_municipality_geometries_wkt,
     get_municipality_metadata,
 )
+from components.styling import inject_custom_css
 
 st.set_page_config(page_title='Ondate di Calore — Heatwave Piemonte', layout='wide')
+inject_custom_css()
 st.title("🔥 Ondate di Calore")
 st.caption("Quando, dove e quanto sono state intense le ondate di calore rilevate dal 2000 a oggi.")
 
