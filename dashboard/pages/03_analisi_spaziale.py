@@ -24,7 +24,7 @@ st.caption("Ci sono zone del Piemonte climaticamente simili tra loro? Il caldo s
 
 with st.expander("ℹ️ Come si legge questa pagina"):
     st.markdown(
-        "- **Cluster climatici**: raggruppiamo gli 8 comuni in **zone simili** "
+        "- **Cluster climatici**: raggruppiamo i comuni in **zone simili** "
         "guardando temperatura media e giorni di caldo intenso, usando un "
         "algoritmo chiamato **K-means** — in pratica, mette nello stesso "
         "gruppo i comuni che si somigliano di più, senza che nessuno decida "
@@ -36,11 +36,11 @@ with st.expander("ℹ️ Come si legge questa pagina"):
         "geografico chiaro, sembra più casuale\"."
     )
 
-st.warning(
-    "Solo **8 unità spaziali** disponibili (i comuni capoluogo, unica "
-    "granularità con temperature reali) — sotto la soglia comunemente "
-    "considerata minima per un'analisi di autocorrelazione spaziale robusta. "
-    "I risultati sotto sono illustrativi, non conclusivi. "
+st.info(
+    "44 comuni disponibili (8 capoluoghi + 36 scelti per coprire bene il "
+    "territorio) — sopra la soglia comunemente citata (20-30) per "
+    "un'analisi di autocorrelazione spaziale ragionevolmente robusta, anche "
+    "se restano una frazione dei 1180 comuni piemontesi. "
     "Vedi `wiki/pages/statistical-analysis.md` per il dettaglio."
 )
 
@@ -96,7 +96,7 @@ else:
                 st.success("Il caldo sembra concentrarsi in zone specifiche del Piemonte, non distribuirsi a caso.")
             else:
                 st.info(
-                    "Con questo campione (solo 8 comuni) non emerge un pattern geografico "
+                    "Con questo campione non emerge un pattern geografico "
                     "statisticamente chiaro — non vuol dire che non ci sia, solo che questi "
                     "dati non bastano per dimostrarlo con sicurezza."
                 )
