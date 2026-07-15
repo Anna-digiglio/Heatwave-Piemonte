@@ -30,7 +30,7 @@ dubbio, la sorgente grezza (codice/SQL/config) prevale sempre sulla wiki.
 ## Visualizzazione
 
 - [Mappe GIS](pages/gis-maps.md) — 3 progetti QGIS, **generati via PyQGIS ed eseguiti su dati reali**
-- [Dashboard](pages/dashboard.md) — dashboard Streamlit, **implementata ed eseguita su dati reali** (5 pagine)
+- [Dashboard](pages/dashboard.md) — dashboard Streamlit, **implementata, eseguita su dati reali e ampliata** (5 pagine, sidebar filtri, mappe coropletiche PostGIS)
 
 ## Qualità del codice
 

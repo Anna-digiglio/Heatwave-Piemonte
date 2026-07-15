@@ -35,7 +35,7 @@ ogni sessione di lavoro rilevante (vedi workflow di ingest in `CLAUDE.md`).
 | `src/analysis/` (statistica, spaziale, temporale) | pianificato | ✅ **implementata ed eseguita su dati reali il 2026-07-15** — trend (Mann-Kendall/regressione), statistiche ondate di calore, STL decomposition, Moran's I + clustering K-means (vedi [Analisi Statistica](statistical-analysis.md)) |
 | `src/visualization/` | pianificato | ❌ cartella vuota |
 | Progetti QGIS | pianificato | ✅ **generati ed eseguiti il 2026-07-15** — 3 progetti `.qgz` (heatmap, hotspot, animazione temporale) via PyQGIS headless, verificati con render PNG (vedi [Mappe GIS](gis-maps.md)); manca solo la mappa "Heatwave Index" |
-| Dashboard Streamlit | pianificato | ✅ **implementata ed eseguita il 2026-07-15** — 5 pagine (home, analisi temporale, analisi spaziale, ondate di calore, download), dati reali, verificata via `AppTest` e avviata live su `localhost:8501` (vedi [Dashboard](dashboard.md)) |
+| Dashboard Streamlit | pianificato | ✅ **implementata il 2026-07-15, contenuto ampliato sostanzialmente lo stesso giorno** — 5 pagine (home con card di navigazione, analisi temporale, analisi spaziale, ondate di calore, download), sidebar filtri globali (anni/provincia), palette colori coerente, dati reali, verificata via `AppTest` e avviata live su `localhost:8501` (vedi [Dashboard](dashboard.md)) |
 | Test unitari | pianificato (70%+ coverage) | ✅ **implementati il 2026-07-15** — 31 test pytest (`DataCleaner`, `src/analysis/` funzioni pure, `Config`), 86% di copertura su `clean_data.py`; **1 bug reale trovato e corretto** in `detect_outliers()` (vedi [Test Unitari](testing.md)) |
 | Documentazione | in gran parte fatta | ✅ README, PROJECT_SUMMARY, docs/* molto estesi (a volte più avanti del codice) |
 
@@ -112,14 +112,33 @@ statisticamente significativo (I=0.101, p=0.002, n=44)** — vedi
 risolto un bug di encoding vecchio di 11 giorni (28 comuni su 1180 con nomi
 corrotti nel DB, mai notato prima — vedi [Fonti Dati](data-sources.md)).
 
+**Aggiornamento 2026-07-15 (ampliamento contenuto dashboard)**: su
+richiesta esplicita dell'utente, contenuto delle 3 pagine di analisi
+ampliato sostanzialmente (dettaglio completo in
+[Dashboard](dashboard.md)): anomalie termiche, confronto stagionale,
+boxplot per quinquennio e confronto con letteratura in Analisi Temporale;
+mappe coropletiche per provincia (via `ST_Union` PostGIS), mappa del trend
+per comune, fasce altitudinali e isola di calore urbana in Analisi
+Spaziale; conteggio cumulato, mappa di concentrazione e heatmap
+"calendario" in Ondate di Calore. Aggiunta anche una sidebar di filtri
+globali (anni/provincia, persistiti tra le pagine) e una home con card di
+navigazione al posto dei link testuali. Per la fascia altitudinale è stato
+necessario popolare `municipalities.elevation_m` (prima sempre `NULL`) —
+scaricato per davvero da Open-Meteo Elevation API per i 44 comuni con dati
+(scelta confermata con l'utente, invece di un placeholder "non
+disponibile") — vedi [Fonti Dati](data-sources.md) e
+[Modello Dati](data-model.md).
+
 Prossimi passi, in ordine (tutti minori/non bloccanti — il nucleo
 pianificato del progetto è completo):
 
 1. ~~Aprire i 3 `.qgz` in QGIS Desktop per confermare visivamente le
    etichette~~ — **fatto e confermato dall'utente il 2026-07-15**, incluso
    un fix successivo per le etichette mancanti in `evolution_animation.qgz`
-2. Popolare `population`/`elevation_m` dei comuni con un dataset ISTAT
-   demografico separato (oggi `NULL` — vedi [Modello Dati](data-model.md))
+2. ~~Popolare `elevation_m`~~ — **fatto parzialmente il 2026-07-15**, ma
+   solo per i 44 comuni con dati di temperatura (Open-Meteo Elevation API,
+   vedi [Modello Dati](data-model.md)); `population` resta `NULL` per tutti
+   i 1180 comuni, servirebbe un dataset ISTAT demografico separato
 3. Riavviare `postgresql-x64-16` come vero servizio Windows (oggi gira via
    `pg_ctl` manuale — il servizio in sé risulta "Stopped" e non
    ripartirebbe da solo dopo un riavvio del PC)
@@ -133,6 +152,11 @@ pianificato del progetto è completo):
 7. Retry più generico per errori di rete transitori (non solo `429`) in
    `download_data.py` — scoperto durante il download dei comuni extra
    (vedi [Analisi Statistica](statistical-analysis.md))
+8. ~~Contenuto delle 3 pagine di analisi della dashboard troppo essenziale~~
+   — **ampliato sostanzialmente il 2026-07-15** (anomalie, stagionalità,
+   boxplot per quinquennio, mappe coropletiche per provincia, fasce
+   altitudinali, isola di calore urbana, heatmap calendario delle ondate,
+   sidebar filtri globali) — vedi [Dashboard](dashboard.md)
 
 ## Discrepanze da tenere a mente quando si presenta il progetto
 

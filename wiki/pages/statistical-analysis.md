@@ -45,7 +45,10 @@ CLI: `python -m src.analysis.heatwave_stats`
 - `summary_by_municipality()` — conteggio, durata media/max, intensità
   media/max per comune
 - `frequency_by_year()` — conteggio ondate per anno (2000-2025, anni senza
-  ondate inclusi come 0)
+  ondate inclusi come 0); **estesa il 2026-07-15** per includere anche
+  `avg_duration_days`/`avg_intensity` per anno, non solo il conteggio —
+  usate dal grafico a barre a doppio asse della pagina "Ondate di Calore"
+  della dashboard
 - Output: `output/heatwave_stats_by_municipality.csv`,
   `output/heatwave_frequency_by_year.csv`
 

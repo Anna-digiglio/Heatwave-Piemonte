@@ -27,9 +27,15 @@ può divergere leggermente, in caso di conflitto fidati dello script SQL).
   `MULTIPOLYGON` (era il tipo originario nello script DDL): 74 dei 1180
   comuni hanno confini multi-parte nei dati ISTAT reali (es. exclavi), che
   un `POLYGON` semplice non può rappresentare.
-- `population` ed `elevation_m` sono `NULL` per tutti i comuni: lo
-  shapefile ISTAT dei confini amministrativi non include questi dati
-  (serve un dataset demografico ISTAT separato, non ancora integrato).
+- `population` è `NULL` per tutti i comuni: lo shapefile ISTAT dei confini
+  amministrativi non include questo dato (servirebbe un dataset demografico
+  ISTAT separato, non ancora integrato).
+- `elevation_m`: **popolato il 2026-07-15** ma solo per i 44 comuni con dati
+  di temperatura reali (resta `NULL` per gli altri 1136) — fonte: Open-Meteo
+  Elevation API sul centroide di ciascun comune (vedi
+  [Fonti Dati](data-sources.md), `src/data_acquisition/fetch_elevation.py`).
+  Usato dalla pagina "Analisi Spaziale" della dashboard per il confronto per
+  fascia altitudinale (pianura/collina/montagna).
 
 ### `temperature` — tabella principale, serie storica giornaliera
 - PK `temperature_id BIGSERIAL`

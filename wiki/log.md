@@ -528,3 +528,83 @@ Log cronologico append-only. Ogni riga: data, azione, pagine toccate.
   "Qualità del codice"), `project-status.md` (riga "Test unitari" in
   Settimana 3 segnata fatta con dettaglio, punto 6 dei prossimi passi
   segnato fatto).
+
+- **2026-07-15** — AMPLIAMENTO CONTENUTO DELLE 3 PAGINE DI ANALISI DELLA
+  DASHBOARD + FILTRI GLOBALI. Su richiesta esplicita e dettagliata
+  dell'utente (specifica puntuale per ciascuna pagina + requisiti
+  trasversali di UI/UX), ampliato sostanzialmente il contenuto di
+  `02_analisi_temporale.py`, `03_analisi_spaziale.py`,
+  `04_ondate_di_calore.py`, oltre a `app.py` (home) e a due nuovi moduli
+  condivisi.
+
+  **Nuovi componenti condivisi**:
+  - `components/constants.py` — palette coerente (scala sequenziale
+    `RdYlBu_r` per temperature assolute, divergente `RdBu_r` centrata sullo
+    zero per trend/anomalie, da non confondere tra loro), soglie fasce
+    altitudinali (300/700 m), set dei capoluoghi, valori di riferimento
+    nazionale/globale (IPCC AR6, ISPRA — dichiarati come letteratura, non
+    calcolati dal progetto).
+  - `components/filters.py` — sidebar comune (intervallo anni + provincia),
+    persistita tra le pagine via `st.session_state` (Streamlit esegue ogni
+    pagina come script indipendente, i widget non sono condivisi
+    automaticamente).
+  - `components/heatwave_definitions.py` — `identify_heatwaves_percentile()`,
+    definizione alternativa di ondata di calore a soglia percentile
+    (relativa al singolo comune), usata solo a scopo di confronto
+    metodologico (vedi decisione sotto).
+
+  **Decisione di scoping 1 — elevazione reale**: la richiesta di un
+  confronto per fascia altitudinale (pianura/collina/montagna) richiedeva
+  `municipalities.elevation_m`, mai popolato (sempre `NULL`, voce aperta in
+  `project-status.md` da settimane). Chiesto esplicitamente all'utente se
+  scaricare il dato reale o mostrare un placeholder "non disponibile" —
+  scelto il dato reale. Scritto `src/data_acquisition/fetch_elevation.py`:
+  centroide di ciascun comune via PostGIS (`ST_Centroid`), interrogata la
+  Open-Meteo Elevation API (stessa piattaforma delle temperature, nessuna
+  chiave, endpoint diverso: `api.open-meteo.com/v1/elevation`) in
+  un'unica richiesta batch per i 44 comuni con dati, risultati scritti in
+  `municipalities.elevation_m`. Eseguito realmente: da Torino (256 m) a
+  Formazza (2250 m), coerente con la geografia nota del Piemonte.
+
+  **Decisione di scoping 2 — definizione di ondata di calore**: la
+  richiesta chiedeva di "implementare una funzione per identificare le
+  ondate di calore" con soglia percentile. Il progetto ha già una
+  definizione canonica (`identify_heatwaves()` nel DB, soglia fissa
+  35°C/3gg) usata ovunque nel resto del sito (145 ondate in home,
+  statistiche per comune, mappe QGIS) — sostituirla avrebbe reso
+  incoerenti tutti quei numeri. Scelta: la soglia percentile è
+  implementata come funzione pura, usata **solo** nel tab "Dettaglio
+  tecnico" della pagina Ondate di Calore come confronto illustrativo per
+  il comune selezionato, senza toccare il database.
+
+  **Estensione a `heatwave_stats.py`**: `frequency_by_year()` ora include
+  anche `avg_duration_days`/`avg_intensity` per anno (prima solo il
+  conteggio), necessario per il grafico a barre a doppio asse richiesto
+  nella pagina Ondate di Calore. Rieseguito, CSV rigenerato.
+
+  **Contenuto aggiunto per pagina** (dettaglio completo in
+  `wiki/pages/dashboard.md`): Analisi Temporale — anomalie con baseline
+  configurabile, confronto stagionale (4 stagioni meteorologiche), boxplot
+  per quinquennio, widget di confronto con letteratura, tab
+  Panoramica/Dettaglio tecnico; Analisi Spaziale — mappa coropletica per
+  provincia (confine reale via `ST_Union` PostGIS su tutti i 1180 comuni),
+  mappa del trend per comune (colormap divergente), fasce altitudinali,
+  isola di calore urbana (Torino vs comuni rurali della sua provincia),
+  tab Panoramica/Dettaglio tecnico (cluster K-means e Moran's I spostati
+  qui); Ondate di Calore — conteggio cumulato, mappa di concentrazione
+  geografica, heatmap "calendario" (anno × giorno dell'anno), confronto
+  soglia percentile; Home — 3 card di navigazione (`st.page_link`) al
+  posto dei link testuali, sidebar filtri applicata anche a mappa e
+  tabella trend esistenti.
+
+  **Verifica**: tutte le pagine compilate (`py_compile`) e verificate con
+  `streamlit.testing.v1.AppTest`, incluse esecuzioni con stati non
+  di default (provincia Torino esclusa dal filtro → ramo isola di calore
+  "dati insufficienti"; intervallo di un solo anno → ramo pendenza "n/d";
+  comune di montagna con soglia percentile diversa) — nessuna eccezione in
+  nessun caso. Server live riavviato e verificato (`/_stcore/health` → 200).
+
+  Pagine aggiornate: `dashboard.md` (riscrittura sostanziale), `data-model.md`
+  (`elevation_m` popolato per i 44 comuni), `data-sources.md` (nuovo
+  endpoint Open-Meteo Elevation API), `statistical-analysis.md`
+  (`frequency_by_year()` estesa), `project-status.md`.
