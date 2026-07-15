@@ -2,7 +2,7 @@
 Rende importabile il pacchetto `src` (root del progetto) da dentro
 `dashboard/`, che Streamlit esegue come script standalone (non come modulo
 di pacchetto) — senza questo, `from src.utils...` fallirebbe con
-ModuleNotFoundError sia in app.py sia nelle pagine sotto pages/.
+ModuleNotFoundError sia in Home.py sia nelle pagine sotto pages/.
 """
 import sys
 from pathlib import Path
