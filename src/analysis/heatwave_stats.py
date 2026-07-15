@@ -93,14 +93,21 @@ def summary_by_municipality(df: pd.DataFrame) -> pd.DataFrame:
 
 
 def frequency_by_year(df: pd.DataFrame) -> pd.DataFrame:
-    """Conteggio ondate per anno (frequenza), su tutti i comuni."""
+    """
+    Conteggio ondate per anno (frequenza), su tutti i comuni, con durata e
+    intensità media associate (usate dal grafico a barre della pagina
+    'Ondate di Calore' nella dashboard).
+    """
     df = df.copy()
     df['year'] = pd.to_datetime(df['start_date']).dt.year
+    yearly = df.groupby('year').agg(
+        n_heatwaves=('duration_days', 'count'),
+        avg_duration_days=('duration_days', 'mean'),
+        avg_intensity=('intensity_index', 'mean'),
+    )
     return (
-        df.groupby('year')
-        .size()
-        .reindex(range(2000, 2026), fill_value=0)
-        .rename('n_heatwaves')
+        yearly.reindex(range(2000, 2026), fill_value=0)
+        .round(2)
         .reset_index()
         .rename(columns={'index': 'year'})
     )
