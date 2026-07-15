@@ -19,7 +19,6 @@ import streamlit as st
 from streamlit_folium import st_folium
 
 from components.constants import format_mk_trend
-from components.filters import render_sidebar_filters
 from components.maps import wkt_to_geojson
 from components.queries import (
     get_municipality_geometries_wkt,
@@ -37,8 +36,6 @@ inject_custom_css()
 
 st.title("🌡️ Heatwave Piemonte")
 st.caption("Analisi spazio-temporale delle ondate di calore in Piemonte (2000-2025)")
-
-year_start, year_end, provinces = render_sidebar_filters()
 
 st.markdown(
      "Questo progetto analizza **26 anni di dati meteorologici reali** per "
@@ -118,12 +115,11 @@ col_map, col_trend = st.columns([3, 2])
 
 with col_map:
     st.subheader("Comuni con dati di temperatura reali")
-    st.caption("I comuni (in rosso, filtrati per provincia nella sidebar) da cui vengono i numeri di questo sito. Passa il mouse per il nome.")
+    st.caption("I 44 comuni (in rosso) da cui vengono i numeri di questo sito. Passa il mouse per il nome.")
     geo_df = get_municipality_geometries_wkt()
-    geo_df_f = geo_df[geo_df['province_name'].isin(provinces)]
 
     m = folium.Map(location=[45.0, 8.0], zoom_start=8, tiles='CartoDB positron')
-    for _, row in geo_df_f.iterrows():
+    for _, row in geo_df.iterrows():
         folium.GeoJson(
             wkt_to_geojson(row['geometry_wkt']),
             name=row['municipality_name'],
@@ -139,9 +135,7 @@ with col_trend:
     if trend_df.empty:
         st.info("Esegui `python -m src.analysis.trend_analysis` per generare questi risultati.")
     else:
-        trend_df_f = trend_df.merge(geo_df[['municipality_name', 'province_name']], on='municipality_name')
-        trend_df_f = trend_df_f[trend_df_f['province_name'].isin(provinces)]
-        display_df = trend_df_f[['municipality_name', 'mk_trend', 'lr_slope_per_decade', 'lr_p_value']].copy()
+        display_df = trend_df[['municipality_name', 'mk_trend', 'lr_slope_per_decade', 'lr_p_value']].copy()
         display_df['mk_trend'] = display_df['mk_trend'].apply(format_mk_trend)
         display_df.columns = ['Comune', 'Trend (Mann-Kendall)', '°C/decade', 'p-value']
         display_df['°C/decade'] = display_df['°C/decade'].round(2)
