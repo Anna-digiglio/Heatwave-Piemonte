@@ -24,6 +24,11 @@ cdsapi==0.7.2
 netCDF4==1.6.4
 xarray==2023.12.1
 
+# --- Analisi statistica/spaziale ---
+pymannkendall==1.4.3
+scikit-learn==1.9.0
+statsmodels==0.14.6
+
 # --- Visualization ---
 matplotlib==3.8.2
 plotly==5.18.0
