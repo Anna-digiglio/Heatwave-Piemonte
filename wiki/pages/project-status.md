@@ -35,7 +35,7 @@ ogni sessione di lavoro rilevante (vedi workflow di ingest in `CLAUDE.md`).
 | `src/analysis/` (statistica, spaziale, temporale) | pianificato | ✅ **implementata ed eseguita su dati reali il 2026-07-15** — trend (Mann-Kendall/regressione), statistiche ondate di calore, STL decomposition, Moran's I + clustering K-means (vedi [Analisi Statistica](statistical-analysis.md)) |
 | `src/visualization/` | pianificato | ❌ cartella vuota |
 | Progetti QGIS | pianificato | ❌ `qgis_projects/` vuota |
-| Dashboard Streamlit | pianificato | ❌ `dashboard/` vuota |
+| Dashboard Streamlit | pianificato | ✅ **implementata ed eseguita il 2026-07-15** — 5 pagine (home, analisi temporale, analisi spaziale, ondate di calore, download), dati reali, verificata via `AppTest` e avviata live su `localhost:8501` (vedi [Dashboard](dashboard.md)) |
 | Test unitari | pianificato (70%+ coverage) | ❌ `tests/` vuota |
 | Documentazione | in gran parte fatta | ✅ README, PROJECT_SUMMARY, docs/* molto estesi (a volte più avanti del codice) |
 
@@ -67,11 +67,18 @@ popolate su tutte le 51 ondate), STL decomposition (ampiezza stagionale
 sole 8 unità spaziali — vedi [Analisi Statistica](statistical-analysis.md)
 per il dettaglio e i caveat). Risultati salvati come CSV in `output/`.
 
+Aggiornamento 2026-07-15 (dashboard): scritta ed eseguita la dashboard
+Streamlit (5 pagine, dati reali) — vedi [Dashboard](dashboard.md) per i 3
+bug trovati eseguendola per la prima volta (import `components` non
+risolto, WKT passato a `folium.GeoJson` senza conversione, API deprecata).
+Verificata senza browser con `streamlit.testing.v1.AppTest`, poi avviata
+live su `http://localhost:8501`.
+
 Prossimi passi, in ordine:
 
-1. Mappe GIS (QGIS) e dashboard Streamlit — ora con dati reali E risultati
-   di analisi reali (trend, ondate, cluster climatici) da visualizzare,
-   invece di celle vuote
+1. Mappe GIS (QGIS) — ultimo pezzo pianificato in Settimana 3 non ancora
+   implementato. Richiede QGIS desktop per la verifica visiva (non
+   automatizzabile come gli script Python)
 2. **(minore, non bloccante)** correggere `logging.format` in `config.yaml`
    per la sintassi loguru — oggi console e file di log sono illeggibili
    (vedi [Fonti Dati](data-sources.md))
@@ -88,6 +95,9 @@ Prossimi passi, in ordine:
    un sottoinsieme più ampio di comuni (oggi solo 8), per rendere Moran's I
    e il clustering climatico statisticamente più robusti (vedi
    [Analisi Statistica](statistical-analysis.md))
+7. **(minore, non bloccante)** allineare `requirements.txt` alle versioni
+   effettivamente installate nel `.venv` (drift preesistente, es. streamlit
+   1.58.0 installato vs 1.29.0 pinnato — vedi [Dashboard](dashboard.md))
 
 ## Discrepanze da tenere a mente quando si presenta il progetto
 
