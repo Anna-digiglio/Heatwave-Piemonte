@@ -38,7 +38,8 @@ year_start, year_end, provinces = render_sidebar_filters()
 metadata = get_municipality_metadata()
 names_in_provinces = sorted(metadata[metadata['province_name'].isin(provinces)]['municipality_name'])
 names = names_in_provinces or get_municipality_names_with_data()
-municipality = st.selectbox("Comune", names)
+default_index = names.index('Torino') if 'Torino' in names else 0
+municipality = st.selectbox("Comune", names, index=default_index)
 
 with st.expander("ℹ️ Come si legge questa pagina"):
     st.markdown(
@@ -130,27 +131,35 @@ with tab_overview:
         st.plotly_chart(fig, width='stretch')
 
     st.subheader("Anomalie termiche rispetto a una baseline")
-    st.caption(
-        "L'**anomalia** è la differenza tra la temperatura media di un anno e una "
-        "media di riferimento (\"baseline\"): barre rosse sopra lo zero = anno più "
-        "caldo della baseline, barre blu sotto zero = anno più freddo. Guarda se le "
-        "barre rosse diventano più frequenti/alte andando verso il presente."
-    )
-    default_baseline_end = min(baseline_years_available + 9, last_year)
-    b_col1, b_col2 = st.columns(2)
-    baseline_start = b_col1.number_input(
-        "Inizio baseline", min_value=baseline_years_available, max_value=last_year,
-        value=baseline_years_available, key='baseline_start',
-    )
-    baseline_end = b_col2.number_input(
-        "Fine baseline", min_value=baseline_years_available, max_value=last_year,
-        value=default_baseline_end, key='baseline_end',
-    )
-    baseline_mask = (annual_m['year'] >= baseline_start) & (annual_m['year'] <= baseline_end)
-    if baseline_mask.sum() == 0:
-        st.info("Intervallo di baseline non valido (nessun anno disponibile).")
+    baseline_end = min(baseline_years_available + 9, last_year)
+    baseline_mask = (annual_m['year'] >= baseline_years_available) & (annual_m['year'] <= baseline_end)
+    baseline_mean = annual_m.loc[baseline_mask, 'temp_mean_annual'].mean() if baseline_mask.any() else None
+
+    if baseline_mean is None:
+        st.info("Dati insufficienti per calcolare una baseline per questo comune.")
     else:
-        baseline_mean = annual_m.loc[baseline_mask, 'temp_mean_annual'].mean()
+        st.markdown(
+            f"Quando si parla di cambiamento climatico, la domanda giusta non è "
+            f"\"che temperatura ha fatto quest'anno\", ma \"quanto si discosta dal "
+            f"passato\". Per rispondere serve un punto di riferimento fisso, "
+            f"chiamato **baseline**: un periodo storico la cui temperatura media "
+            f"viene usata come zero da cui misurare tutti gli scostamenti "
+            f"successivi. In questo progetto la baseline è la **media "
+            f"{baseline_years_available}-{baseline_end}**, il primo decennio "
+            f"disponibile per questo comune — il punto più indietro nel tempo a "
+            f"cui possiamo guardare con questi dati, ed è la stessa per tutti i "
+            f"comuni analizzati, così i confronti tra zone diverse restano "
+            f"coerenti.\n\n"
+            f"Questo grafico non mostra quindi la temperatura assoluta di ogni "
+            f"anno, ma la sua distanza da quella baseline. Le **barre rosse** "
+            f"sopra lo zero indicano anni più caldi della media "
+            f"{baseline_years_available}-{baseline_end}, le **barre blu** sotto "
+            f"zero anni più freddi. Se osservando il grafico da sinistra a destra "
+            f"le barre rosse diventano via via più frequenti e più alte, è il "
+            f"segnale più diretto che il clima si sta scaldando rispetto a "
+            f"{last_year - baseline_end} anni fa: non un singolo anno "
+            f"caldo, ma una tendenza che si consolida nel tempo."
+        )
         anomaly_df = annual_range.copy()
         anomaly_df['anomaly'] = anomaly_df['temp_mean_annual'] - baseline_mean
         anomaly_df['sign'] = np.where(anomaly_df['anomaly'] >= 0, 'Sopra baseline', 'Sotto baseline')
@@ -161,7 +170,7 @@ with tab_overview:
         )
         fig_anom.update_layout(height=300, margin=dict(t=10, b=10))
         st.plotly_chart(fig_anom, width='stretch')
-        st.caption(f"Baseline: media {baseline_start}-{baseline_end} = {baseline_mean:.1f} °C.")
+        st.caption(f"Baseline: media {baseline_years_available}-{baseline_end} = {baseline_mean:.1f} °C.")
 
     st.subheader("Quale stagione si sta scaldando di più?")
     st.caption(
@@ -273,8 +282,9 @@ with tab_detail:
         "- **Stagioni**: definizione meteorologica standard (non astronomica) — "
         "Inverno = Dic/Gen/Feb, Primavera = Mar/Apr/Mag, Estate = Giu/Lug/Ago, "
         "Autunno = Set/Ott/Nov.\n"
-        "- **Baseline anomalie**: di default il primo decennio disponibile per "
-        "il comune selezionato, modificabile a mano nella tab Panoramica.\n"
+        "- **Baseline anomalie**: fissa al primo decennio disponibile per il "
+        "comune selezionato (non configurabile, per rendere i confronti "
+        "coerenti tra un comune e l'altro).\n"
         "- **Regressione sul periodo selezionato**: ricalcolata ogni volta sugli "
         "anni scelti in sidebar, quindi diversa dal Mann-Kendall/Sen's slope qui "
         "sopra, che restano fissi sull'intero 2000-2025 come test di riferimento.\n"
