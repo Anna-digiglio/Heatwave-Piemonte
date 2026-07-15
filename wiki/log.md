@@ -380,3 +380,25 @@ Log cronologico append-only. Ogni riga: data, azione, pagine toccate.
   `localhost:8501`.
 
   Pagina aggiornata: `dashboard.md`.
+
+- **2026-07-15** — DUE RIFINITURE MINORI: FIX LOGGING + ALLINEAMENTO
+  REQUIREMENTS. Su richiesta dell'utente, risolte le due voci più rapide
+  rimaste nella lista dei prossimi passi:
+  1. `logging.format` in `config.yaml` corretto dalla sintassi stdlib
+     `%(asctime)s...` (mai compatibile con loguru, bug noto da inizio
+     wiki il 2026-07-04) alla sintassi loguru corretta — lo stesso valore
+     già usato come default di fallback in `src/utils/logger.py`. Log di
+     console e file finalmente leggibili; verificato con un test diretto.
+  2. `requirements.txt` riallineato alle versioni realmente installate nel
+     `.venv` (drift esistente sin dall'inizio del progetto: pandas
+     2.1.4→3.0.3, numpy 1.26→2.4, scipy, sqlalchemy, geopandas, shapely,
+     pyproj, requests, cdsapi, netCDF4, xarray, matplotlib, plotly,
+     seaborn, folium, streamlit 1.29→1.58, streamlit-folium, pyyaml,
+     python-dotenv, tqdm, loguru, pytest, pytest-cov, black, flake8, mypy,
+     pylint — praticamente ogni pacchetto). Verificato `pip check`: nessun
+     conflitto nell'ambiente attuale.
+
+  Pagine aggiornate: `data-sources.md` (bug logging segnato risolto),
+  `dashboard.md` (nota sul drift dei requirements aggiornata),
+  `project-status.md` (entrambe le voci rimosse dalla lista prossimi
+  passi, aggiunta nota sul fix).
