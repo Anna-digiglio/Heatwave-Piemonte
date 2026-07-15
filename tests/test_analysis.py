@@ -1,0 +1,132 @@
+"""
+test_analysis.py - Test unitari per src/analysis/*.py
+
+Coprono solo le funzioni pure (nessun accesso a database): i test lavorano
+su Series/DataFrame/array sintetici costruiti a mano, non sui dati reali.
+"""
+
+import numpy as np
+import pandas as pd
+import pytest
+
+from src.analysis.trend_analysis import mann_kendall_trend, linear_trend
+from src.analysis.spatial_analysis import (
+    haversine_km,
+    build_inverse_distance_weights,
+    morans_i,
+    climate_clustering,
+)
+from src.analysis.heatwave_stats import summary_by_municipality, frequency_by_year
+
+
+class TestMannKendallTrend:
+    def test_detects_increasing_trend(self):
+        years = np.arange(2000, 2026)
+        noise = np.random.RandomState(0).normal(0, 0.1, len(years))
+        values = pd.Series(0.05 * (years - 2000) + 10 + noise)
+
+        result = mann_kendall_trend(values)
+
+        assert result['mk_trend'] == 'increasing'
+        assert result['mk_p_value'] < 0.05
+
+    def test_no_trend_for_flat_noisy_series(self):
+        values = pd.Series(np.random.RandomState(1).normal(10, 0.5, 26))
+
+        result = mann_kendall_trend(values)
+
+        assert result['mk_trend'] == 'no trend'
+
+
+class TestLinearTrend:
+    def test_recovers_known_slope(self):
+        years = pd.Series(np.arange(2000, 2026))
+        true_slope = 0.05
+        values = years * true_slope + 10.0
+
+        result = linear_trend(years, values)
+
+        assert result['lr_slope_per_year'] == pytest.approx(true_slope, abs=1e-6)
+        assert result['lr_slope_per_decade'] == pytest.approx(true_slope * 10, abs=1e-6)
+        assert result['lr_r_squared'] == pytest.approx(1.0, abs=1e-6)
+
+
+class TestHaversineKm:
+    def test_zero_distance_for_same_point(self):
+        assert haversine_km(7.68, 45.07, 7.68, 45.07) == pytest.approx(0, abs=1e-9)
+
+    def test_known_distance_torino_milano(self):
+        # Torino (7.68, 45.07) - Milano (9.19, 45.46), distanza reale ~126 km
+        d = haversine_km(7.68, 45.07, 9.19, 45.46)
+        assert 100 < d < 150
+
+
+class TestInverseDistanceWeights:
+    def _sample_df(self):
+        return pd.DataFrame({'lon': [7.68, 8.19, 8.62], 'lat': [45.07, 44.90, 45.44]})
+
+    def test_rows_sum_to_one(self):
+        w = build_inverse_distance_weights(self._sample_df())
+        assert np.allclose(w.sum(axis=1), 1.0)
+
+    def test_diagonal_is_zero(self):
+        w = build_inverse_distance_weights(self._sample_df())
+        assert np.allclose(np.diag(w), 0.0)
+
+
+class TestMoransI:
+    def test_positive_for_spatially_clustered_values(self):
+        # Due gruppi di punti geograficamente lontani, con valori simili
+        # all'interno di ciascun gruppo e molto diversi tra i due gruppi:
+        # autocorrelazione spaziale positiva attesa, forte.
+        df = pd.DataFrame({
+            'lon': [0.0, 0.01, 0.02, 10.0, 10.01, 10.02],
+            'lat': [0.0, 0.01, 0.02, 10.0, 10.01, 10.02],
+        })
+        values = np.array([1.0, 1.1, 0.9, 20.0, 20.1, 19.9])
+        w = build_inverse_distance_weights(df)
+
+        result = morans_i(values, w)
+
+        assert result > 0.5
+
+
+class TestClimateClustering:
+    def test_separates_two_clearly_distinct_groups(self):
+        df = pd.DataFrame({
+            'temp_mean_avg': [5.0, 5.2, 4.8, 20.0, 20.3, 19.7],
+            'days_gt_30c_avg': [0.0, 1.0, 0.0, 60.0, 58.0, 62.0],
+            'days_gt_35c_avg': [0.0, 0.0, 0.0, 20.0, 19.0, 21.0],
+        })
+
+        labels = climate_clustering(df, k=2)
+
+        assert labels.iloc[0] == labels.iloc[1] == labels.iloc[2]
+        assert labels.iloc[3] == labels.iloc[4] == labels.iloc[5]
+        assert labels.iloc[0] != labels.iloc[3]
+
+
+class TestHeatwaveStatsSummary:
+    def test_summary_by_municipality_counts_and_averages(self):
+        df = pd.DataFrame({
+            'municipality_name': ['Torino', 'Torino', 'Asti'],
+            'duration_days': [3, 5, 4],
+            'intensity_index': [10.0, 20.0, 15.0],
+            'max_temp': [36.0, 38.0, 37.0],
+        })
+
+        summary = summary_by_municipality(df)
+        torino = summary[summary['municipality_name'] == 'Torino'].iloc[0]
+
+        assert torino['n_heatwaves'] == 2
+        assert torino['avg_duration_days'] == pytest.approx(4.0)
+        assert torino['max_duration_days'] == 5
+
+    def test_frequency_by_year_includes_years_with_zero_events(self):
+        df = pd.DataFrame({'start_date': ['2003-08-01', '2003-08-10']})
+
+        result = frequency_by_year(df)
+
+        assert len(result) == 26  # 2000-2025 inclusi
+        assert result.loc[result['year'] == 2003, 'n_heatwaves'].iloc[0] == 2
+        assert result.loc[result['year'] == 2000, 'n_heatwaves'].iloc[0] == 0
