@@ -92,7 +92,7 @@ def get_heatwave_events() -> pd.DataFrame:
 def get_municipality_geometries_wkt() -> pd.DataFrame:
     """
     Geometrie (come WKT) dei comuni che hanno dati di temperatura reali,
-    per la mappa. Solo 8 comuni capoluogo, vedi
+    per la mappa. 44 comuni (8 capoluoghi + 36 extra), vedi
     wiki/pages/etl-pipeline.md per la nota di granularità.
     """
     query = """
