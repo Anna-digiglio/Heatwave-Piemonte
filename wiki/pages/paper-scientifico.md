@@ -67,13 +67,27 @@ presente in dashboard (`03_analisi_spaziale.py`) è dichiarato esplicitamente
      comune. Non richiede nuovi download di temperatura.
    - Popolazione residente (ISTAT, dataset comunale open data) — join su
      `istat_code` (chiave già usata per i fix di encoding, vedi
-     [Fonti dati](data-sources.md)) per densità demografica. **Percorso
-     identificato il 2026-07-16**: `dati.istat.it` (dataset SDMX
-     `DCIS_POPORESBIL1`, "Popolazione residente - bilancio") o
-     `demo.istat.it` — nessun account richiesto (a differenza di CORINE),
-     ma l'endpoint/query esatti vanno ancora verificati con una richiesta
-     HTTP diretta, stesso tipo di lavoro fatto per l'URL dei confini
-     comunali il 2026-07-04.
+     [Fonti dati](data-sources.md)) per densità demografica. **Investigazione
+     approfondita il 2026-07-16** (API SDMX `esploradati.istat.it/SDMXWS`,
+     nessun account richiesto): confermato che i codici territorio del
+     dataset (`CL_ITTER107`) coincidono esattamente con `istat_code` già in
+     DB (es. `001272` = Torino, verificato). Trovato anche il dataflow
+     specifico Piemonte (`22_315_DF_DCIS_POPORESBIL1_3`, filtro `ITC1`),
+     distinto dal dataflow padre `22_315` — la struttura/DSD è quindi
+     interamente mappata. **Ma**: ogni query dati provata (sia sul flow
+     generale `22_315` sia su quello specifico Piemonte, con vari
+     `DATA_TYPE`: `JAN`, `DEC_CP_P`, wildcard, e anche con `REF_AREA`
+     completamente jolly) restituisce osservazioni sempre `null` o
+     `NoRecordsFound` — la struttura dati esiste ma sembra vuota lato
+     server per questo dataset via questo endpoint REST (comportamento
+     noto e lamentato nella comunità open-data italiana per il nuovo
+     sistema `esploradati.istat.it`, in transizione dal 2022). **Prossimo
+     passo pragmatico, non ancora tentato**: usare l'export CSV manuale
+     della query salvata "Popolazione residente al 1° gennaio: Tutti i
+     comuni" (`dati.istat.it/Index.aspx?QueryId=19101`, sistema .Stat
+     legacy, diverso dal nuovo SDMX REST) — probabilmente richiede
+     un'interazione via browser per il primo export, poi eventualmente
+     automatizzabile ispezionando le richieste di rete di quella pagina.
    - CORINE Land Cover richiede un account Copernicus Land Monitoring
      Service (CLMS) con credenziali per l'API di download o i servizi OGC
      (WMS/WFS/WCS) — stesso schema già usato per `CopernicusERA5Downloader`/
@@ -128,9 +142,22 @@ Da citare, organizzata per ruolo nel paper:
   increase in extreme heat events in the Apennines* (2025); variabilità
   termica Po Valley da radiosondaggi (arXiv).
 
+## Manoscritto
+
+Lo scheletro vero e proprio del paper (Abstract/Intro/Metodi/Risultati/
+Discussione/Bibliografia, con marcatori **[FATTO]**/**[DA FARE]** per
+distinguere cosa si basa su risultati reali già calcolati da cosa dipende
+da lavoro non ancora completato) vive in `paper/manoscritto.md`, non in
+questa pagina wiki — questa pagina resta il livello di pianificazione/
+tracciamento, il file in `paper/` è il contenuto del paper stesso. Creato
+il 2026-07-16, in italiano (da tradurre in inglese solo a ridosso della
+sottomissione).
+
 ## Prossimi passi
 
 Vedi [Stato del progetto](project-status.md) per lo stato operativo
 aggiornato di ETL/analisi. Questa pagina va aggiornata quando: (a) la corsa
 a 300 comuni sarà completa e caricata nel DB, (b) partirà l'acquisizione di
-CORINE/popolazione, (c) la validazione ARPA produrrà risultati.
+CORINE/popolazione, (c) la validazione ARPA produrrà risultati. Il file
+`paper/manoscritto.md` va aggiornato in parallelo (sezioni 2.1/2.4/3.5/4
+dipendono direttamente da questi tre punti).

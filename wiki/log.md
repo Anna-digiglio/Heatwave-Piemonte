@@ -1259,3 +1259,41 @@ Log cronologico append-only. Ogni riga: data, azione, pagine toccate.
   l'estensione della copertura temperature da 44 a 300 comuni.
 
   Pagine aggiornate: `paper-scientifico.md` (nuova), `index.md`.
+
+  **Scheletro del manoscritto**: su richiesta dell'utente, creato
+  `paper/manoscritto.md` (nuova cartella, fuori da `wiki/` — è il contenuto
+  del paper stesso, non meta-pianificazione). Struttura completa
+  Abstract/Introduzione/Dati e Metodi/Risultati/Discussione/Conclusioni/
+  Bibliografia/Appendice di tracciabilità, con marcatori **[FATTO]**/
+  **[DA FARE]** su ogni sottosezione. Le sezioni **[FATTO]** riportano i
+  numeri reali già verificati (38/44 comuni con trend significativo,
+  145 ondate, Moran's I=0.101 p=0.002, cluster 3.8/11.1/12.9°C, ampiezza
+  STL 27-34°C) con riferimento diretto ai CSV in `output/` (tabella di
+  tracciabilità in Appendice A). Le sezioni **[DA FARE]** (uso del
+  suolo/popolazione, validazione ARPA, modello a errore spaziale)
+  restano vuote/segnaposto finché il lavoro sottostante non è concluso —
+  deliberato, per non scrivere conclusioni prima di avere i dati.
+  Aggiornata `paper-scientifico.md` con un rimando al nuovo file.
+
+  **Approfondimento popolazione ISTAT (stessa sessione, su richiesta
+  esplicita dell'utente di lavorare in parallelo al download dei 300
+  comuni)**: investigata l'API SDMX `esploradati.istat.it/SDMXWS` per il
+  dataset `DCIS_POPORESBIL1` (popolazione residente-bilancio). Confermato
+  via richieste HTTP dirette: (1) i codici territorio nel codelist
+  `CL_ITTER107` coincidono esattamente con `municipalities.istat_code` già
+  in DB (`001272` = Torino, verificato leggendo il codelist completo, 9MB);
+  (2) esiste un dataflow specifico per il Piemonte
+  (`22_315_DF_DCIS_POPORESBIL1_3`, identificato tra ~450 dataflow cercando
+  l'annotazione `FILTER__ITC1`), distinto dal dataflow padre `22_315`.
+  **Nessuna query dati ha però restituito osservazioni reali**: sia sul
+  flow padre che su quello Piemonte-specifico, con diverse combinazioni di
+  `DATA_TYPE` (`JAN`, `DEC_CP_P`, wildcard) e anche con `REF_AREA`
+  completamente jolly, la risposta è sempre `NoRecordsFound` o serie con
+  tutte le osservazioni `null` — sembra un dataset con struttura/DSD
+  popolata ma dati non esposti (o non ancora migrati) su questo endpoint
+  REST specifico. Non risolto in questa sessione: il passo successivo
+  probabile è l'export CSV manuale della query legacy `.Stat`
+  (`dati.istat.it/Index.aspx?QueryId=19101`), sistema diverso dal nuovo
+  SDMX REST, mai tentato. File temporanei di indagine (codelist 9MB, lista
+  dataflow 13.5MB) salvati solo nello scratchpad di sessione, non nel
+  repository.
