@@ -1,11 +1,14 @@
 """
-filters.py - Filtri globali condivisi tra tutte le pagine, nella sidebar.
+filters.py - Filtri riutilizzabili, inline nella pagina che li usa davvero.
 
-Streamlit esegue ogni pagina come script indipendente, quindi i widget non
-sono condivisi automaticamente: qui si usa `st.session_state` per far
-persistere la scelta dell'utente quando naviga da una pagina all'altra
-(i default della sidebar riflettono l'ultima selezione fatta, anche in
-un'altra pagina).
+Non più una sidebar comune a tutte le pagine (rimossa il 2026-07-15 su
+richiesta dell'utente: appariva ovunque anche dove non serviva a niente,
+es. nella pagina Download Dati o nella Home). Ogni pagina richiama solo il
+filtro di cui ha davvero bisogno, nel punto della pagina in cui lo usa.
+Streamlit persiste automaticamente il valore di un widget tramite il suo
+`key` per tutta la sessione, quindi non serve più gestire a mano
+`st.session_state` come quando i filtri dovevano sopravvivere al cambio
+pagina nella sidebar.
 """
 
 import streamlit as st
@@ -15,41 +18,31 @@ from .queries import get_municipality_metadata
 YEAR_MIN, YEAR_MAX = 2000, 2025
 
 
-def render_sidebar_filters() -> tuple:
-    """
-    Disegna la sidebar comune (intervallo anni + provincia) e ritorna
-    (year_start, year_end, province_selezionate).
-
-    `province_selezionate` è la lista di nomi provincia scelti, oppure
-    l'intera lista di province con dati se l'utente non filtra nulla
-    (equivalente a "tutte").
-    """
-    metadata = get_municipality_metadata()
-    all_provinces = sorted(metadata['province_name'].unique())
-
-    st.sidebar.header("🔎 Filtri")
-
-    year_range = st.sidebar.slider(
+def render_year_range_filter(key: str) -> tuple:
+    """Slider intervallo anni. `key` deve essere univoca per pagina."""
+    year_range = st.slider(
         "Intervallo anni",
         min_value=YEAR_MIN,
         max_value=YEAR_MAX,
-        value=st.session_state.get('year_range', (YEAR_MIN, YEAR_MAX)),
-        key='year_range',
+        value=(YEAR_MIN, YEAR_MAX),
+        key=key,
     )
+    return year_range[0], year_range[1]
 
-    provinces = st.sidebar.multiselect(
+
+def render_province_filter(key: str) -> list:
+    """
+    Multiselect provincia. `key` deve essere univoca per pagina. Ritorna la
+    lista di province scelte, o tutte le province con dati se l'utente non
+    ne seleziona nessuna (equivalente a "nessun filtro").
+    """
+    metadata = get_municipality_metadata()
+    all_provinces = sorted(metadata['province_name'].unique())
+    provinces = st.multiselect(
         "Provincia",
         options=all_provinces,
-        default=st.session_state.get('province_filter', all_provinces),
-        key='province_filter',
-        help="Filtra i comuni per provincia. Vuoto o tutte selezionate = nessun filtro.",
+        default=all_provinces,
+        key=key,
+        help="Vuoto o tutte selezionate = nessun filtro.",
     )
-    if not provinces:
-        provinces = all_provinces
-
-    st.sidebar.caption(
-        "Filtri applicati a grafici e mappe di questa pagina (dove pertinente). "
-        "Restano impostati anche cambiando pagina."
-    )
-
-    return year_range[0], year_range[1], provinces
+    return provinces or all_provinces
