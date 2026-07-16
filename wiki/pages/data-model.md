@@ -34,6 +34,26 @@ può divergere leggermente, in caso di conflitto fidati dello script SQL).
   6580 ab/km²; Formazza 410 ab., densità 3.1 ab/km² — coerente col
   contrasto pianura/alpino già visto nel clustering climatico, vedi
   [Analisi statistica](statistical-analysis.md)).
+
+## `municipality_land_cover` (nuova tabella, `sql/03_land_cover.sql`, 2026-07-16)
+
+- PK `municipality_id` (FK 1:1 verso `municipalities`, `ON DELETE CASCADE`)
+- `pct_urban`, `pct_agricultural`, `pct_forest_seminatural`, `pct_wetland`,
+  `pct_water`, `pct_other` (NUMERIC(5,2), sommano a ~100 per comune),
+  `dominant_class`, `source_year` (2018), `computed_at`
+- Tabella satellite separata invece di nuove colonne su `municipalities`,
+  per non appesantire la tabella principale con più valori derivati.
+- **Popolata il 2026-07-16** per tutti i 1180 comuni via
+  `src/data_acquisition/process_land_cover.py` (overlay geopandas tra le
+  geometrie comunali e i poligoni CORINE Land Cover 2018 — vedi
+  [Fonti dati](data-sources.md) per la fonte e la metodologia).
+- Distribuzione classe dominante sui 1180 comuni: 690 agricultural, 466
+  forest_seminatural, 12 urban, 12 water. Valori verificati a campione:
+  Torino 75.45% urbano (dominante urbano); Verbania 40.70% acqua
+  (dominante acqua — sul Lago Maggiore); Vercelli/Alessandria/Cuneo/Asti
+  67-84% agricolo (dominante agricolo, coerente con la vocazione
+  risicola/cerealicola della pianura); Bardonecchia/Formazza >94%
+  forest_seminatural (dominante forestale, comuni alpini).
 - `elevation_m`: **popolato il 2026-07-15** ma solo per i 44 comuni con dati
   di temperatura reali (resta `NULL` per gli altri 1136) — fonte: Open-Meteo
   Elevation API sul centroide di ciascun comune (vedi

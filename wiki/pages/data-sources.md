@@ -174,4 +174,39 @@ Alessandria 93.409 ab., Cuneo 55.747 ab., Bardonecchia 2.853 ab. (densità
 pianura/alpino coerente con quanto già trovato in
 [Analisi statistica](statistical-analysis.md).
 
+## CORINE Land Cover 2018 — uso del suolo per tutti i 1180 comuni (2026-07-16)
+
+Motivazione: seconda covariata esplicativa mancante per il paper scientifico
+(vedi [Articolo scientifico](paper-scientifico.md)), dopo la popolazione.
+
+**Decisione presa con l'utente**: niente API CLMS con token JWT (troppo
+complessa per un dataset che si aggiorna ogni ~6 anni) — account EU Login
+gratuito su `land.copernicus.eu`, poi download manuale via "Download by
+area" (ritaglio sul Piemonte invece di tutta Europa), formato vettoriale
+GeoPackage.
+
+**Due tentativi prima del file giusto**: il primo file fornito
+dall'utente (`U2018_CLC2018_V2020_20u1_doc/`) era solo documentazione/
+legenda (PDF, metadata XML), senza geometrie — cartella eliminata dopo aver
+salvato solo `data/external/clc_legend.csv` (tabella dei codici CLC, utile
+per la categorizzazione). Il file dati vero (`U2018_CLC2018_V2020_20u1.gpkg`,
+136 MB, EPSG:3035, 52.794 poligoni, campo `Code_18` = codice CLC a 3 cifre)
+è arrivato al secondo giro.
+
+**Metodo**: `src/data_acquisition/process_land_cover.py` — overlay
+geopandas tra le geometrie di tutti i 1180 comuni (riproiettate in
+EPSG:3035, la stessa proiezione equal-area di CLC, per calcoli di area
+corretti — stessa lezione già imparata per `area_km2`) e i poligoni CLC.
+Percentuali aggregate alle 5 categorie di Livello 1 (primo carattere del
+codice a 3 cifre: 1=urbano, 2=agricolo, 3=forestale/seminaturale,
+4=zone umide, 5=corpi idrici; i codici speciali 990/995/999 finiscono in
+"other"). Overlay completo sui 1180 comuni eseguito in ~16 secondi.
+Risultati in `municipality_land_cover` (vedi
+[Modello Dati](data-model.md)).
+
+**Nota temporale**: CLC2018 è uno scatto del 2018, usato come covariata
+statica contro temperature 2000-2025 e popolazione stimata 2026 — pratica
+comune per l'uso del suolo (cambia lentamente, un'epoca CLC copre ~6 anni),
+ma da dichiarare esplicitamente come limite nel paper, non da nascondere.
+
 Vedi [Stato del Progetto](project-status.md).

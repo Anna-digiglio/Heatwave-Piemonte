@@ -78,18 +78,18 @@ presente in dashboard (`03_analisi_spaziale.py`) è dichiarato esplicitamente
      (`municipalities.population`), non solo quelli con temperatura.
      Valori verificati plausibili (Torino 6580 ab/km², Formazza alpina
      3.1 ab/km²).
-   - CORINE Land Cover — **decisione presa il 2026-07-16** (con l'utente):
-     via manuale, non API. Account EU Login gratuito su
-     `land.copernicus.eu`, poi "Download by area" (formato vettoriale,
-     ritagliato sul Piemonte invece di tutta Europa scaricata intera),
-     niente token/JWT — l'API completa CLMS richiede un flusso OAuth2 con
-     service key firmata (stesso livello di complessità di
-     `CopernicusERA5Downloader`/`CDS_KEY`, ma qui non giustificato: CORINE
-     si aggiorna ogni ~6 anni, un download manuale una tantum basta). Una
-     volta ottenuto il file dall'utente, l'overlay via PostGIS sulle
-     geometrie dei 1180 comuni (già presenti) per calcolare % superficie
-     urbana/agricola/forestale per comune è lavoro mio. **In attesa del
-     file dall'utente.**
+   - CORINE Land Cover — **fatto il 2026-07-16**. Via manuale (non API,
+     vedi sopra la motivazione): l'utente ha scaricato
+     `U2018_CLC2018_V2020_20u1.gpkg` (52.794 poligoni, EPSG:3035) via
+     "Download by area" su `land.copernicus.eu`. Overlay geopandas
+     (`src/data_acquisition/process_land_cover.py`, ~16 secondi per tutti
+     i 1180 comuni) → nuova tabella `municipality_land_cover` con %
+     urbano/agricolo/forestale/zone umide/acqua per comune. Risultati
+     verificati plausibili: Torino 75% urbano, Verbania 41% acqua (sul
+     Lago Maggiore), Vercelli/Alessandria/Cuneo/Asti 67-84% agricolo,
+     Bardonecchia/Formazza >94% forestale. Vedi [Fonti dati](data-sources.md)
+     per il dettaglio completo (inclusi i due tentativi prima del file
+     giusto: la prima cartella era solo documentazione, senza geometrie).
    - Entrambe indipendenti dall'estensione a 300 comuni: operano su tutti i
      1180 comuni già in `municipalities`, non solo su quelli con
      temperatura.
@@ -154,8 +154,13 @@ sottomissione).
 ## Prossimi passi
 
 Vedi [Stato del progetto](project-status.md) per lo stato operativo
-aggiornato di ETL/analisi. Questa pagina va aggiornata quando: (a) la corsa
-a 300 comuni sarà completa e caricata nel DB, (b) partirà l'acquisizione di
-CORINE/popolazione, (c) la validazione ARPA produrrà risultati. Il file
-`paper/manoscritto.md` va aggiornato in parallelo (sezioni 2.1/2.4/3.5/4
-dipendono direttamente da questi tre punti).
+aggiornato di ETL/analisi. Con popolazione e uso del suolo ora entrambi
+fatti (2026-07-16), restano aperti:
+(a) la corsa a 300 comuni (in corso lato utente, non ancora caricata nel
+DB — fermo a 44 al 2026-07-16 sera);
+(b) la validazione ARPA (mai risolta, vedi fase 1 sopra);
+(c) il modello statistico vero e proprio di §3.5/§2.4 nel manoscritto —
+ora possibile con i dati disponibili (temperatura, elevazione,
+popolazione, uso del suolo tutti presenti per i comuni con temperatura),
+ma non ancora costruito.
+Il file `paper/manoscritto.md` va aggiornato in parallelo.

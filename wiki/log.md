@@ -1331,3 +1331,61 @@ Log cronologico append-only. Ogni riga: data, azione, pagine toccate.
 
   Pagine aggiornate: `data-sources.md` (nuova sezione), `data-model.md`
   (`population` non piu' `NULL`), `paper-scientifico.md`.
+
+- **2026-07-16** — CORINE LAND COVER: TERZA COVARIATA ESPLICATIVA FATTA,
+  PER TUTTI I 1180 COMUNI. Su richiesta esplicita dell'utente ("spiegami
+  come procedere con Copernicus"), spiegato il percorso CLMS (account EU
+  Login gratuito, poi "Download by area" invece dell'API con token JWT —
+  quest'ultima scartata di comune accordo perche' CORINE si aggiorna ogni
+  ~6 anni, non serve automazione). L'utente ha creato l'account e provato a
+  scaricare da solo.
+
+  **Primo tentativo dell'utente**: cartella `U2018_CLC2018_V2020_20u1_doc/`
+  aggiunta al progetto — ispezionata e risultata **solo documentazione**
+  (42 file: PDF, metadata XML, legenda), nessuna geometria. Salvato
+  `data/external/clc_legend.csv` (tabella codici CLC -> classi, utile per
+  dopo), poi cancellata la cartella su richiesta dell'utente.
+
+  **Secondo tentativo, quello giusto**: file `U2018_CLC2018_V2020_20u1.gpkg`
+  (136 MB) aggiunto alla root del progetto. Ispezionato prima di scrivere
+  codice (`pyogrio.read_info`): EPSG:3035 (proiezione equal-area di CLC),
+  52.794 poligoni, campo `Code_18` = codice CLC a 3 cifre, dimensione ed
+  estensione coerenti con un ritaglio sul Piemonte (non tutta Europa).
+
+  Creata `sql/03_land_cover.sql` — nuova tabella `municipality_land_cover`
+  (satellite 1:1 con `municipalities`, non nuove colonne li' per non
+  appesantirla): % urbano/agricolo/forestale-seminaturale/zone umide/acqua
+  + classe dominante, per comune.
+
+  Scritto `src/data_acquisition/process_land_cover.py`: overlay geopandas
+  tra le geometrie comunali (riproiettate in EPSG:3035 per coerenza con
+  CLC) e i poligoni CLC, categorie aggregate al primo carattere del codice
+  a 3 cifre (1=urbano...5=acqua; i codici speciali 990/995/999 in "other",
+  vedi `clc_legend.csv`). Testato prima su 3 comuni campione
+  (Torino/Alessandria/Formazza, ~8 secondi) prima di lanciare sui 1180
+  reali — risultati gia' plausibili nel test (Torino 75% urbano, Formazza
+  0% urbano/dominante forestale). Overlay completo sui 1180 comuni:
+  **~16 secondi**, nessun problema di performance.
+
+  **Risultato reale, 1180/1180 comuni**: distribuzione classe dominante
+  690 agricultural, 466 forest_seminatural, 12 urban, 12 water. Valori
+  verificati a campione: Torino 75.45% urbano (dominante urbano); Verbania
+  40.70% acqua (dominante acqua — sul Lago Maggiore, coerente con
+  l'ampiezza stagionale minima gia' trovata in
+  [Analisi statistica](statistical-analysis.md)); Vercelli 75.94% agricolo,
+  Alessandria 84.18%, Cuneo 82.37%, Asti 67.59% (tutte dominante
+  agricolo, coerente con la vocazione risicola/cerealicola della pianura
+  piemontese); Bardonecchia 95.46% e Formazza 94.64% forest_seminatural
+  (dominante forestale, comuni alpini).
+
+  Aggiornato `paper/manoscritto.md` (§2.4 uso del suolo passata a
+  **[FATTO]**; nota esplicita sul disallineamento temporale CLC2018 vs
+  temperature 2000-2025/popolazione 2026, da dichiarare come limite non da
+  nascondere). Con questo, tutti e tre gli ingredienti del modello
+  esplicativo di §3.5 (elevazione, popolazione, uso del suolo) sono ora
+  disponibili per i comuni con temperatura — il modello statistico vero e
+  proprio (§2.4/§3.5) resta pero' ancora da costruire.
+
+  Pagine aggiornate: `data-model.md` (nuova tabella
+  `municipality_land_cover`), `data-sources.md` (nuova sezione, inclusi i
+  due tentativi), `paper-scientifico.md`.
