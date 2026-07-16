@@ -123,14 +123,21 @@ città).
   le colonne già presenti). Vedi [Fonti dati](data-sources.md) per il
   percorso di acquisizione (due vicoli ciechi prima di trovare la fonte
   giusta: SDMX ISTAT nuovo senza dati esposti, portale legacy dismesso).
-- Uso del suolo: CORINE Land Cover (Copernicus), overlay su geometrie
-  comunali per % superficie urbana/agricola/forestale. **[DA FARE]** —
-  richiede account CLMS (identificato 2026-07-16, non ancora creato).
+- **Uso del suolo — [FATTO] il 2026-07-16**: CORINE Land Cover 2018
+  (Copernicus), overlay geopandas su geometrie comunali di tutti i 1180
+  comuni → tabella `municipality_land_cover` con % urbano/agricolo/
+  forestale-seminaturale/zone umide/acqua per comune. Nota temporale da
+  dichiarare: CLC2018 è uno scatto statico usato contro temperature
+  2000-2025 e popolazione stimata 2026 — accettabile (l'uso del suolo
+  cambia lentamente) ma va detto esplicitamente, non nascosto.
 - Modello: dato che Moran's I è risultato significativo (§3.4), un OLS
   classico violerebbe l'indipendenza dei residui — pianificato un modello
   a errore/lag spaziale, con controllo VIF per multicollinearità
-  (elevazione e densità demografica saranno probabilmente correlate).
-  **[DA FARE]** — non tentato finché manca anche l'uso del suolo.
+  (elevazione, densità demografica e % uso urbano del suolo sono
+  probabilmente correlate tra loro). **[DA FARE]** — tutti gli
+  ingredienti (temperatura, elevazione, popolazione, uso del suolo) sono
+  ora disponibili per i comuni con temperatura; il modello vero e proprio
+  non è ancora stato costruito.
 
 ---
 
