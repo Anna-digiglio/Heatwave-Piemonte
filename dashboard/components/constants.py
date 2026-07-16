@@ -91,6 +91,29 @@ CLUSTER_COLORS = {0: "#3498db", 1: "#f39c12", 2: "#e74c3c"}
 NEUTRAL_COLOR = "#3498db"
 ALERT_COLOR = "#e74c3c"
 
+# Uso del suolo (CORINE Land Cover, vedi municipality_land_cover e
+# wiki/pages/data-sources.md): colori vicini alla palette ufficiale CLC per
+# ciascuna categoria di Livello 1 (presa da data/external/clc_legend.csv,
+# colore della classe più rappresentativa di ciascun gruppo), non una
+# palette inventata - così una mappa di uso del suolo qui si legge in modo
+# coerente con qualunque altra mappa CORINE si sia già visto altrove.
+LAND_COVER_COLORS = {
+    "urban": "#e6004d",
+    "agricultural": "#ffffa8",
+    "forest_seminatural": "#80ff00",
+    "wetland": "#a6a6ff",
+    "water": "#00cced",
+    "other": "#cccccc",
+}
+LAND_COVER_LABELS = {
+    "urban": "Urbano/artificiale",
+    "agricultural": "Agricolo",
+    "forest_seminatural": "Forestale/seminaturale",
+    "wetland": "Zone umide",
+    "water": "Corpi idrici",
+    "other": "Altro/non classificato",
+}
+
 # Valori di riferimento pubblicati in letteratura scientifica, usati solo
 # come contesto di confronto ("il nostro trend locale è più o meno ripido
 # della media?"). NON sono calcolati da questo progetto e non vengono
