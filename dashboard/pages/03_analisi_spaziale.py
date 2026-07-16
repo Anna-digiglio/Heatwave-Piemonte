@@ -245,11 +245,28 @@ with tab_detail:
     geo_df = get_municipality_geometries_wkt()
 
     st.subheader("Cluster climatici (K-means, k=3)")
-    st.caption(
-        "Raggruppa i comuni in **zone climaticamente simili** guardando "
-        "temperatura media e giorni di caldo intenso, con l'algoritmo "
-        "**K-means** (mette nello stesso gruppo i comuni che si somigliano "
-        "di più, senza confini decisi a priori)."
+    st.markdown(
+        "**Cos'è un \"cluster\" e come viene deciso?** Un cluster qui è "
+        "semplicemente un **gruppo di comuni che si somigliano dal punto di "
+        "vista climatico** — non un confine amministrativo o geografico, ma "
+        "un raggruppamento calcolato guardando i numeri (temperatura media e "
+        "quanti giorni all'anno superano 30°C/35°C). L'algoritmo usato, "
+        "**K-means**, funziona così: si decide in anticipo **quanti gruppi si "
+        "vogliono** (qui 3, una scelta pratica per avere poche zone facili da "
+        "descrivere a parole — non calcolata con un metodo statistico che "
+        "cerca il numero \"ottimale\"); poi l'algoritmo posiziona 3 centri "
+        "provvisori, assegna ogni comune al centro più vicino guardando i suoi "
+        "valori di temperatura/giorni caldi, sposta ogni centro sulla media "
+        "dei comuni che gli sono stati assegnati, e ripete questi due passi "
+        "finché i gruppi smettono di cambiare. Prima del calcolo i valori "
+        "vengono **standardizzati** (riportati sulla stessa scala), altrimenti "
+        "\"giorni sopra 30°C\" (che va da 0 a oltre 60) peserebbe molto più "
+        "della temperatura media (che varia solo di pochi gradi) nel decidere "
+        "la somiglianza. Importante: il raggruppamento **non guarda dove si "
+        "trova un comune sulla mappa** — se i cluster risultano comunque "
+        "geograficamente compatti (vicini fisicamente) è perché il clima "
+        "reale del Piemonte è già organizzato per zone (montagna, pianura...), "
+        "non perché l'algoritmo lo sappia in anticipo."
     )
     if spatial_df.empty:
         st.info("Esegui `python -m src.analysis.spatial_analysis` per generare questi risultati.")
@@ -271,27 +288,67 @@ with tab_detail:
                 ).add_to(m3)
             st_folium(m3, width=None, height=420, returned_objects=[], key='map_clusters')
         with col_info:
-            for cluster_id, group in merged.groupby('climate_cluster'):
+            st.markdown("**I 3 gruppi trovati oggi, dal più fresco al più caldo:**")
+            cluster_summary = (
+                merged.groupby('climate_cluster')
+                .agg(temp=('temp_mean_avg', 'mean'), giorni_30=('days_gt_30c_avg', 'mean'), n=('municipality_name', 'count'))
+                .sort_values('temp')
+            )
+            profile_labels = ["il più fresco", "un profilo intermedio", "il più caldo"]
+            for rank, (cluster_id, stats) in enumerate(cluster_summary.iterrows()):
+                group = merged[merged['climate_cluster'] == cluster_id]
+                label = profile_labels[rank] if rank < len(profile_labels) else "un profilo a sé"
                 st.markdown(
-                    f"**Cluster {int(cluster_id)}** "
-                    f"({', '.join(group['municipality_name'])}) — "
-                    f"{group['temp_mean_avg'].mean():.1f}°C media"
+                    f"**Cluster {int(cluster_id)}** — {label} ({stats['temp']:.1f}°C medi, "
+                    f"~{stats['giorni_30']:.0f} giorni/anno sopra 30°C, {int(stats['n'])} comuni): "
+                    f"{', '.join(group['municipality_name'])}."
                 )
+            st.caption(
+                "I comuni con temperatura/giorni caldi simili finiscono nello stesso gruppo "
+                "indipendentemente da dove si trovano — che spesso coincidano con zone "
+                "alpine, di pianura o intermedie è un risultato dell'analisi, non un'ipotesi "
+                "di partenza."
+            )
 
     st.subheader("Indice di Moran (autocorrelazione spaziale)")
-    st.caption(
-        "Un valore positivo e alto significa \"il caldo si concentra in zone "
-        "precise\"; un valore vicino a zero (o negativo) significa \"non c'è "
-        "un pattern geografico chiaro, sembra più casuale\"."
+    st.markdown(
+        "**Cosa misura**: se i comuni **geograficamente vicini** hanno anche "
+        "temperature **simili tra loro**, più di quanto ci si aspetterebbe se "
+        "le temperature fossero distribuite a caso sulla mappa. Non è la "
+        "stessa cosa dei cluster K-means sopra (quelli raggruppano per "
+        "somiglianza climatica, senza guardare la posizione): l'indice di "
+        "Moran guarda esplicitamente la **geografia**.\n\n"
+        "**Come si calcola, in pratica**: per ogni comune si costruisce un "
+        "peso che è tanto più alto quanto più un altro comune gli è vicino "
+        "(l'inverso della distanza in km tra i due centri comunali) — comuni "
+        "lontani pesano poco, comuni vicini pesano molto. L'indice combina "
+        "questi pesi con quanto la temperatura di ciascun comune si discosta "
+        "dalla media generale: se i comuni vicini tendono ad avere "
+        "scostamenti dello **stesso segno** (tutti più caldi o tutti più "
+        "freddi della media insieme), l'indice viene positivo e alto; se gli "
+        "scostamenti dei vicini sono scollegati tra loro, l'indice si "
+        "avvicina a zero.\n\n"
+        "**Perché il p-value viene da una \"permutazione\" e non da una "
+        "formula diretta**: si mescolano a caso le temperature tra i comuni "
+        "(tenendo ferma la geografia) migliaia di volte, e si ricalcola "
+        "l'indice ogni volta. Se il valore osservato con i dati veri è "
+        "**più estremo** della quasi totalità di questi valori ottenuti "
+        "mescolando a caso, allora il pattern geografico osservato è "
+        "difficilmente dovuto al caso. Questo metodo è più affidabile della "
+        "formula matematica classica quando, come qui, il numero di comuni "
+        "non è enorme."
     )
     mi_df = get_morans_i_summary()
     if not mi_df.empty:
         mi = mi_df.iloc[0]
         d1, d2, d3 = st.columns(3)
         d1.metric("Moran's I", mi['morans_i'])
+        d1.caption("Il valore osservato con i dati reali")
         d2.metric("Atteso sotto casualità", mi['expected_i_random'])
+        d2.caption("Media dei valori ottenuti mescolando a caso")
         is_significant = mi['p_value_permutation'] < 0.05
         d3.metric("p-value (permutazione)", mi['p_value_permutation'])
+        d3.caption("< 0.05 → pattern difficilmente casuale")
         if is_significant:
             st.success("Il caldo sembra concentrarsi in zone specifiche del Piemonte, non distribuirsi a caso.")
         else:
@@ -299,18 +356,27 @@ with tab_detail:
 
     st.subheader("Metodologia")
     st.markdown(
-        "- **Fasce altitudinali**: soglie semplificate (300 m / 700 m) su "
-        "elevazione del centroide comunale, non la classificazione ISTAT "
-        "ufficiale di \"zona altimetrica\" (più complessa, per l'intero "
-        "territorio comunale). Elevazione da Open-Meteo Elevation API "
-        "(vedi `wiki/pages/data-sources.md`).\n"
-        "- **Isola di calore urbana**: confronto illustrativo (media annuale "
-        "Torino vs media dei comuni non-capoluogo della sua provincia), non "
-        "un modello dell'effetto isola di calore in senso stretto (che "
-        "richiederebbe stazioni urbane/rurali appaiate e controllate per "
-        "quota/esposizione).\n"
-        "- **Mappa del trend**: usa il coefficiente di regressione lineare "
-        "precalcolato su tutto il periodo 2000-2025 (`trend_analysis.csv`), "
-        "non ricalcolato sul filtro anni della sidebar (richiederebbe la "
-        "serie giornaliera completa per ciascun comune ad ogni refresh)."
+        "Alcune scelte fatte in questa pagina, spiegate:\n\n"
+        "- **Perché proprio 3 fasce altitudinali, con quelle soglie?** "
+        "Pianura/Collina/Montagna con soglie a 300 m e 700 m sono una "
+        "semplificazione divulgativa basata sulla sola elevazione del "
+        "centro di ciascun comune, non la classificazione ufficiale ISTAT "
+        "di \"zona altimetrica\" (che è più complessa e valuta l'intero "
+        "territorio comunale, non un solo punto). L'elevazione viene da "
+        "Open-Meteo, non da un catasto ufficiale.\n"
+        "- **Perché il confronto isola di calore urbana è solo "
+        "\"illustrativo\"?** Confronta la media annuale di Torino città con "
+        "la media dei comuni non-capoluogo della sua stessa provincia — un "
+        "indizio ragionevole, ma non un vero studio dell'effetto isola di "
+        "calore, che richiederebbe stazioni meteo urbane e rurali scelte "
+        "apposta per avere la stessa quota e la stessa esposizione (qui non "
+        "controlliamo questi fattori).\n"
+        "- **Perché la mappa del trend non si aggiorna con il filtro anni?** "
+        "Usa la pendenza di riscaldamento già calcolata sull'intero periodo "
+        "2000-2025 per ciascun comune. Ricalcolarla ogni volta che cambi "
+        "l'intervallo richiederebbe rileggere l'intera serie giornaliera di "
+        "ogni comune a ogni interazione, troppo lento per una mappa "
+        "interattiva — per questo resta un riferimento fisso, mentre la "
+        "mappa della temperatura sopra si aggiorna regolarmente con il "
+        "periodo scelto."
     )
