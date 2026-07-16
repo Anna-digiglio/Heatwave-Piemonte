@@ -146,17 +146,15 @@ with tab_overview:
 
     st.subheader("Velocità di riscaldamento per comune")
     st.caption(
-        "Ogni punto è un comune, colorato per **pendenza del trend** "
-        "(°C/decade, 2000-2025, non ricalcolato sul filtro anni — richiede la "
+        "Ogni comune è colorato per **pendenza del trend** (°C/decade, intero "
+        "periodo disponibile, non ricalcolato sul filtro anni — richiede la "
         "serie giornaliera completa). Rosso = si scalda più in fretta della "
         "media, blu = più lentamente. Il colore è centrato sullo zero: due "
         "sfumature di rosso diverse indicano comunque due velocità diverse "
         "di riscaldamento, non caldo/freddo assoluto."
     )
     geo_df = get_municipality_geometries_wkt()
-    trend_points = trend_df.merge(geo_df, on='municipality_name').merge(
-        metadata[['municipality_name', 'lat', 'lon']], on='municipality_name'
-    )
+    trend_points = trend_df.merge(geo_df, on='municipality_name')
     trend_points_f = trend_points[trend_points['province_name'].isin(provinces)]
 
     if trend_points_f.empty:
@@ -169,11 +167,10 @@ with tab_overview:
         m2 = folium.Map(location=[45.0, 8.0], zoom_start=8, tiles='CartoDB positron')
         for _, row in trend_points_f.iterrows():
             color = cmap_trend(row['lr_slope_per_decade'])
-            folium.CircleMarker(
-                location=[row['lat'], row['lon']],
-                radius=7,
-                color='#555', weight=1, fill=True, fill_color=color, fill_opacity=0.9,
+            folium.GeoJson(
+                wkt_to_geojson(row['geometry_wkt']),
                 tooltip=f"{row['municipality_name']}: {row['lr_slope_per_decade']:+.2f} °C/decade",
+                style_function=lambda _, c=color: {'fillColor': c, 'color': '#555', 'weight': 0.5, 'fillOpacity': 0.85},
             ).add_to(m2)
         st_folium(m2, width=None, height=420, returned_objects=[], key='map_trend_points')
         render_gradient_legend(
