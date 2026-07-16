@@ -119,6 +119,16 @@ conta come "ondata di calore", metriche generali (righe di temperatura,
 periodo, comuni con dati reali, ondate identificate) con didascalie, mappa
 dei 44 comuni e tabella trend di riscaldamento — nessun filtro (vedi sopra).
 
+**Mappa colorata per trend, non più tutta rossa (2026-07-16)**: la mappa
+mostrava tutti i 44 comuni con lo stesso rosso fisso (serviva solo a
+localizzarli, non trasmetteva alcuna informazione). Su segnalazione
+dell'utente ("perché non dividerla per gravità come le altre?"), ricolorata
+per `lr_slope_per_decade` (stesso `trend_analysis.csv` già usato dalla
+tabella accanto), con la stessa colormap divergente e la stessa legenda a
+5 fasce (`render_gradient_legend()`) della mappa trend di Analisi Spaziale
+— coerenza visiva tra le due pagine invece di due modi diversi di
+rappresentare lo stesso tipo di dato.
+
 ### Analisi Temporale (`02_analisi_temporale.py`) — ampliata il 2026-07-15
 Tab **Panoramica**: 4 metriche in alto (pendenza sul periodo selezionato,
 significatività, trend Mann-Kendall di riferimento sull'intero 2000-2025,

@@ -882,3 +882,30 @@ Log cronologico append-only. Ogni riga: data, azione, pagine toccate.
 
   Pagina aggiornata: `dashboard.md` (descrizione Analisi Spaziale, nuova
   frase sulla legenda a fasce).
+
+- **2026-07-16** — MAPPA HOME COLORATA PER TREND (NON PIÙ TUTTA ROSSA).
+  L'utente ha notato che la mappa della home aveva tutte le aree dello
+  stesso colore e ha chiesto se non fosse meglio dividerle per gravità
+  come le altre mappe. La mappa in effetti coloriva tutti i 44 comuni con
+  lo stesso rosso fisso (`style_function` con colore costante) — serviva
+  solo a localizzarli, senza trasmettere alcuna informazione. Ricolorata
+  per `lr_slope_per_decade` (lo stesso `trend_analysis.csv` già letto per
+  la tabella accanto, spostato prima dello split in colonne così entrambe
+  le colonne possono usarlo), con la stessa colormap divergente centrata
+  sullo zero e la stessa legenda a 5 fasce
+  (`components/maps.py::render_gradient_legend()`) già introdotta poco
+  prima per la mappa trend di Analisi Spaziale — stessa rappresentazione
+  per lo stesso tipo di dato in due pagine diverse, invece di due
+  convenzioni visive diverse per lo stesso concetto.
+
+  Sottotitolo/didascalia della sezione aggiornati di conseguenza
+  ("Comuni con dati di temperatura reali" → "Velocità di riscaldamento per
+  comune"). Mantenuto un ramo di fallback (mappa tutta rossa col messaggio
+  "esegui trend_analysis.py") nel caso improbabile in cui
+  `trend_analysis.csv` non esista ancora.
+
+  Verificato con `py_compile` + `AppTest` (nessuna eccezione); server live
+  riavviato per applicare le modifiche.
+
+  Pagina aggiornata: `dashboard.md` (sezione Home, nuovo paragrafo sulla
+  mappa colorata per trend).
