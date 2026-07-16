@@ -1014,3 +1014,36 @@ Log cronologico append-only. Ogni riga: data, azione, pagine toccate.
 
   Pagina aggiornata: `dashboard.md` (sezione Home, rimosso riferimento
   all'expander spostato, aggiunta nota sullo spostamento).
+
+- **2026-07-16** — CARD HOME: ALTEZZA FISSA INVECE DI TESTO "A OCCHIO".
+  Il fix precedente (allungare la didascalia della card "Ondate di
+  Calore" per farla combaciare con le altre due) ha overcorretto: la
+  card è diventata più grande delle altre due. Individuata la causa
+  strutturale: `st.container(border=True)` senza un'altezza esplicita si
+  dimensiona sul proprio contenuto, quindi far combaciare l'altezza di 3
+  card tarando manualmente la lunghezza del testo è intrinsecamente
+  fragile (dipende da dove il testo va a capo, che a sua volta dipende
+  dalla larghezza reale della colonna a schermo, non dal numero di
+  caratteri). Fix strutturale: `st.container(border=True, height=160)` su
+  tutte e 3 le card (`CARD_HEIGHT` come costante condivisa) — Streamlit
+  supporta un'altezza fissa in pixel per `st.container()` dalla versione
+  installata (1.58.0). Ripristinata la didascalia originale, più concisa,
+  della card Ondate di Calore: con l'altezza ora fissa non serve più
+  allungarla artificialmente per farla combaciare.
+
+  Verificato con `py_compile` + `AppTest` (nessuna eccezione, il parametro
+  `height` è supportato); server live riavviato.
+
+  Pagina aggiornata: `dashboard.md` (nota nella sezione Home sostituita:
+  non più "didascalie allungate per bilanciare", ma "altezza fissa
+  esplicita").
+
+- **2026-07-16** — CARD HOME: ALTEZZA AUMENTATA (160 → 220px, poi → 280px).
+  L'utente ha segnalato che con `height=160` il testo delle card veniva
+  tagliato. Aumentato `CARD_HEIGHT` a 220px; l'utente ha poi chiesto di
+  aumentarlo ancora perché anche il link "Vai alla pagina" non si vedeva
+  per intero — portato a 280px, abbastanza per titolo + didascalia su più
+  righe + link sempre visibili. Mantenuto il vantaggio del fix precedente
+  (le 3 card restano sempre della stessa altezza, indipendentemente dalla
+  lunghezza del testo). Verificato con `AppTest` a ogni passaggio (nessuna
+  eccezione); server live riavviato.

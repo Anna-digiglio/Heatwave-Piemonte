@@ -110,9 +110,14 @@ davvero:
   CSV completi, un filtro qui non avrebbe alcun effetto.
 
 - **Home con card di navigazione**: sostituiti i link testuali con 3
-  `st.container(border=True)` affiancati (uno per pagina di analisi), ognuno
-  con titolo, una frase di sintesi e `st.page_link()` per la navigazione
-  reale (non solo testo).
+  `st.container(border=True, height=280)` affiancati (uno per pagina di
+  analisi), ognuno con titolo, una frase di sintesi e `st.page_link()` per
+  la navigazione reale (non solo testo). Altezza **fissa** (2026-07-16):
+  senza `height` esplicito ogni card si dimensiona sul proprio contenuto,
+  quindi 3 didascalie di lunghezza anche solo leggermente diversa
+  producono 3 card di altezza diversa — non risolvibile in modo affidabile
+  tarando a mano la lunghezza del testo (il punto di a-capo dipende dalla
+  larghezza reale della colonna a schermo, non dal conteggio caratteri).
 - **Palette coerente** (`components/constants.py`): scala sequenziale
   `RdYlBu_r` (blu→rosso) per ogni valore assoluto di temperatura in tutte le
   mappe/grafici; scala divergente `RdBu_r` centrata sullo zero solo per
