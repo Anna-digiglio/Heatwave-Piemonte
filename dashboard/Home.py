@@ -46,9 +46,10 @@ st.markdown(
 )
 
 st.subheader("Esplora la dashboard")
+CARD_HEIGHT = 280  # altezza fissa: le 3 card devono avere la stessa dimensione a prescindere dalla lunghezza del testo
 card1, card2, card3 = st.columns(3)
 with card1:
-    with st.container(border=True):
+    with st.container(border=True, height=CARD_HEIGHT):
         st.markdown("### 📈 Analisi Temporale")
         st.caption(
             "Le temperature stanno davvero salendo? Trend, anomalie, "
@@ -56,7 +57,7 @@ with card1:
         )
         st.page_link("pages/02_analisi_temporale.py", label="Vai alla pagina →")
 with card2:
-    with st.container(border=True):
+    with st.container(border=True, height=CARD_HEIGHT):
         st.markdown("### 🗺️ Analisi Spaziale")
         st.caption(
             "Quali zone del Piemonte sono più calde o si scaldano più in "
@@ -65,12 +66,11 @@ with card2:
         )
         st.page_link("pages/03_analisi_spaziale.py", label="Vai alla pagina →")
 with card3:
-    with st.container(border=True):
+    with st.container(border=True, height=CARD_HEIGHT):
         st.markdown("### 🔥 Ondate di Calore")
         st.caption(
-            "Quando, dove e quanto intense sono state le ondate di calore dal "
-            "2000 a oggi: frequenza, durata, concentrazione geografica e se "
-            "il fenomeno sta accelerando negli anni recenti."
+            "Quando, dove e quanto intense sono state le ondate di calore "
+            "dal 2000 a oggi, e se il fenomeno sta accelerando."
         )
         st.page_link("pages/04_ondate_di_calore.py", label="Vai alla pagina →")
 
