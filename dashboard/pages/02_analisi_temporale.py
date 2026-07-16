@@ -17,12 +17,11 @@ from scipy import stats
 from components.constants import (
     NATIONAL_GLOBAL_REFERENCE, SEASON_BY_MONTH, SEASON_COLORS, SEASON_ORDER, format_mk_trend,
 )
-from components.filters import render_sidebar_filters
+from components.filters import render_year_range_filter
 from components.queries import (
     get_daily_temperature,
     get_daily_temperature_aggregate,
     get_kpi_annual,
-    get_municipality_metadata,
     get_municipality_names_with_data,
     get_seasonal_decomposition,
     get_seasonal_decomposition_aggregate,
@@ -36,32 +35,34 @@ inject_custom_css()
 st.title("📈 Analisi Temporale")
 st.caption("La temperatura di ogni comune sta davvero cambiando nel tempo, o è solo variazione normale?")
 
-year_start, year_end, provinces = render_sidebar_filters()
-
-metadata = get_municipality_metadata()
-names_in_provinces = sorted(metadata[metadata['province_name'].isin(provinces)]['municipality_name'])
-names = names_in_provinces or get_municipality_names_with_data()
+names = get_municipality_names_with_data()
 
 col_check, col_select = st.columns([1, 2])
 with col_check:
     is_aggregate = st.checkbox(
         "🌍 Intero Piemonte",
-        help="Calcola tutta la pagina sulla media dei comuni attualmente filtrati, invece che su un singolo comune.",
+        help="Calcola tutta la pagina sulla media dei 44 comuni con dati, invece che su un singolo comune.",
     )
 with col_select:
     default_index = names.index('Torino') if 'Torino' in names else 0
     municipality = st.selectbox("Comune", names, index=default_index, disabled=is_aggregate)
 
-subject_label = f"Piemonte (media di {len(names)} comuni filtrati)" if is_aggregate else municipality
+subject_label = f"Piemonte (media di {len(names)} comuni)" if is_aggregate else municipality
 
 if is_aggregate:
     st.info(
         "Stai guardando la **media aritmetica** (non pesata per popolazione o "
-        "superficie) dei comuni attualmente filtrati con dati reali — non una "
-        "stima ufficiale della temperatura media del Piemonte, che "
-        "richiederebbe pesare per area/popolazione e includere tutti i 1180 "
-        "comuni (qui solo 44 hanno dati reali, vedi Home)."
+        "superficie) dei 44 comuni con dati reali — non una stima ufficiale "
+        "della temperatura media del Piemonte, che richiederebbe pesare per "
+        "area/popolazione e includere tutti i 1180 comuni."
     )
+
+year_start, year_end = render_year_range_filter(key='temporale_year_range')
+st.caption(
+    "L'intervallo sopra determina il periodo mostrato nei grafici sotto. "
+    "Il test di Mann-Kendall e la scomposizione STL restano invece calcolati "
+    "sull'intero periodo disponibile, come riferimento fisso."
+)
 
 with st.expander("ℹ️ Come si legge questa pagina"):
     st.markdown(
