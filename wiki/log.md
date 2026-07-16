@@ -1297,3 +1297,37 @@ Log cronologico append-only. Ogni riga: data, azione, pagine toccate.
   SDMX REST, mai tentato. File temporanei di indagine (codelist 9MB, lista
   dataflow 13.5MB) salvati solo nello scratchpad di sessione, non nel
   repository.
+
+- **2026-07-16** — POPOLAZIONE ISTAT: TROVATA LA FONTE GIUSTA E CARICATA
+  PER TUTTI I 1180 COMUNI. Continuazione della stessa indagine, stessa
+  sessione: tentato l'export della query legacy `dati.istat.it` (QueryId
+  19101) come prossimo passo previsto — il portale e' dismesso (redirect
+  con certificato scaduto verso un avviso di decommissioning). Trovato
+  invece `demo.istat.it`, sistema attivo e separato ("Popolazione
+  residente per eta' e sesso"), con un file ZIP per provincia
+  (`https://demo.istat.it/data/posas/POSAS_{anno}_it_{codice}_{nome}.zip`,
+  nessun account), CSV con una riga per comune/eta'/sesso (eta'=999 e' il
+  totale per comune). Verificato scaricando ed ispezionando a mano il file
+  di Torino prima di scrivere codice: i codici comune coincidono
+  esattamente con `istat_code` gia' in DB.
+
+  Scritto `src/data_acquisition/download_population.py`. Bug trovato in
+  fase di test manuale (prima di lanciare lo script sulle 8 province): la
+  colonna eta' viene letta da pandas come stringa, non intero — un filtro
+  numerico (`== 999`) restituiva sempre 0 righe; corretto confrontando con
+  la stringa `'999'`. Eseguito sulle 8 province reali: **1180/1180 comuni
+  aggiornati** (`municipalities.population`), coincidenza esatta per
+  provincia con l'allocazione gia' usata in
+  `download_extra_municipalities.py` (312 Torino, 247 Cuneo, 187
+  Alessandria, 117 Asti, 87 Novara, 82 Vercelli, 74 Biella, 74
+  Verbano-Cusio-Ossola). Valori verificati a campione via query SQL
+  diretta: Torino 855.654 ab. (densita' 6580 ab/km2, usando `area_km2` gia'
+  presente), Alessandria 93.409, Cuneo 55.747, Bardonecchia 2.853 (densita'
+  21.6 ab/km2), Formazza 410 (densita' 3.1 ab/km2) — gradiente
+  pianura/alpino coerente col clustering climatico gia' trovato.
+
+  Aggiornato anche `paper/manoscritto.md` (§2.4 passata da "DA FARE" a
+  "PARZIALMENTE FATTO" per la parte popolazione).
+
+  Pagine aggiornate: `data-sources.md` (nuova sezione), `data-model.md`
+  (`population` non piu' `NULL`), `paper-scientifico.md`.

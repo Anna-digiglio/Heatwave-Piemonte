@@ -27,9 +27,13 @@ può divergere leggermente, in caso di conflitto fidati dello script SQL).
   `MULTIPOLYGON` (era il tipo originario nello script DDL): 74 dei 1180
   comuni hanno confini multi-parte nei dati ISTAT reali (es. exclavi), che
   un `POLYGON` semplice non può rappresentare.
-- `population` è `NULL` per tutti i comuni: lo shapefile ISTAT dei confini
-  amministrativi non include questo dato (servirebbe un dataset demografico
-  ISTAT separato, non ancora integrato).
+- `population` **popolata il 2026-07-16** per tutti i 1180 comuni (non solo
+  i 44/300 con temperatura) — vedi [Fonti dati](data-sources.md) per la
+  fonte (`demo.istat.it`, script `src/data_acquisition/download_population.py`).
+  Valori plausibili verificati a campione (Torino 855.654 ab., densità
+  6580 ab/km²; Formazza 410 ab., densità 3.1 ab/km² — coerente col
+  contrasto pianura/alpino già visto nel clustering climatico, vedi
+  [Analisi statistica](statistical-analysis.md)).
 - `elevation_m`: **popolato il 2026-07-15** ma solo per i 44 comuni con dati
   di temperatura reali (resta `NULL` per gli altri 1136) — fonte: Open-Meteo
   Elevation API sul centroide di ciascun comune (vedi

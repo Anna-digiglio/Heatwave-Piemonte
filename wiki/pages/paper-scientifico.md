@@ -65,33 +65,31 @@ presente in dashboard (`03_analisi_spaziale.py`) è dichiarato esplicitamente
      sulle geometrie comunali già presenti per tutti i 1180 comuni, per
      ottenere % superficie urbana/artificiale, agricola, forestale per
      comune. Non richiede nuovi download di temperatura.
-   - Popolazione residente (ISTAT, dataset comunale open data) — join su
-     `istat_code` (chiave già usata per i fix di encoding, vedi
-     [Fonti dati](data-sources.md)) per densità demografica. **Investigazione
-     approfondita il 2026-07-16** (API SDMX `esploradati.istat.it/SDMXWS`,
-     nessun account richiesto): confermato che i codici territorio del
-     dataset (`CL_ITTER107`) coincidono esattamente con `istat_code` già in
-     DB (es. `001272` = Torino, verificato). Trovato anche il dataflow
-     specifico Piemonte (`22_315_DF_DCIS_POPORESBIL1_3`, filtro `ITC1`),
-     distinto dal dataflow padre `22_315` — la struttura/DSD è quindi
-     interamente mappata. **Ma**: ogni query dati provata (sia sul flow
-     generale `22_315` sia su quello specifico Piemonte, con vari
-     `DATA_TYPE`: `JAN`, `DEC_CP_P`, wildcard, e anche con `REF_AREA`
-     completamente jolly) restituisce osservazioni sempre `null` o
-     `NoRecordsFound` — la struttura dati esiste ma sembra vuota lato
-     server per questo dataset via questo endpoint REST (comportamento
-     noto e lamentato nella comunità open-data italiana per il nuovo
-     sistema `esploradati.istat.it`, in transizione dal 2022). **Prossimo
-     passo pragmatico, non ancora tentato**: usare l'export CSV manuale
-     della query salvata "Popolazione residente al 1° gennaio: Tutti i
-     comuni" (`dati.istat.it/Index.aspx?QueryId=19101`, sistema .Stat
-     legacy, diverso dal nuovo SDMX REST) — probabilmente richiede
-     un'interazione via browser per il primo export, poi eventualmente
-     automatizzabile ispezionando le richieste di rete di quella pagina.
-   - CORINE Land Cover richiede un account Copernicus Land Monitoring
-     Service (CLMS) con credenziali per l'API di download o i servizi OGC
-     (WMS/WFS/WCS) — stesso schema già usato per `CopernicusERA5Downloader`/
-     `CDS_KEY` in questo progetto.
+   - Popolazione residente — **fatto il 2026-07-16**. Dopo due vicoli ciechi
+     (l'API SDMX `esploradati.istat.it` ha la struttura giusta — stessi
+     codici `istat_code`, dataflow Piemonte-specifico identificato
+     `22_315_DF_DCIS_POPORESBIL1_3` — ma non restituisce osservazioni reali
+     per questo dataset; il portale legacy `dati.istat.it` è dismesso,
+     redirect a un avviso di decommissioning), trovato `demo.istat.it`
+     (sistema attivo e separato, ZIP scaricabile per provincia, nessun
+     account) — vedi [Fonti dati](data-sources.md) per il dettaglio
+     completo. Script `src/data_acquisition/download_population.py`,
+     eseguito su tutte le 8 province: **1180/1180 comuni aggiornati**
+     (`municipalities.population`), non solo quelli con temperatura.
+     Valori verificati plausibili (Torino 6580 ab/km², Formazza alpina
+     3.1 ab/km²).
+   - CORINE Land Cover — **decisione presa il 2026-07-16** (con l'utente):
+     via manuale, non API. Account EU Login gratuito su
+     `land.copernicus.eu`, poi "Download by area" (formato vettoriale,
+     ritagliato sul Piemonte invece di tutta Europa scaricata intera),
+     niente token/JWT — l'API completa CLMS richiede un flusso OAuth2 con
+     service key firmata (stesso livello di complessità di
+     `CopernicusERA5Downloader`/`CDS_KEY`, ma qui non giustificato: CORINE
+     si aggiorna ogni ~6 anni, un download manuale una tantum basta). Una
+     volta ottenuto il file dall'utente, l'overlay via PostGIS sulle
+     geometrie dei 1180 comuni (già presenti) per calcolare % superficie
+     urbana/agricola/forestale per comune è lavoro mio. **In attesa del
+     file dall'utente.**
    - Entrambe indipendenti dall'estensione a 300 comuni: operano su tutti i
      1180 comuni già in `municipalities`, non solo su quelli con
      temperatura.

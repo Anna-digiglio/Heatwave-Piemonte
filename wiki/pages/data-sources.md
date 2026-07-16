@@ -138,4 +138,40 @@ righe, nessun dato mancante.
 - Tabella `temperature`: **417.868 righe, 44 comuni** (8 capoluoghi +
   36 extra), 2000-2025.
 
+## `download_population.py` — popolazione residente reale per tutti i 1180 comuni (2026-07-16)
+
+Motivazione: covariata esplicativa mancante per il paper scientifico (vedi
+[Articolo scientifico](paper-scientifico.md)) — `municipalities.population`
+era `NULL` dall'inizio del progetto.
+
+**Percorso trovato dopo un'indagine con diversi vicoli ciechi** (dettaglio
+completo in [Articolo scientifico](paper-scientifico.md)): l'API SDMX nuova
+di ISTAT (`esploradati.istat.it`) ha la struttura giusta (stessi codici
+`istat_code`) ma non restituisce osservazioni per il dataset
+`DCIS_POPORESBIL1`; il vecchio portale `dati.istat.it` è dismesso (redirect
+a un avviso). **`demo.istat.it`** è invece un sistema separato e attivo, con
+un file ZIP scaricabile per provincia
+(`https://demo.istat.it/data/posas/POSAS_{anno}_it_{codice}_{nome}.zip`,
+nessuna chiave/account), CSV con una riga per comune/età/sesso — la riga
+con età=999 è il totale per comune. Verificato che i codici comune nel CSV
+coincidono esattamente con `municipalities.istat_code`.
+
+**Bug incontrato durante l'implementazione**: la colonna età viene letta da
+pandas come stringa (non intero, per via di alcune righe non puramente
+numeriche nel file), quindi il filtro sulla riga di totale va scritto come
+confronto a stringa (`== '999'`), non a intero (`== 999`, che restituiva
+sempre 0 righe) — scoperto testando prima su un file scaricato a mano
+prima di lanciare lo script su tutte le 8 province.
+
+**Risultato reale**: eseguito su tutte le 8 province, **1180/1180 comuni
+aggiornati** (non solo i comuni con temperatura) — 312 Torino, 247 Cuneo,
+187 Alessandria, 117 Asti, 87 Novara, 82 Vercelli, 74 Biella, 74
+Verbano-Cusio-Ossola (somma esatta con l'allocazione già usata in
+`download_extra_municipalities.py`). Dato: stima al 1° gennaio 2026.
+Valori verificati a campione: Torino 855.654 ab. (densità 6580 ab/km²),
+Alessandria 93.409 ab., Cuneo 55.747 ab., Bardonecchia 2.853 ab. (densità
+21.6 ab/km²), Formazza 410 ab. (densità 3.1 ab/km²) — gradiente
+pianura/alpino coerente con quanto già trovato in
+[Analisi statistica](statistical-analysis.md).
+
 Vedi [Stato del Progetto](project-status.md).
