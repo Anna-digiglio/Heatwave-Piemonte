@@ -1442,3 +1442,49 @@ Log cronologico append-only. Ogni riga: data, azione, pagine toccate.
   NDVI da satellite, pendenza/esposizione da un DEM, distanza dal Po/dai
   laghi, densita' stradale/edificato da OpenStreetMap (downloader gia'
   presente nel codice, mai attivato).
+
+- **2026-07-16** — DASHBOARD: USO DEL SUOLO E POPOLAZIONE IN ANALISI
+  SPAZIALE, SOSTITUITO IL CONFRONTO ISOLA DI CALORE ILLUSTRATIVO. Su
+  richiesta esplicita dell'utente ("procedi con Aggiungere popolazione/uso
+  del suolo alla dashboard"), primo dei due to-do tracciati poco prima.
+
+  Aggiunte a `components/constants.py`: `LAND_COVER_COLORS`/
+  `LAND_COVER_LABELS`, colori vicini alla palette ufficiale CORINE (presi
+  da `data/external/clc_legend.csv`, non inventati) per le 5 categorie di
+  Livello 1. Aggiunte a `components/queries.py`: `get_land_cover_all()` e
+  `get_all_municipality_geometries_wkt()` (tutti i 1180 comuni, non solo i
+  44 con temperatura - uso del suolo/popolazione coprono l'intero
+  territorio) e `get_land_cover_with_population()` (solo i comuni con
+  temperatura, per lo scatter).
+
+  In `03_analisi_spaziale.py`, dopo la sezione fasce altitudinali:
+  - **Mappa uso del suolo dominante** (1180 comuni).
+  - **Mappa densita' di popolazione** (1180 comuni, scala logaritmica -
+    altrimenti Torino schiaccia la scala).
+  - **Scatter temperatura vs uso del suolo/popolazione** (solo i comuni con
+    temperatura): sostituisce il vecchio confronto "Torino vs comuni
+    rurali della provincia" (dichiarato "solo illustrativo"). Selettore
+    `st.radio` tra % urbano/% industriale-commerciale/densita' di
+    popolazione; colore = fascia altitudinale, per poter valutare a occhio
+    se l'effetto regge a parita' di quota; metrica di correlazione di
+    Pearson con caveat esplicito ("non controllata per quota", il modello
+    vero resta pianificato in `paper/manoscritto.md` §3.5).
+
+  **Bug trovato e corretto con `AppTest` prima di qualunque verifica
+  manuale**: `geo_all.merge(land_cover_all, on='municipality_name')` -
+  entrambe le tabelle hanno una colonna `province_name`, non parte della
+  chiave di join, quindi pandas la rinominava in `province_name_x`/
+  `province_name_y` invece di lasciarla con il nome atteso - `KeyError:
+  'province_name'` al primo `AppTest.run()`. Fix: colonna duplicata esclusa
+  da un lato del merge prima di unire.
+
+  **Verificato con `AppTest`**: run di default (nessuna eccezione), radio
+  su `pop_density` (scala log sull'asse x) e su
+  `pct_industrial_commercial` (nessuna eccezione in entrambi i casi),
+  filtro provincia ristretto a una sola provincia piccola (Biella, nessuna
+  eccezione). Valori reali sensati: correlazione Pearson +0.30 (%urbano vs
+  temperatura, tutti i comuni nel filtro di default) - plausibile, non
+  sospetta data la confusione nota con la quota.
+
+  Pagine aggiornate: `dashboard.md` (nuova sezione + bug documentato),
+  `paper-scientifico.md` (to-do 1 segnato fatto).

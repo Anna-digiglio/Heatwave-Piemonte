@@ -146,17 +146,12 @@ Discusse con l'utente, non ancora avviate — l'utente ha scelto di procedere
 prima con la scomposizione urbana (vedi sopra) e di aspettare i 300 comuni
 prima del resto.
 
-**1. Aggiungere popolazione/uso del suolo alla dashboard** — fattibile
-subito, non dipende dai 300 comuni (i dati coprono già tutti i 1180
-comuni):
-- Mappa coropletica della classe dominante di uso del suolo (o della %
-  urbana/industriale) per comune.
-- Mappa di densità di popolazione.
-- Sostituire il confronto "isola di calore urbana" attuale nella pagina
-  Analisi Spaziale — oggi dichiarato esplicitamente "solo illustrativo"
-  (Torino vs media provincia, vedi [Dashboard](dashboard.md)) — con
-  qualcosa basato su dati reali (%urbano/%industriale/densità
-  demografica), ora possibile.
+**1. Aggiungere popolazione/uso del suolo alla dashboard — fatto il
+2026-07-16.** Mappa uso del suolo dominante e mappa densità di popolazione
+(tutti i 1180 comuni), più uno scatter temperatura/uso del
+suolo/popolazione con selettore di variabile, che sostituisce il vecchio
+confronto "isola di calore urbana" (Torino vs media provincia, dichiarato
+"solo illustrativo"). Dettaglio completo in [Dashboard](dashboard.md).
 
 **2. Altre covariate esplicative candidate**, in ordine di sforzo
 crescente:

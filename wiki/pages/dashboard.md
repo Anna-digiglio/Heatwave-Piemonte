@@ -23,7 +23,7 @@ dashboard/
 ├── Home.py                         # entry point = pagina Home (overview, KPI, card di navigazione)
 ├── pages/
 │   ├── 02_analisi_temporale.py     # trend, anomalie, stagionalità, boxplot per quinquennio, STL
-│   ├── 03_analisi_spaziale.py      # coropletiche per provincia, trend per comune, fasce altitudinali, isola di calore, cluster, Moran's I
+│   ├── 03_analisi_spaziale.py      # coropletiche per provincia, trend per comune, fasce altitudinali, uso del suolo, popolazione, cluster, Moran's I
 │   ├── 04_ondate_di_calore.py      # frequenza/intensità/cumulato, mappa concentrazione, heatmap calendario
 │   └── 05_download_dati.py         # export CSV (dati puliti + risultati di analisi)
 └── components/
@@ -228,8 +228,38 @@ gravità/velocità esplicita (es. "Nella media", "Riscaldamento rapido"),
 richiesta dall'utente per capire subito cosa significa ogni colore senza
 dover interpretare una colorbar continua; confronto per **fascia
 altitudinale** (pianura/collina/montagna, soglie 300/700 m su elevazione
-reale da Open-Meteo, vedi sotto); confronto **isola di calore urbana**
-(Torino città vs media dei comuni rurali della sua stessa provincia).
+reale da Open-Meteo, vedi sotto).
+
+**Uso del suolo, popolazione e temperatura (2026-07-16, sostituisce il
+vecchio confronto "isola di calore urbana")**: il confronto originale
+(Torino città vs media dei comuni rurali della sua provincia, dichiarato
+esplicitamente "solo illustrativo") è stato sostituito con contenuto basato
+sui dati reali di uso del suolo/popolazione aggiunti lo stesso giorno (vedi
+[Modello Dati](data-model.md), tabella `municipality_land_cover`) — su
+richiesta esplicita dell'utente ("procedi con Aggiungere popolazione/uso
+del suolo alla dashboard"):
+- **Mappa uso del suolo dominante**: tutti i 1180 comuni (non solo i 44 con
+  temperatura), colori vicini alla palette ufficiale CORINE
+  (`LAND_COVER_COLORS` in `components/constants.py`, presi da
+  `data/external/clc_legend.csv`).
+- **Mappa densità di popolazione**: tutti i 1180 comuni, scala
+  logaritmica (altrimenti Torino schiaccia la scala).
+- **Scatter temperatura vs uso del suolo/popolazione**: solo i comuni con
+  temperatura, con un selettore (`st.radio`) tra % urbano, % industriale/
+  commerciale, densità di popolazione; colore = fascia altitudinale (per
+  poter valutare a occhio se l'effetto regge a parità di quota); metrica
+  di correlazione di Pearson mostrata con caveat esplicito ("non
+  controllata per quota", il vero modello resta pianificato in
+  `paper/manoscritto.md` §3.5, non ancora costruito). Verificato con
+  `AppTest` un valore reale di correlazione +0.30 (% urbano vs
+  temperatura, tutti i comuni) — plausibile, non sospetto.
+
+**Bug corretto durante lo sviluppo**: le query di geometrie/uso del suolo
+condividono la colonna `province_name` — un primo merge tra le due
+produceva `province_name_x`/`province_name_y` invece del nome atteso
+(`KeyError` scoperto subito con `AppTest`, non in produzione), risolto
+escludendo la colonna duplicata da un lato del merge prima di unirle.
+
 Tab **Dettaglio tecnico**: cluster climatici K-means (k=3) e indice di
 Moran (contenuto già esistente, spostato qui), nota di metodologia sui
 limiti delle sezioni sopra (fasce altitudinali semplificate, confronto UHI
