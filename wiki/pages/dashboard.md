@@ -79,6 +79,16 @@ davvero:
   tutta la sessione, senza bisogno di gestire `st.session_state` a mano
   come richiedeva la sidebar condivisa).
 - `render_province_filter(key)` — multiselect provincia, stessa logica.
+  **Default vuoto** (2026-07-16, fix a seguito di un altro feedback
+  dell'utente): la primissima versione default va a `all_provinces`,
+  riempiendo il riquadro con tutti gli 8 tag già selezionati fin dal primo
+  sguardo — "non facilmente capibile", secondo l'utente. Ora il box parte
+  vuoto (`default=[]`, con `placeholder="Tutte le province con dati"`) e
+  il fallback già esistente nella funzione (`return provinces or
+  all_provinces`) fa sì che "nessuna selezione" continui a significare
+  "tutti i 44 comuni", senza dover mai spuntare/digitare nulla per lo stato
+  di default — un click sul box serve solo se si vuole restringere,
+  scegliendo dal menu (mai scrivendo a mano il nome di una provincia).
 
 **Dove sono rimasti, dove sono stati tolti**:
 - **Home**: nessun filtro — mostra sempre tutti i 44 comuni (una pagina di

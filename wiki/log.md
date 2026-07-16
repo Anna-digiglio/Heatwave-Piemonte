@@ -958,3 +958,30 @@ Log cronologico append-only. Ogni riga: data, azione, pagine toccate.
 
   Pagina aggiornata: `dashboard.md` (descrizione Ondate di Calore, nota
   sulla legenda del grafico intensità).
+
+- **2026-07-16** — FILTRO PROVINCIA: DEFAULT VUOTO INVECE DI TUTTO
+  PRESELEZIONATO. L'utente ha segnalato (chiamandolo "la legenda", ma
+  descrivendo in realtà il multiselect provincia di Analisi Spaziale/Ondate
+  di Calore) che il riquadro filtro non era "facilmente capibile": all'
+  apertura della pagina mostrava già 8 tag preselezionati (tutte le
+  province), un riquadro pieno e poco immediato da leggere al primo
+  sguardo. Richiesta esplicita: di default deve prendere tutti i comuni
+  con dati, con la possibilità di restringere scegliendo dal menu (mai
+  digitando a mano).
+
+  Causa: `render_province_filter()` in `components/filters.py` aveva
+  `default=all_provinces` — precompilava il box con tutti gli 8 tag.
+  Fix: `default=[]` (box vuoto all'apertura) +
+  `placeholder="Tutte le province con dati"` per comunicare comunque cosa
+  succede di default senza riempire il box di tag. Il comportamento
+  sostanziale **non cambia**: la funzione già ritornava
+  `provinces or all_provinces`, quindi "nessuna selezione" equivaleva già
+  a "tutti i 44 comuni" — il fix è puramente di leggibilità
+  dell'interfaccia, non di logica di filtro. La selezione resta comunque
+  solo per click dal menu a tendina, mai testo libero.
+
+  Verificato con `AppTest` su entrambe le pagine: box vuoto di default,
+  nessuna eccezione. Server live riavviato.
+
+  Pagina aggiornata: `dashboard.md` (sezione "Filtri", nota sul default
+  vuoto del multiselect provincia).
