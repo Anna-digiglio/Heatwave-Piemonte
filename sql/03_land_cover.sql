@@ -22,3 +22,17 @@ CREATE TABLE IF NOT EXISTS municipality_land_cover (
 );
 
 CREATE INDEX IF NOT EXISTS idx_land_cover_dominant ON municipality_land_cover(dominant_class);
+
+-- ============================================================================
+-- Aggiunta 2026-07-16 (stessa sessione): scomposizione di pct_urban in
+-- sotto-classi. Motivazione: l'idea originale del paper era correlare le
+-- zone piu' calde a città/industria/riscaldamento - un unico "pct_urban"
+-- confonde residenziale, industriale, trasporti e verde urbano, che hanno
+-- proprieta' termiche molto diverse. Le 4 sotto-classi sommano a pct_urban
+-- (a meno di arrotondamento).
+-- ============================================================================
+ALTER TABLE municipality_land_cover ADD COLUMN IF NOT EXISTS pct_residential NUMERIC(5, 2) NOT NULL DEFAULT 0;
+ALTER TABLE municipality_land_cover ADD COLUMN IF NOT EXISTS pct_industrial_commercial NUMERIC(5, 2) NOT NULL DEFAULT 0;
+ALTER TABLE municipality_land_cover ADD COLUMN IF NOT EXISTS pct_transport NUMERIC(5, 2) NOT NULL DEFAULT 0;
+ALTER TABLE municipality_land_cover ADD COLUMN IF NOT EXISTS pct_urban_green NUMERIC(5, 2) NOT NULL DEFAULT 0;
+ALTER TABLE municipality_land_cover ADD COLUMN IF NOT EXISTS pct_extraction_construction NUMERIC(5, 2) NOT NULL DEFAULT 0;
