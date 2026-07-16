@@ -9,6 +9,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 import folium
+import numpy as np
 import pandas as pd
 import plotly.express as px
 import streamlit as st
@@ -16,13 +17,17 @@ from branca.colormap import LinearColormap
 from streamlit_folium import st_folium
 
 from components.constants import (
-    CAPOLUOGHI, CLUSTER_COLORS, TEMPERATURE_COLORSCALE, TREND_COLORSCALE, elevation_band,
+    CLUSTER_COLORS, LAND_COVER_COLORS, LAND_COVER_LABELS,
+    TEMPERATURE_COLORSCALE, TREND_COLORSCALE, elevation_band,
 )
 from components.filters import render_province_filter, render_year_range_filter
 from components.maps import render_gradient_legend, wkt_to_geojson
 from components.queries import (
+    get_all_municipality_geometries_wkt,
     get_kpi_annual,
     get_kpi_annual_by_province,
+    get_land_cover_all,
+    get_land_cover_with_population,
     get_morans_i_summary,
     get_municipality_geometries_wkt,
     get_municipality_metadata,
@@ -57,7 +62,12 @@ with st.expander("ℹ️ Come si legge questa pagina"):
         "temperatura assoluta.\n"
         "- **Cluster climatici** (tab Dettaglio) raggruppano i comuni simili "
         "con K-means; l'**indice di Moran** misura se i comuni vicini hanno "
-        "anche temperature simili."
+        "anche temperature simili.\n"
+        "- Le mappe di **uso del suolo** e **densità di popolazione** "
+        "(CORINE Land Cover 2018 e ISTAT) coprono tutti i 1180 comuni "
+        "piemontesi, non solo quelli con temperatura — servono a esplorare "
+        "*perché* certe zone potrebbero risultare più calde, non solo "
+        "*dove* lo sono."
     )
 
 st.info(
@@ -205,37 +215,128 @@ with tab_overview:
         fig_elev.update_layout(height=350, margin=dict(t=10, b=10), showlegend=False)
         st.plotly_chart(fig_elev, width='stretch')
 
-    st.subheader("Isola di calore urbana: Torino vs comuni rurali della provincia")
+    st.subheader("Uso del suolo per comune")
     st.caption(
-        "Confronto tra la città di **Torino** e la media dei comuni rurali "
-        "della sua stessa provincia (esclusi i capoluoghi) — se Torino risulta "
-        "sistematicamente più calda, è un indizio dell'effetto \"isola di "
-        "calore urbana\" (le città trattengono più calore di campagna/montagna)."
+        "Classe di uso del suolo dominante (CORINE Land Cover 2018, "
+        "Copernicus) per ciascuno dei 1180 comuni piemontesi — non solo "
+        "quelli con dati di temperatura. \"Urbano/artificiale\" include "
+        "residenziale, industriale, trasporti e verde urbano; il dettaglio "
+        "per sotto-classe è nel grafico più sotto."
     )
-    if 'Torino' not in provinces:
-        st.info("Includi la provincia di Torino nel filtro sidebar per vedere questo confronto.")
-    else:
-        torino_prov_municipalities = metadata[metadata['province_name'] == 'Torino']['municipality_name']
-        rural_names = [n for n in torino_prov_municipalities if n not in CAPOLUOGHI]
-        annual_to = annual_f[annual_f['municipality_name'].isin(torino_prov_municipalities)]
-        torino_series = annual_to[annual_to['municipality_name'] == 'Torino'].set_index('year')['temp_mean_annual']
-        rural_series = annual_to[annual_to['municipality_name'].isin(rural_names)].groupby('year')['temp_mean_annual'].mean()
+    land_cover_all = get_land_cover_all()
+    geo_all = get_all_municipality_geometries_wkt()
+    lc_geo = geo_all.merge(land_cover_all.drop(columns=['province_name']), on='municipality_name')
+    lc_geo_f = lc_geo[lc_geo['province_name'].isin(provinces)]
 
-        if torino_series.empty or rural_series.empty:
-            st.info("Dati insufficienti per il confronto nel periodo selezionato.")
-        else:
-            uhi_df = torino_series.rename('Torino (città)').to_frame().join(
-                rural_series.rename('Media comuni rurali (provincia TO)'), how='inner'
-            ).reset_index()
-            fig_uhi = px.line(
-                uhi_df, x='year', y=['Torino (città)', 'Media comuni rurali (provincia TO)'],
-                labels={'year': 'Anno', 'value': 'Temp. media annuale (°C)', 'variable': ''},
-                color_discrete_sequence=['#e74c3c', '#3498db'],
-            )
-            fig_uhi.update_layout(height=320, margin=dict(t=10, b=10), legend=dict(orientation='h'))
-            st.plotly_chart(fig_uhi, width='stretch')
-            diff = (uhi_df['Torino (città)'] - uhi_df['Media comuni rurali (provincia TO)']).mean()
-            st.metric("Differenza media Torino vs rurale", f"{diff:+.1f} °C")
+    if lc_geo_f.empty:
+        st.info("Nessun comune per il filtro provincia scelto.")
+    else:
+        m_lc = folium.Map(location=[45.0, 8.0], zoom_start=8, tiles='CartoDB positron')
+        for _, row in lc_geo_f.iterrows():
+            color = LAND_COVER_COLORS.get(row['dominant_class'], '#cccccc')
+            folium.GeoJson(
+                wkt_to_geojson(row['geometry_wkt']),
+                tooltip=f"{row['municipality_name']}: {LAND_COVER_LABELS.get(row['dominant_class'], row['dominant_class'])}",
+                style_function=lambda _, c=color: {'fillColor': c, 'color': '#999', 'weight': 0.3, 'fillOpacity': 0.8},
+            ).add_to(m_lc)
+        st_folium(m_lc, width=None, height=420, returned_objects=[], key='map_land_cover')
+        legend_rows = ''.join(
+            f'<div style="display:flex;align-items:center;gap:8px;margin:2px 0;">'
+            f'<span style="display:inline-block;width:22px;height:14px;background:{LAND_COVER_COLORS[k]};'
+            f'border:1px solid rgba(0,0,0,0.3);border-radius:3px;flex-shrink:0;"></span>'
+            f'<span style="font-size:0.85rem;">{v}</span></div>'
+            for k, v in LAND_COVER_LABELS.items()
+        )
+        st.markdown(f'<div style="margin:0.25rem 0 0.75rem 0;">{legend_rows}</div>', unsafe_allow_html=True)
+
+    st.subheader("Densità di popolazione")
+    st.caption(
+        "Popolazione residente (stima ISTAT 1° gennaio 2026) diviso "
+        "superficie comunale — tutti i 1180 comuni. Scala logaritmica: senza, "
+        "Torino schiaccerebbe la scala rendendo illeggibili tutte le "
+        "differenze tra gli altri comuni."
+    )
+    pop_geo = geo_all.merge(land_cover_all[['municipality_name', 'population', 'area_km2', 'pop_density']],
+                             on='municipality_name')
+    pop_geo_f = pop_geo[pop_geo['province_name'].isin(provinces) & pop_geo['pop_density'].notna()]
+
+    if pop_geo_f.empty:
+        st.info("Nessun dato di popolazione per il filtro scelto.")
+    else:
+        log_density = np.log10(pop_geo_f['pop_density'].clip(lower=0.1))
+        cmap_pop = LinearColormap(['#fef0d9', '#fc8d59', '#b30000'], vmin=log_density.min(), vmax=log_density.max())
+        m_pop = folium.Map(location=[45.0, 8.0], zoom_start=8, tiles='CartoDB positron')
+        for (_, row), log_val in zip(pop_geo_f.iterrows(), log_density):
+            color = cmap_pop(log_val)
+            folium.GeoJson(
+                wkt_to_geojson(row['geometry_wkt']),
+                tooltip=f"{row['municipality_name']}: {row['pop_density']:.0f} ab/km² ({row['population']:.0f} ab.)",
+                style_function=lambda _, c=color: {'fillColor': c, 'color': '#999', 'weight': 0.3, 'fillOpacity': 0.8},
+            ).add_to(m_pop)
+        st_folium(m_pop, width=None, height=420, returned_objects=[], key='map_population')
+        st.caption(
+            f"Da {10**log_density.min():.1f} a {10**log_density.max():.0f} ab/km² "
+            "nel filtro attuale (scala log)."
+        )
+
+    st.subheader("Temperatura, uso del suolo e popolazione")
+    st.caption(
+        "Ogni punto è un comune **con dati di temperatura reali** "
+        f"({metadata_f.shape[0]} nel filtro attuale). Colore = fascia "
+        "altitudinale (la quota è il fattore che pesa di più, vedi grafico "
+        "sopra); posizione orizzontale = quanto suolo urbano/industriale ha "
+        "il comune. Se, **a parità di colore** (cioè a parità di quota), i "
+        "punti più a destra tendono a stare più in alto, è un indizio "
+        "(non una prova) che l'urbanizzazione conta anche al netto "
+        "dell'altitudine."
+    )
+    lc_pop = get_land_cover_with_population()
+    annual_avg = annual_f.groupby('municipality_name')['temp_mean_annual'].mean().reset_index()
+    scatter_df = annual_avg.merge(lc_pop, on='municipality_name').merge(
+        metadata_f[['municipality_name', 'elevation_m']], on='municipality_name'
+    )
+    scatter_df = scatter_df[scatter_df['province_name'].isin(provinces)]
+
+    x_variable = st.radio(
+        "Variabile in ascissa", ['pct_urban', 'pct_industrial_commercial', 'pop_density'],
+        format_func=lambda v: {'pct_urban': '% suolo urbano/artificiale',
+                                'pct_industrial_commercial': '% industriale/commerciale',
+                                'pop_density': 'Densità di popolazione (ab/km²)'}[v],
+        horizontal=True, key='uhi_x_variable',
+    )
+
+    if scatter_df.empty:
+        st.info("Dati insufficienti per il filtro scelto.")
+    else:
+        scatter_df = scatter_df.copy()
+        scatter_df['fascia'] = scatter_df['elevation_m'].apply(elevation_band)
+        fig_scatter = px.scatter(
+            scatter_df, x=x_variable, y='temp_mean_annual', color='fascia',
+            category_orders={'fascia': ['Pianura', 'Collina', 'Montagna']},
+            color_discrete_map={'Pianura': '#e74c3c', 'Collina': '#f39c12', 'Montagna': '#3498db'},
+            hover_name='municipality_name',
+            labels={
+                'pct_urban': '% suolo urbano/artificiale',
+                'pct_industrial_commercial': '% industriale/commerciale',
+                'pop_density': 'Densità di popolazione (ab/km²)',
+                'temp_mean_annual': 'Temp. media annuale (°C)', 'fascia': 'Fascia altitudinale',
+            },
+        )
+        if x_variable == 'pop_density':
+            fig_scatter.update_xaxes(type='log')
+        fig_scatter.update_layout(height=380, margin=dict(t=10, b=10), legend=dict(orientation='h'))
+        st.plotly_chart(fig_scatter, width='stretch')
+
+        corr = scatter_df[x_variable].corr(scatter_df['temp_mean_annual'])
+        st.metric("Correlazione (Pearson r, tutti i comuni nel filtro)", f"{corr:+.2f}")
+        st.caption(
+            "Correlazione semplice, **non controllata per quota** (a differenza "
+            "della lettura \"a parità di colore\" suggerita sopra) — un valore "
+            "alto qui può derivare in parte dal fatto che i comuni di pianura "
+            "sono sia più caldi sia più urbanizzati. Un modello che isola "
+            "l'effetto dell'uso del suolo da quello della quota è pianificato "
+            "ma non ancora costruito (vedi `paper/manoscritto.md`, §3.5)."
+        )
 
 with tab_detail:
     spatial_df = get_spatial_analysis()
@@ -361,13 +462,24 @@ with tab_detail:
         "di \"zona altimetrica\" (che è più complessa e valuta l'intero "
         "territorio comunale, non un solo punto). L'elevazione viene da "
         "Open-Meteo, non da un catasto ufficiale.\n"
-        "- **Perché il confronto isola di calore urbana è solo "
-        "\"illustrativo\"?** Confronta la media annuale di Torino città con "
-        "la media dei comuni non-capoluogo della sua stessa provincia — un "
-        "indizio ragionevole, ma non un vero studio dell'effetto isola di "
-        "calore, che richiederebbe stazioni meteo urbane e rurali scelte "
-        "apposta per avere la stessa quota e la stessa esposizione (qui non "
-        "controlliamo questi fattori).\n"
+        "- **Perché lo scatter uso del suolo/temperatura non è un vero "
+        "studio dell'effetto isola di calore?** Mostra una correlazione tra "
+        "tutti i comuni con dati, colorata per fascia altitudinale così da "
+        "poter almeno *guardare a occhio* se l'effetto regge a parità di "
+        "quota — ma il coefficiente di correlazione mostrato resta "
+        "calcolato su tutti i comuni insieme, senza isolare "
+        "matematicamente l'effetto della quota da quello dell'uso del "
+        "suolo. Un vero studio richiederebbe un modello statistico che "
+        "controlli esplicitamente per la quota (e per l'autocorrelazione "
+        "spaziale, dato che l'indice di Moran qui sotto è risultato "
+        "significativo) — pianificato per il paper scientifico del "
+        "progetto ma non ancora costruito.\n"
+        "- **Da dove viene l'uso del suolo, e che limite ha?** CORINE Land "
+        "Cover 2018 (Copernicus) — uno scatto del 2018, confrontato qui "
+        "con temperature 2000-2025 e popolazione stimata 2026. L'uso del "
+        "suolo cambia lentamente (un'epoca CORINE copre ~6 anni), quindi è "
+        "un compromesso accettabile, ma non un dato perfettamente "
+        "allineato nel tempo con gli altri due.\n"
         "- **Perché la mappa del trend non si aggiorna con il filtro anni?** "
         "Usa la pendenza di riscaldamento già calcolata sull'intero periodo "
         "2000-2025 per ciascun comune. Ricalcolarla ogni volta che cambi "
