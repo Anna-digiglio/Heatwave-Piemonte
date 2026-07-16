@@ -815,3 +815,70 @@ Log cronologico append-only. Ogni riga: data, azione, pagine toccate.
   Pagina aggiornata: `dashboard.md` (sezione "Opzione aggregata
   'Piemonte'" corretta per riflettere la checkbox invece della voce nel
   menu a tendina).
+
+- **2026-07-15** — FILTRI: DA SIDEBAR GLOBALE A WIDGET INLINE PER PAGINA.
+  L'utente ha segnalato che i filtri nella sidebar sembravano inutili
+  ("non so cosa possiamo aggiungere a lato") e ha chiesto di rimuoverli,
+  mettendoli solo nelle sezioni dove servono davvero. Rimossa
+  `render_sidebar_filters()` da `components/filters.py` e da ogni pagina;
+  sostituita con due funzioni pensate per essere richiamate inline, con
+  una `key` univoca per pagina (non serve più gestire `st.session_state` a
+  mano: senza uno stato condiviso tra pagine, Streamlit persiste da solo
+  il valore di un widget tramite `key` per tutta la sessione):
+  `render_year_range_filter(key)` e `render_province_filter(key)`.
+
+  **Decisioni pagina per pagina** (non un'applicazione meccanica a tutte):
+  - `Home.py`: nessun filtro — rimossi `provinces`/`year_start`/`year_end`
+    e i due `.isin(provinces)` che filtravano mappa e tabella trend;
+    mostra sempre tutti i 44 comuni (una pagina di overview non trae
+    beneficio da un filtro).
+  - `02_analisi_temporale.py`: tenuto solo l'intervallo anni (l'unico
+    usato davvero: regressione, anomalie, stagioni, boxplot), spostato
+    sotto la riga comune/checkbox Piemonte, con didascalia che chiarisce
+    cosa filtra e cosa no (Mann-Kendall/STL restano sull'intero periodo).
+    Rimosso il filtro provincia: serviva solo a restringere la lista dei
+    44 comuni nel menu a tendina, beneficio marginale — la lista ora è
+    sempre completa (`get_municipality_names_with_data()`).
+  - `03_analisi_spaziale.py` e `04_ondate_di_calore.py`: tenuti entrambi i
+    filtri (anni e provincia), spostati inline in due colonne in cima alla
+    pagina — qui hanno un uso reale e diretto (mappe coropletiche, fasce
+    altitudinali, isola di calore, mappa di concentrazione ondate,
+    frequenza/intensità per periodo).
+  - `05_download_dati.py`: invariata, nessun filtro (i CSV scaricabili
+    sono completi, un filtro non avrebbe effetto).
+
+  Verificato con `AppTest` su tutte le pagine (nessuna eccezione), incluso
+  con stati non di default (provincia ristretta a "Torino" e intervallo
+  anni ridotto a un solo anno su Analisi Spaziale/Ondate di Calore).
+  Server live verificato ancora in salute dopo le modifiche.
+
+  Pagina aggiornata: `dashboard.md` (sezione "Filtri: da sidebar globale a
+  inline per pagina" riscritta, struttura cartelle e descrizioni delle
+  singole pagine aggiornate per rimuovere i riferimenti alla sidebar).
+
+- **2026-07-16** — LEGENDA A FASCE PER LE MAPPE DI ANALISI SPAZIALE.
+  Richiesta esplicita dell'utente: per ogni colore delle mappe, indicare
+  range numerico e gravità. Le due mappe (temperatura media per provincia,
+  velocità di riscaldamento per comune) usavano `branca.colormap.LinearColormap`
+  senza alcuna legenda visibile — l'utente doveva indovinare cosa
+  rappresentasse una sfumatura di colore. Aggiunta
+  `components/maps.py::render_gradient_legend()`: non la legenda
+  automatica di branca (`colormap.add_to(m)`, un gradiente continuo con
+  solo min/max etichettati), ma una legenda testuale a 5 fasce discrete —
+  per ciascuna, uno swatch con il colore realmente restituito dalla
+  colormap al centro della fascia, il range numerico e un'etichetta di
+  gravità esplicita:
+  - Mappa temperatura: "Più fresco" → "Più caldo" (°C).
+  - Mappa trend: "Raffreddamento" → "Riscaldamento rapido" (°C/decade,
+    centrata sullo zero come la mappa).
+
+  Le etichette non sono generiche: riusano esattamente la stessa istanza
+  di colormap già creata per colorare la mappa (`cmap_temp`/`cmap_trend`),
+  quindi il colore dello swatch in legenda è garantito identico a quello
+  visto sulla mappa, non un'approssimazione a parte.
+
+  Verificato con `py_compile` + `AppTest` (nessuna eccezione); server live
+  riavviato per applicare le modifiche.
+
+  Pagina aggiornata: `dashboard.md` (descrizione Analisi Spaziale, nuova
+  frase sulla legenda a fasce).

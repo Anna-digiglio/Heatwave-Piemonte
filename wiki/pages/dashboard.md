@@ -8,8 +8,9 @@ inizialmente su 8 comuni (75.976 righe di temperatura, 51 ondate), estesa lo
 stesso giorno a 44 comuni (417.868 righe, 145 ondate — vedi
 [ETL](etl-pipeline.md)), poi **ampliata sostanzialmente nel contenuto delle
 3 pagine di analisi** (vedi sezione dedicata sotto), su richiesta esplicita
-dell'utente di un contenuto molto più ricco per ciascuna pagina più una
-sidebar di filtri globali. Verificata senza browser reale via
+dell'utente di un contenuto molto più ricco per ciascuna pagina, con
+filtri (poi spostati da una sidebar globale a widget inline per pagina,
+vedi sotto). Verificata senza browser reale via
 `streamlit.testing.v1.AppTest` (vedi sotto) e poi avviata live
 (`streamlit run dashboard/Home.py`), raggiungibile su `http://localhost:8501`.
 **Rinominata da `app.py` a `Home.py` il 2026-07-15** su richiesta
@@ -28,7 +29,7 @@ dashboard/
 └── components/
     ├── __init__.py                 # bootstrap sys.path (vedi bug sotto)
     ├── constants.py                # palette colori, soglie fasce altitudinali, capoluoghi, riferimenti letteratura, etichette Mann-Kendall (2026-07-15)
-    ├── filters.py                  # sidebar comune (intervallo anni + provincia), persistita via st.session_state (2026-07-15)
+    ├── filters.py                  # filtri anni/provincia, inline per pagina (non più sidebar dal 2026-07-15)
     ├── heatwave_definitions.py     # definizione alternativa (percentile) di ondata di calore, solo per confronto metodologico (2026-07-15)
     ├── styling.py                  # CSS condiviso, iniettato in ogni pagina (2026-07-15)
     ├── queries.py                  # accesso dati (DB + CSV di output), cache_data
@@ -61,16 +62,43 @@ Configurazione da `config.yaml`: titolo (`dashboard.title`) passato a
 (`--server.port 8501`), non c'è un modo diretto per leggerla da
 `config.yaml` all'avvio di `streamlit run`.
 
-## Filtri globali e navigazione (2026-07-15)
+## Filtri: da sidebar globale a inline per pagina (2026-07-15)
 
-- **Sidebar comune** (`components/filters.py::render_sidebar_filters()`):
-  slider intervallo anni (2000-2025) e multiselect provincia, richiamata in
-  cima a ogni pagina (home inclusa). Usa `st.session_state` per persistere
-  la scelta dell'utente quando naviga da una pagina all'altra (Streamlit
-  esegue ogni pagina come script indipendente, i widget non sono condivisi
-  automaticamente — solo il `session_state` lo è). Non aggiunta a
-  "Download Dati": i filtri non avrebbero alcun effetto lì (i file scaricabili
-  sono CSV completi), e mostrare un filtro senza effetto sarebbe fuorviante.
+Prima versione: una sidebar comune (`render_sidebar_filters()`, slider anni +
+multiselect provincia) richiamata in cima a ogni pagina, home inclusa.
+L'utente ha fatto notare che sembrava per lo più inutile ("non so cosa
+possiamo aggiungere a lato") — su molte pagine i filtri non aggiungevano
+valore reale o duplicavano controlli già presenti nel corpo della pagina.
+**Rimossa interamente la sidebar**; `components/filters.py` ora espone due
+funzioni pensate per essere richiamate *inline*, solo dove il filtro serve
+davvero:
+
+- `render_year_range_filter(key)` — slider anni, con `key` univoca per
+  pagina (necessaria perché non c'è più uno stato condiviso globale: ogni
+  pagina ha il proprio, Streamlit lo persiste da solo tramite `key` per
+  tutta la sessione, senza bisogno di gestire `st.session_state` a mano
+  come richiedeva la sidebar condivisa).
+- `render_province_filter(key)` — multiselect provincia, stessa logica.
+
+**Dove sono rimasti, dove sono stati tolti**:
+- **Home**: nessun filtro — mostra sempre tutti i 44 comuni (una pagina di
+  overview non trae beneficio da un filtro).
+- **Analisi Temporale**: solo l'intervallo anni (inline, sotto il
+  selettore comune/checkbox Piemonte) — è l'unico filtro usato davvero
+  nella pagina (regressione, anomalie, stagioni, boxplot). Il filtro
+  provincia è stato tolto: serviva solo a restringere la lista dei 44
+  comuni nel menu a tendina, un beneficio marginale.
+- **Analisi Spaziale**: intervallo anni **e** provincia, entrambi inline
+  in cima alla pagina — qui il filtro provincia ha un senso reale (la
+  pagina è esplicitamente sulla geografia: mappe coropletiche, fasce
+  altitudinali, isola di calore, tutte hanno senso se ristrette a un
+  sottoinsieme di province).
+- **Ondate di Calore**: stessa scelta di Analisi Spaziale — entrambi i
+  filtri, inline, perché frequenza/intensità/mappa di concentrazione
+  cambiano davvero in base al periodo e alle province scelte.
+- **Download Dati**: nessun filtro (invariato) — i file scaricabili sono
+  CSV completi, un filtro qui non avrebbe alcun effetto.
+
 - **Home con card di navigazione**: sostituiti i link testuali con 3
   `st.container(border=True)` affiancati (uno per pagina di analisi), ognuno
   con titolo, una frase di sintesi e `st.page_link()` per la navigazione
@@ -86,18 +114,18 @@ Configurazione da `config.yaml`: titolo (`dashboard.title`) passato a
 ## Contenuto delle pagine (dati reali)
 
 ### Home
-Intro in linguaggio semplice, sidebar filtri, 3 card di navigazione,
-spiegazione di cosa conta come "ondata di calore", metriche generali (righe
-di temperatura, periodo, comuni con dati reali, ondate identificate) con
-didascalie, mappa dei comuni (filtrata per provincia) e tabella trend di
-riscaldamento (filtrata allo stesso modo).
+Intro in linguaggio semplice, 3 card di navigazione, spiegazione di cosa
+conta come "ondata di calore", metriche generali (righe di temperatura,
+periodo, comuni con dati reali, ondate identificate) con didascalie, mappa
+dei 44 comuni e tabella trend di riscaldamento — nessun filtro (vedi sopra).
 
 ### Analisi Temporale (`02_analisi_temporale.py`) — ampliata il 2026-07-15
 Tab **Panoramica**: 4 metriche in alto (pendenza sul periodo selezionato,
 significatività, trend Mann-Kendall di riferimento sull'intero 2000-2025,
 temperatura media dell'ultimo anno); serie annuale max/media/min con **retta
-di regressione sovrapposta**, ricalcolata dal vivo sul periodo scelto in
-sidebar (non il CSV precalcolato, che copre sempre tutto il 2000-2025);
+di regressione sovrapposta**, ricalcolata dal vivo sul periodo scelto con
+lo slider anni della pagina (non il CSV precalcolato, che copre sempre
+tutto il 2000-2025);
 grafico delle **anomalie** rispetto a una baseline **fissa** (primo
 decennio disponibile per il comune, non configurabile — vedi nota sotto);
 confronto
@@ -117,12 +145,12 @@ checkbox è attiva, invece di convivere come voce nella stessa lista —
 prima versione scartata su richiesta dell'utente, vedi log). Quando
 attiva, ogni grafico/metrica della pagina (serie annuale, anomalie,
 stagioni, boxplot, STL, Mann-Kendall) viene calcolato sulla **media
-aritmetica non pesata**
-dei comuni con dati reali attualmente filtrati, invece che su un singolo
-comune — con un `st.info` esplicito che chiarisce non essere una stima
-ufficiale della temperatura regionale (richiederebbe pesare per
+aritmetica non pesata** dei 44 comuni con dati reali, invece che su un
+singolo comune — con un `st.info` esplicito che chiarisce non essere una
+stima ufficiale della temperatura regionale (richiederebbe pesare per
 area/popolazione e includere tutti i 1180 comuni, non solo i 44
-monitorati). Mann-Kendall/regressione sull'intero periodo per l'aggregato
+monitorati; questa pagina non ha più un filtro provincia, vedi sezione
+"Filtri" più sopra — la media è sempre sui 44 comuni). Mann-Kendall/regressione sull'intero periodo per l'aggregato
 sono ricalcolati al volo con le stesse funzioni pure di
 `src/analysis/trend_analysis.py` (`mann_kendall_trend()`/`linear_trend()`),
 non lette da `trend_analysis.csv` (che ha una riga per comune, non per
@@ -137,7 +165,13 @@ coropletica per provincia** (temperatura media nel periodo selezionato),
 confine reale ottenuto aggregando via PostGIS (`ST_Union`) le geometrie di
 tutti i 1180 comuni di ciascuna provincia, non solo i 44 con dati; **mappa
 del trend** (punti per comune, colormap divergente centrata sullo zero,
-`lr_slope_per_decade` da `trend_analysis.csv`); confronto per **fascia
+`lr_slope_per_decade` da `trend_analysis.csv`); **legenda a fasce sotto
+entrambe le mappe** (2026-07-15, `components/maps.py::render_gradient_legend()`)
+— non il gradiente continuo di default di branca, ma 5 fasce discrete con
+swatch del colore realmente usato, range numerico ed etichetta di
+gravità/velocità esplicita (es. "Nella media", "Riscaldamento rapido"),
+richiesta dall'utente per capire subito cosa significa ogni colore senza
+dover interpretare una colorbar continua; confronto per **fascia
 altitudinale** (pianura/collina/montagna, soglie 300/700 m su elevazione
 reale da Open-Meteo, vedi sotto); confronto **isola di calore urbana**
 (Torino città vs media dei comuni rurali della sua stessa provincia).
