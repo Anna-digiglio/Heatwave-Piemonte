@@ -1223,3 +1223,39 @@ Log cronologico append-only. Ogni riga: data, azione, pagine toccate.
   Pagina aggiornata: `dashboard.md` (descrizione Ondate di Calore, nuovo
   paragrafo sul testo esplicativo esteso — chiude il giro di tutte e 3 le
   pagine di analisi con lo stesso trattamento).
+
+- **2026-07-16** — PIANO ARTICOLO SCIENTIFICO: NUOVA PAGINA + RICOGNIZIONE
+  FONTI ESTERNE MANCANTI. L'utente ha deciso di trasformare il progetto in
+  un articolo scientifico (descrittivo + esplicativo sulle cause
+  città/industria/riscaldamento delle differenze di temperatura), target
+  una rivista/conferenza peer-reviewed vera, non solo portfolio. Creata
+  `wiki/pages/paper-scientifico.md` (nuova pagina di pianificazione, non di
+  codice esistente) con le 5 fasi concordate (validazione ARPA, estensione
+  campione comuni, acquisizione uso del suolo/popolazione, modellazione
+  spaziale, percorso di pubblicazione) e la letteratura raccolta via
+  ricerca web (Garzena et al. 2019 su UHI Torino, Perkins & Alexander 2013
+  su definizione ondate di calore, studio SUHI/impervious surface città
+  italiane, ecc.). Aggiornato `index.md`.
+
+  **Ricognizione di fattibilità delle fonti esterne mancanti** (uso del
+  suolo, popolazione, validazione stazioni): nessuna delle tre è un
+  semplice "attiva e scarica".
+  - `ArpaPiemonteDownloader` esiste già nel codice ma **l'URL in
+    `config.yaml` (`arpa_piemonte.url`) risponde 404** (verificato con
+    richiesta HTTP diretta) — stesso tipo di bug placeholder mai eseguito
+    già trovato per l'URL ISTAT dei confini comunali il 2026-07-04. I dati
+    veri stanno dietro un'interfaccia a mappa o una richiesta manuale, non
+    un endpoint diretto.
+  - CORINE Land Cover (Copernicus) ha un'API di download reale ma richiede
+    un account CLMS con credenziali, come già il caso di
+    `CopernicusERA5Downloader`/`CDS_KEY`.
+  - Popolazione ISTAT (`dati.istat.it`, dataset SDMX `DCIS_POPORESBIL1`)
+    non richiede account, ma l'endpoint/query esatti restano da verificare.
+
+  Nessun codice scritto in questa sessione per queste fonti (solo
+  ricognizione); documentato in `paper-scientifico.md` per evitare di
+  ripartire da zero nella prossima sessione. Non toccato
+  `download_extra_municipalities.py`/DB: l'utente sta eseguendo in parallelo
+  l'estensione della copertura temperature da 44 a 300 comuni.
+
+  Pagine aggiornate: `paper-scientifico.md` (nuova), `index.md`.

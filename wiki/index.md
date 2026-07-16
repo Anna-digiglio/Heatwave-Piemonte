@@ -8,6 +8,7 @@ dubbio, la sorgente grezza (codice/SQL/config) prevale sempre sulla wiki.
 
 - [Panoramica del progetto](pages/project-overview.md) — obiettivo, domande di ricerca, stack dichiarato
 - [Stato del progetto](pages/project-status.md) — **pianificato vs implementato**, prossimi passi ad alto impatto
+- [Articolo scientifico](pages/paper-scientifico.md) — piano verso una pubblicazione peer-reviewed: fasi, dati mancanti (uso del suolo/popolazione), letteratura da citare
 
 ## Architettura & infrastruttura
 
