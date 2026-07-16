@@ -270,6 +270,87 @@ def get_province_geometries_wkt() -> pd.DataFrame:
 
 
 @st.cache_data(ttl=600)
+def get_land_cover_with_population() -> pd.DataFrame:
+    """
+    Uso del suolo (`municipality_land_cover`) e popolazione/densità per i
+    comuni con dati di temperatura reali - join con `municipalities` per
+    popolazione/area_km2 (entrambe popolate per tutti i 1180 comuni, non
+    solo quelli con temperatura, vedi wiki/pages/data-sources.md), non solo
+    le percentuali di uso del suolo.
+    """
+    query = """
+        SELECT m.name AS municipality_name, p.name AS province_name,
+               m.population, m.area_km2,
+               l.pct_urban, l.pct_residential, l.pct_industrial_commercial,
+               l.pct_transport, l.pct_urban_green, l.pct_agricultural,
+               l.pct_forest_seminatural, l.pct_wetland, l.pct_water,
+               l.dominant_class
+        FROM municipality_land_cover l
+        JOIN municipalities m ON m.municipality_id = l.municipality_id
+        JOIN provinces p ON m.province_id = p.province_id
+        WHERE l.municipality_id IN (SELECT DISTINCT municipality_id FROM temperature)
+        ORDER BY m.name
+    """
+    rows = db_manager.execute_query(query)
+    columns = ['municipality_name', 'province_name', 'population', 'area_km2',
+               'pct_urban', 'pct_residential', 'pct_industrial_commercial',
+               'pct_transport', 'pct_urban_green', 'pct_agricultural',
+               'pct_forest_seminatural', 'pct_wetland', 'pct_water', 'dominant_class']
+    df = pd.DataFrame(rows, columns=columns)
+    df['population'] = df['population'].astype(float)
+    df['area_km2'] = df['area_km2'].astype(float)
+    df['pop_density'] = df['population'] / df['area_km2']
+    return df
+
+
+@st.cache_data(ttl=600)
+def get_land_cover_all() -> pd.DataFrame:
+    """
+    Uso del suolo e popolazione/densità per **tutti i 1180 comuni**
+    piemontesi (non solo quelli con temperatura, a differenza di
+    `get_land_cover_with_population`) - usato per le mappe di uso del
+    suolo/popolazione, che hanno copertura completa indipendentemente
+    dalla disponibilità di temperatura.
+    """
+    query = """
+        SELECT m.name AS municipality_name, p.name AS province_name,
+               m.population, m.area_km2, l.dominant_class,
+               l.pct_urban, l.pct_industrial_commercial
+        FROM municipality_land_cover l
+        JOIN municipalities m ON m.municipality_id = l.municipality_id
+        JOIN provinces p ON m.province_id = p.province_id
+        ORDER BY m.name
+    """
+    rows = db_manager.execute_query(query)
+    columns = ['municipality_name', 'province_name', 'population', 'area_km2',
+               'dominant_class', 'pct_urban', 'pct_industrial_commercial']
+    df = pd.DataFrame(rows, columns=columns)
+    df['population'] = df['population'].astype(float)
+    df['area_km2'] = df['area_km2'].astype(float)
+    df['pop_density'] = df['population'] / df['area_km2']
+    return df
+
+
+@st.cache_data(ttl=600)
+def get_all_municipality_geometries_wkt() -> pd.DataFrame:
+    """
+    Geometrie (come WKT) di **tutti i 1180 comuni** piemontesi, non solo
+    quelli con dati di temperatura reali (a differenza di
+    `get_municipality_geometries_wkt`) - usato per le mappe di uso del
+    suolo/popolazione, che coprono l'intero territorio.
+    """
+    query = """
+        SELECT m.name AS municipality_name, p.name AS province_name,
+               ST_AsText(m.geometry) AS geometry_wkt
+        FROM municipalities m
+        JOIN provinces p ON m.province_id = p.province_id
+        ORDER BY m.name
+    """
+    rows = db_manager.execute_query(query)
+    return pd.DataFrame(rows, columns=['municipality_name', 'province_name', 'geometry_wkt'])
+
+
+@st.cache_data(ttl=600)
 def get_kpi_annual_by_province() -> pd.DataFrame:
     """Serie annuale di KPI per provincia (vista kpi_annual_by_province)."""
     query = """
