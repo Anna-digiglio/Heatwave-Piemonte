@@ -240,7 +240,10 @@ def build_hotspot_analysis(db: dict) -> None:
     data_layer = load_municipalities_with_data_layer(db, 'Cluster climatici (K-means, k=3)')
     add_csv_join(data_layer, PROJECT_ROOT / 'output' / 'spatial_analysis.csv')
 
-    cluster_colors = {'0': '#3498db', '1': '#e74c3c', '2': '#2ecc71'}
+    # 0 = più fresco, 2 = più caldo (climate_clustering() rinumera le
+    # etichette K-means per temperatura media crescente) - stessa
+    # convenzione blu->rosso della dashboard, non più colori arbitrari.
+    cluster_colors = {'0': '#3498db', '1': '#f39c12', '2': '#e74c3c'}
     categories = []
     for value, color in cluster_colors.items():
         symbol = QgsFillSymbol.createSimple({'color': color, 'outline_color': '#555555', 'outline_width': '0.3'})
