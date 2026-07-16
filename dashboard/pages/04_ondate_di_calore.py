@@ -18,7 +18,7 @@ from plotly.subplots import make_subplots
 from streamlit_folium import st_folium
 
 from components.constants import TEMPERATURE_COLORSCALE
-from components.filters import render_sidebar_filters
+from components.filters import render_province_filter, render_year_range_filter
 from components.heatwave_definitions import identify_heatwaves_percentile
 from components.maps import wkt_to_geojson
 from components.queries import (
@@ -36,7 +36,12 @@ inject_custom_css()
 st.title("🔥 Ondate di Calore")
 st.caption("Quando, dove e quanto sono state intense le ondate di calore rilevate dal 2000 a oggi.")
 
-year_start, year_end, provinces = render_sidebar_filters()
+col_year, col_prov = st.columns(2)
+with col_year:
+    year_start, year_end = render_year_range_filter(key='ondate_year_range')
+with col_prov:
+    provinces = render_province_filter(key='ondate_province')
+st.caption("Entrambi i filtri sopra si applicano a tutti i grafici, la mappa e le tabelle di questa pagina.")
 
 with st.expander("ℹ️ Come si legge questa pagina"):
     st.markdown(
