@@ -32,17 +32,21 @@ def render_year_range_filter(key: str) -> tuple:
 
 def render_province_filter(key: str) -> list:
     """
-    Multiselect provincia. `key` deve essere univoca per pagina. Ritorna la
-    lista di province scelte, o tutte le province con dati se l'utente non
-    ne seleziona nessuna (equivalente a "nessun filtro").
+    Multiselect provincia. `key` deve essere univoca per pagina. Di default
+    è **vuoto** (= tutti i comuni con dati, nessun filtro attivo): l'utente
+    clicca e sceglie dal menu solo se vuole restringere a una o più
+    province, senza dover scrivere/digitare nulla a mano. Un default con
+    tutte le province già selezionate riempirebbe il riquadro di 8 tag fin
+    dal primo sguardo, senza comunicare nulla di utile.
     """
     metadata = get_municipality_metadata()
     all_provinces = sorted(metadata['province_name'].unique())
     provinces = st.multiselect(
-        "Provincia",
+        "Filtra per provincia (opzionale)",
         options=all_provinces,
-        default=all_provinces,
+        default=[],
         key=key,
-        help="Vuoto o tutte selezionate = nessun filtro.",
+        placeholder="Tutte le province con dati",
+        help="Lascia vuoto per includere tutti i 44 comuni con dati; scegli una o più province per restringere.",
     )
     return provinces or all_provinces
