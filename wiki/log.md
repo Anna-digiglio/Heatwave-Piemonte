@@ -1191,3 +1191,35 @@ Log cronologico append-only. Ogni riga: data, azione, pagine toccate.
   rinumerate, composizione con id 0/1/2 espliciti), `gis-maps.md` (nota su
   `hotspot_analysis.qgz` rigenerata), `dashboard.md` (nuovo paragrafo sul
   fix alla fonte).
+
+- **2026-07-16** — TESTO ESPLICATIVO ESTESO NEL TAB "DETTAGLIO TECNICO" DI
+  ONDATE DI CALORE (stesso pattern di Analisi Temporale e Analisi
+  Spaziale). Richiesta esplicita dell'utente di applicare lo stesso
+  trattamento fatto per le altre due pagine anche qui.
+
+  **Confronto con la definizione a soglia percentile**: aggiunta una
+  premessa sul *perché* esiste un'alternativa alla soglia fissa (35°C
+  tratta tutti i comuni allo stesso modo, penalizzando i comuni di
+  montagna che quasi non la raggiungono mai anche in estati eccezionali
+  per i loro standard locali), poi una spiegazione concreta di cosa sia un
+  percentile e come si calcola (ordinare tutte le temperature massime
+  storiche di un comune dal 2000 a oggi; il 90° percentile è il valore
+  sotto il quale sta il 90% dei giorni — un numero diverso per ogni
+  comune, non fisso come 35°C).
+
+  **Metodologia** riscritta in domande e risposte, stesso trattamento
+  delle altre due pagine: perché il resto del sito usa comunque la soglia
+  fissa (un solo criterio semplice e uguale per tutti, i numeri percentile
+  qui sono solo un confronto illustrativo e non sostituiscono mai quelli
+  ufficiali mostrati altrove), perché la durata minima resta 3 giorni
+  anche con la soglia percentile (per confrontare le due definizioni a
+  parità di condizioni), cosa aggrega esattamente la heatmap "calendario"
+  (per ogni combinazione anno/giorno-dell'anno, quanti comuni avevano
+  un'ondata attiva quel giorno preciso).
+
+  Verificato con `py_compile` + `AppTest` (nessuna eccezione); server live
+  riavviato.
+
+  Pagina aggiornata: `dashboard.md` (descrizione Ondate di Calore, nuovo
+  paragrafo sul testo esplicativo esteso — chiude il giro di tutte e 3 le
+  pagine di analisi con lo stesso trattamento).

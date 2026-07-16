@@ -301,6 +301,22 @@ calore a soglia percentile (relativa al singolo comune, non fissa per
 tutti — vedi sotto), nota di metodologia. Sotto le tab, invariate: tabella
 statistiche per comune ed elenco ondate.
 
+**Testo esplicativo esteso nel tab Dettaglio tecnico (2026-07-16)**: stesso
+trattamento già applicato ad Analisi Temporale e Analisi Spaziale ("stessa
+cosa... con lo stesso pattern delle altre due pagine"). Spiegato in
+linguaggio discorsivo perché esiste una definizione alternativa a soglia
+percentile (la soglia fissa 35°C tratta tutti i comuni allo stesso modo,
+penalizzando i comuni di montagna che raramente la raggiungono anche in
+estati eccezionali per i loro standard), cos'è un percentile e come si
+calcola in pratica (ordinare tutte le temperature massime storiche di un
+comune, il 90° percentile è il valore sotto cui sta il 90% dei giorni —
+diverso per ogni comune, a differenza dei 35°C fissi). **Metodologia**
+riscritta in domande e risposte (perché il resto del sito usa comunque la
+soglia fissa e non sostituisce mai i numeri ufficiali con quelli
+percentile, perché la durata minima resta 3 giorni in entrambe le
+definizioni per un confronto equo, cosa aggrega esattamente la heatmap
+calendario) — stesso trattamento delle altre due pagine.
+
 ### Download Dati
 Invariata: ogni file ha una descrizione in linguaggio semplice di cosa
 contiene, oltre al bottone di export per i CSV di `data/processed/`,
