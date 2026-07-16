@@ -14,7 +14,7 @@ def wkt_to_geojson(wkt_str: str) -> dict:
 
 def render_gradient_legend(
     colormap, vmin: float, vmax: float, labels: list, unit: str, title: str,
-    n_bins: int = 5, signed: bool = False,
+    n_bins: int = 5, signed: bool = False, integer: bool = False,
 ) -> None:
     """
     Legenda testuale per una colormap continua (branca `LinearColormap`):
@@ -26,9 +26,17 @@ def render_gradient_legend(
     continuo con soli min/max etichettati): qui ogni fascia ha un'etichetta
     testuale esplicita, più facile da leggere per chi non è abituato a leggere
     una colorbar continua.
+
+    `integer=True` per grandezze intrinsecamente intere (es. un conteggio di
+    eventi), per non mostrare range come "3.4 – 6.8 ondate".
     """
     step = (vmax - vmin) / n_bins if vmax > vmin else 0
-    fmt = "{:+.2f}".format if signed else "{:.1f}".format
+    if integer:
+        fmt = "{:.0f}".format
+    elif signed:
+        fmt = "{:+.2f}".format
+    else:
+        fmt = "{:.1f}".format
 
     rows = []
     for i in range(n_bins):
