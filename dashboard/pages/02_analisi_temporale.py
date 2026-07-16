@@ -292,7 +292,7 @@ with tab_overview:
 with tab_detail:
     st.subheader("Test statistici sull'intero periodo disponibile")
     if not has_trend_info:
-        st.info("Nessun risultato di trend disponibile — esegui `python -m src.analysis.trend_analysis`.")
+        st.info("Nessun risultato di trend disponibile per questo comune.")
     else:
         row = trend_info
         d1, d2, d3, d4 = st.columns(4)
@@ -300,25 +300,75 @@ with tab_detail:
         d2.metric("MK p-value", f"{row['mk_p_value']:.4f}")
         d3.metric("Sen's slope", f"{row['mk_sen_slope']:.4f} °C/anno")
         d4.metric("Regressione (°C/decade)", f"{row['lr_slope_per_decade']:+.2f}")
-        st.caption(
-            "Il **Sen's slope** è una stima robusta della pendenza (mediana delle "
-            "pendenze tra tutte le coppie di punti), meno sensibile agli outlier "
-            "della regressione lineare classica — qui usata solo come test di "
-            "riferimento, non ricalcolata sul filtro anni."
-            + (" Per l'aggregato \"Piemonte\" ricalcolato al volo sulla media dei "
-               "comuni filtrati, non letto da un CSV precalcolato." if is_aggregate else "")
+
+        st.markdown(
+            "**Cosa sono questi 4 numeri, in parole semplici:**\n\n"
+            "- **Mann-Kendall** risponde a una sola domanda: *guardando tutti gli "
+            "anni dal 2000 in poi, la temperatura sta seguendo una direzione "
+            "chiara (sale o scende), oppure sale e scende a caso senza una vera "
+            "tendenza?* Il test non guarda solo il primo e l'ultimo anno: "
+            "confronta **ogni coppia possibile di anni** e conta quante volte "
+            "l'anno più recente è stato più caldo di quello più vecchio rispetto "
+            "a quante volte è successo il contrario. Se una delle due direzioni "
+            "vince nettamente, c'è un trend reale; se il punteggio è quasi alla "
+            "pari, probabilmente è solo variabilità naturale. Il vantaggio di "
+            "questo metodo è che non si lascia ingannare da un singolo anno "
+            "anomalo (un'estate eccezionalmente calda o fredda), perché guarda "
+            "l'insieme di tutti i confronti, non solo alcuni punti.\n\n"
+            "- **MK p-value** è la probabilità di aver visto per puro caso il "
+            "risultato del test qui sopra, anche se in realtà **non ci fosse "
+            "nessun trend reale**. È un numero tra 0 e 1: più è basso, più "
+            "possiamo fidarci che il trend osservato sia vero e non un "
+            "accidente statistico. La soglia comunemente usata è **0.05**: sotto "
+            "quella soglia si considera il trend \"statisticamente "
+            "significativo\", cioè abbastanza solido da non essere spiegato dal "
+            "solo caso.\n\n"
+            "- **Sen's slope** risponde a una domanda diversa: *non SE c'è un "
+            "trend, ma DI QUANTO sale o scende ogni anno, in °C*. Per calcolarlo "
+            "si prendono tutte le possibili coppie di anni, si calcola per "
+            "ciascuna coppia \"quanto è cambiata la temperatura diviso quanti "
+            "anni sono passati\", e poi si prende il valore **di mezzo** "
+            "(la mediana) di tutti questi risultati. Usare il valore di mezzo "
+            "invece della media rende questa stima molto più difficile da far "
+            "\"sballare\" da un singolo anno estremo, che è esattamente il "
+            "motivo per cui si affianca al test di Mann-Kendall invece di usare "
+            "solo la regressione classica.\n\n"
+            "- **Regressione (°C/decade)** è il modo più tradizionale e più "
+            "diffuso di rispondere alla stessa domanda del punto sopra: si "
+            "traccia la retta che meglio approssima tutti i punti della serie "
+            "(la classica \"linea di tendenza\") e se ne legge l'inclinazione, "
+            "convertita in gradi ogni 10 anni per essere più intuitiva. A "
+            "differenza del Sen's slope, questo metodo tiene conto di ogni "
+            "singolo valore nel calcolo, quindi un anno particolarmente estremo "
+            "puó spostare un po' di più il risultato — resta comunque il numero "
+            "più citato quando si parla di \"quanti gradi in più a decennio\", "
+            "perché è lo stesso standard usato nella maggior parte dei report "
+            "climatici.\n\n"
+            "In sintesi: **Mann-Kendall + p-value** dicono se fidarsi del trend, "
+            "**Sen's slope e regressione** dicono quanto è ripido — sono due "
+            "stime della stessa pendenza calcolate in due modi diversi, ed è "
+            "normale (e rassicurante) che siano simili tra loro."
+            + (" Per l'aggregato \"Piemonte\" tutti e 4 questi numeri sono "
+               "ricalcolati sulla media dei comuni filtrati con lo stesso "
+               "metodo, non letti da un file già pronto." if is_aggregate else "")
         )
 
     st.subheader(f"Scomposizione STL (trend / stagionalità / residuo) — {subject_label}")
-    st.caption(
-        "La **STL decomposition** scompone la serie giornaliera in tre pezzi: "
-        "l'andamento di lungo periodo (**trend**), il ciclo estate/inverno che "
-        "si ripete ogni anno (**stagionalità**), e ciò che resta — rumore "
-        "giornaliero non spiegato dagli altri due (**residuo**)."
+    st.markdown(
+        "Una serie giornaliera di temperatura è \"rumorosa\": ogni giorno può "
+        "essere più caldo o più freddo della media per mille motivi (un "
+        "temporale, una perturbazione, un'ondata di aria fredda), e sopra a "
+        "tutto questo si sovrappone il normale ciclo delle stagioni (fa più "
+        "caldo d'estate, più freddo d'inverno, sempre, ogni anno). Se si guarda "
+        "la temperatura grezza giorno per giorno è quasi impossibile capire se "
+        "il clima si sta davvero scaldando, perché il segnale di riscaldamento "
+        "(lento, su 26 anni) è nascosto sotto oscillazioni molto più grandi e "
+        "veloci (stagionali e giornaliere). La scomposizione qui sotto separa "
+        "questi tre livelli, uno per grafico:"
     )
     stl = get_seasonal_decomposition_aggregate(tuple(names)) if is_aggregate else get_seasonal_decomposition(municipality)
     if stl.empty:
-        st.info("Nessuna decomposizione disponibile — esegui `python -m src.analysis.seasonal_analysis`.")
+        st.info("Nessuna decomposizione disponibile per questo comune.")
     else:
         stl_fig = make_subplots(rows=3, cols=1, shared_xaxes=True, subplot_titles=('Trend', 'Stagionalità', 'Residuo'))
         stl_fig.add_trace(go.Scatter(x=stl['date'], y=stl['trend'], line=dict(color='#2c3e50')), row=1, col=1)
@@ -327,17 +377,58 @@ with tab_detail:
         stl_fig.update_layout(height=550, showlegend=False, margin=dict(t=30, b=10))
         st.plotly_chart(stl_fig, width='stretch')
 
+        st.markdown(
+            "- **Trend** (grafico in alto): è il segnale di lungo periodo, "
+            "\"ripulito\" sia dalle stagioni sia dal rumore giornaliero — mostra "
+            "solo la tendenza di fondo. Se questa linea sale andando da "
+            "sinistra a destra, è la prova più diretta che questo comune si sta "
+            "davvero scaldando nel tempo, indipendentemente da quale stagione è "
+            "o da quanto è stato strano un singolo giorno.\n"
+            "- **Stagionalità** (grafico centrale): è il ciclo che si ripete "
+            "**identico** ogni anno — sale in estate, scende in inverno, sempre "
+            "con la stessa forma. Rappresenta il normale susseguirsi delle "
+            "stagioni, non un cambiamento nel tempo: infatti l'onda qui non "
+            "diventa né più alta né più bassa andando avanti negli anni (a "
+            "differenza del trend).\n"
+            "- **Residuo** (grafico in basso): è tutto ciò che **non** è "
+            "spiegato né dal trend né dalla stagionalità — i punti sparsi "
+            "rappresentano giornate anomale rispetto a quello che ci si "
+            "aspetterebbe in quel periodo dell'anno (un'ondata di calore fuori "
+            "stagione, un crollo termico improvviso, possibili imprecisioni "
+            "nella misura). Punti molto lontani dallo zero segnalano i giorni "
+            "più \"fuori dal normale\" registrati."
+        )
+
     st.subheader("Metodologia")
     st.markdown(
-        "- **Stagioni**: definizione meteorologica standard (non astronomica) — "
-        "Inverno = Dic/Gen/Feb, Primavera = Mar/Apr/Mag, Estate = Giu/Lug/Ago, "
-        "Autunno = Set/Ott/Nov.\n"
-        "- **Baseline anomalie**: fissa al primo decennio disponibile per il "
-        "comune selezionato (non configurabile, per rendere i confronti "
-        "coerenti tra un comune e l'altro).\n"
-        "- **Regressione sul periodo selezionato**: ricalcolata ogni volta sugli "
-        "anni scelti in sidebar, quindi diversa dal Mann-Kendall/Sen's slope qui "
-        "sopra, che restano fissi sull'intero 2000-2025 come test di riferimento.\n"
-        "- **Riferimenti nazionale/globale**: valori di letteratura (vedi tab "
-        "Panoramica), non ricalcolati da questo progetto."
+        "Alcune scelte fatte in questa pagina, spiegate:\n\n"
+        "- **Perché due pendenze diverse (quella in alto e Sen's slope/"
+        "regressione qui sotto)?** La pendenza mostrata nella tab Panoramica "
+        "viene ricalcolata ogni volta che cambi l'intervallo di anni nella "
+        "pagina, per farti vedere \"quanto si è scaldato solo nel periodo che "
+        "hai scelto\". I 4 numeri di questa tab (Mann-Kendall, p-value, Sen's "
+        "slope, regressione) restano invece **fissi sull'intero periodo "
+        "disponibile** (tipicamente 2000-2025): servono come riferimento "
+        "stabile, sempre uguale, per non confondere \"il trend di lungo periodo "
+        "di questo comune\" con \"cosa è successo negli ultimi anni che hai "
+        "scelto di guardare\".\n"
+        "- **Perché le stagioni non coincidono con il calendario "
+        "astronomico?** Uso la definizione **meteorologica**, standard in "
+        "climatologia: Inverno = dicembre/gennaio/febbraio, Primavera = "
+        "marzo/aprile/maggio, Estate = giugno/luglio/agosto, Autunno = "
+        "settembre/ottobre/novembre. È più comoda di quella astronomica (che "
+        "cambia data ogni anno e taglia i mesi a metà) perché raggruppa mesi "
+        "interi, rendendo i confronti anno su anno coerenti.\n"
+        "- **Perché la baseline delle anomalie è fissa e non modificabile?** "
+        "È sempre la media del primo decennio di dati disponibile per il "
+        "comune scelto (di solito 2000-2009): usare lo stesso tipo di "
+        "riferimento per ogni comune rende i confronti tra zone diverse "
+        "coerenti, invece di lasciare che ognuno scelga un periodo diverso e "
+        "renda i risultati non paragonabili tra loro.\n"
+        "- **Cosa sono i \"riferimenti nazionale/globale\" nella tab "
+        "Panoramica?** Sono valori tipici citati nella letteratura "
+        "scientifica (non calcolati da questo progetto, non aggiornati in "
+        "tempo reale) messi lì solo per dare un termine di paragone: il "
+        "trend di questo comune è più ripido, uguale o più lento di quello "
+        "medio italiano o mondiale?"
     )
