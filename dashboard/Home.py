@@ -16,10 +16,11 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 import folium
 import streamlit as st
+from branca.colormap import LinearColormap
 from streamlit_folium import st_folium
 
 from components.constants import format_mk_trend
-from components.maps import wkt_to_geojson
+from components.maps import render_gradient_legend, wkt_to_geojson
 from components.queries import (
     get_municipality_geometries_wkt,
     get_overview_stats,
@@ -111,27 +112,52 @@ col4.caption("Sequenze di 3+ giorni sopra i 35°C")
 
 st.divider()
 
+geo_df = get_municipality_geometries_wkt()
+trend_df = get_trend_analysis()
+
 col_map, col_trend = st.columns([3, 2])
 
 with col_map:
-    st.subheader("Comuni con dati di temperatura reali")
-    st.caption("I 44 comuni (in rosso) da cui vengono i numeri di questo sito. Passa il mouse per il nome.")
-    geo_df = get_municipality_geometries_wkt()
-
+    st.subheader("Velocità di riscaldamento per comune")
+    st.caption(
+        "Colore = pendenza del trend 2000-2025 (°C/decade): rosso = si scalda "
+        "più in fretta, blu = più lentamente (o si raffredda). Passa il mouse "
+        "per il valore esatto — dettaglio nella tabella qui a fianco."
+    )
     m = folium.Map(location=[45.0, 8.0], zoom_start=8, tiles='CartoDB positron')
-    for _, row in geo_df.iterrows():
-        folium.GeoJson(
-            wkt_to_geojson(row['geometry_wkt']),
-            name=row['municipality_name'],
-            tooltip=f"{row['municipality_name']} ({row['province_name']})",
-            style_function=lambda _: {'fillColor': '#e74c3c', 'color': '#c0392b', 'fillOpacity': 0.5},
-        ).add_to(m)
-    st_folium(m, width=None, height=420, returned_objects=[])
+
+    if trend_df.empty:
+        for _, row in geo_df.iterrows():
+            folium.GeoJson(
+                wkt_to_geojson(row['geometry_wkt']),
+                tooltip=f"{row['municipality_name']} ({row['province_name']})",
+                style_function=lambda _: {'fillColor': '#e74c3c', 'color': '#c0392b', 'fillOpacity': 0.5},
+            ).add_to(m)
+        st_folium(m, width=None, height=420, returned_objects=[])
+        st.info("Esegui `python -m src.analysis.trend_analysis` per colorare la mappa per trend.")
+    else:
+        merged = geo_df.merge(trend_df[['municipality_name', 'lr_slope_per_decade']], on='municipality_name')
+        max_abs_slope = merged['lr_slope_per_decade'].abs().max() or 1
+        cmap_trend = LinearColormap(['#3498db', '#f7f7f7', '#e74c3c'], vmin=-max_abs_slope, vmax=max_abs_slope)
+
+        for _, row in merged.iterrows():
+            color = cmap_trend(row['lr_slope_per_decade'])
+            folium.GeoJson(
+                wkt_to_geojson(row['geometry_wkt']),
+                tooltip=f"{row['municipality_name']}: {row['lr_slope_per_decade']:+.2f} °C/decade",
+                style_function=lambda _, c=color: {'fillColor': c, 'color': '#555', 'weight': 1, 'fillOpacity': 0.75},
+            ).add_to(m)
+        st_folium(m, width=None, height=420, returned_objects=[])
+        render_gradient_legend(
+            cmap_trend, -max_abs_slope, max_abs_slope,
+            labels=["Raffreddamento", "Riscaldamento lento", "Riscaldamento moderato",
+                    "Riscaldamento sostenuto", "Riscaldamento rapido"],
+            unit="°C/decade", title="Legenda — velocità di riscaldamento", signed=True,
+        )
 
 with col_trend:
     st.subheader("Trend di riscaldamento (2000-2025)")
     st.caption("La temperatura media di ogni comune sta salendo, scendendo, o restando stabile?")
-    trend_df = get_trend_analysis()
     if trend_df.empty:
         st.info("Esegui `python -m src.analysis.trend_analysis` per generare questi risultati.")
     else:
