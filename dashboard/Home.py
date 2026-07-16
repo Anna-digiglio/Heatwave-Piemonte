@@ -68,23 +68,13 @@ with card3:
     with st.container(border=True):
         st.markdown("### 🔥 Ondate di Calore")
         st.caption(
-            "Quando, dove e quanto intense sono state le ondate di calore "
-            "dal 2000 a oggi, e se il fenomeno sta accelerando."
+            "Quando, dove e quanto intense sono state le ondate di calore dal "
+            "2000 a oggi: frequenza, durata, concentrazione geografica e se "
+            "il fenomeno sta accelerando negli anni recenti."
         )
         st.page_link("pages/04_ondate_di_calore.py", label="Vai alla pagina →")
 
 st.divider()
-
-with st.expander("ℹ️ Cos'è un'ondata di calore?"):
-    st.markdown(
-        "Definiamo **ondata di calore** una sequenza di **almeno 3 giorni "
-        "consecutivi** in cui la temperatura massima supera i **35°C**. "
-        "È una definizione semplificata (i climatologi spesso usano soglie "
-        "che variano località per località, non un numero fisso), scelta "
-        "qui per essere facile da capire e da verificare. Il calcolo è "
-        "fatto da una funzione che "
-        "scandisce anno per anno le temperature di ogni comune."
-    )
 
 st.warning(
     "**Limite importante dei dati**: le temperature reali coprono **44 dei "
