@@ -173,6 +173,27 @@ non scaricati in tempo reale, solo per dare un contesto di scala. Tab
 **Dettaglio tecnico**: test Mann-Kendall/Sen's slope sull'intero periodo,
 scomposizione STL, nota di metodologia.
 
+**Testo esplicativo esteso nel tab Dettaglio tecnico (2026-07-16)**: su
+richiesta esplicita dell'utente ("non capisco cosa c'è scritto, è poco
+chiara"), riscritte in linguaggio discorsivo, senza riferimenti al codice,
+le spiegazioni di: Mann-Kendall (confronta ogni coppia di anni, conta
+quante volte il più recente è più caldo del più vecchio), MK p-value
+(probabilità che il risultato sia solo caso), Sen's slope (mediana delle
+pendenze tra tutte le coppie di punti, robusta agli anni anomali),
+Regressione °C/decade (la retta di tendenza classica, più sensibile agli
+estremi ma standard nei report climatici) — con una sintesi finale su
+come i 4 numeri si completano a vicenda. Stessa estensione per la STL:
+spiegato prima *perché* si scompone una serie giornaliera rumorosa (il
+segnale di riscaldamento, lento, è nascosto sotto oscillazioni stagionali
+e giornaliere molto più grandi), poi cosa mostra ciascuno dei 3 grafici
+(trend = tendenza di fondo ripulita; stagionalità = ciclo che si ripete
+identico ogni anno, non un cambiamento nel tempo; residuo = giornate
+anomale non spiegate dagli altri due). Riscritta anche la sezione
+"Metodologia" in forma di domande e risposte (perché due pendenze diverse,
+perché le stagioni meteorologiche e non astronomiche, perché la baseline è
+fissa, cosa sono i riferimenti nazionale/globale) invece dell'elenco
+puntato originale, giudicato poco chiaro dall'utente.
+
 **Opzione aggregata "Piemonte"** (2026-07-15): una checkbox `🌍 Intero
 Piemonte` accanto al selettore "Comune" (che si disabilita quando la
 checkbox è attiva, invece di convivere come voce nella stessa lista —

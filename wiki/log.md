@@ -1047,3 +1047,44 @@ Log cronologico append-only. Ogni riga: data, azione, pagine toccate.
   (le 3 card restano sempre della stessa altezza, indipendentemente dalla
   lunghezza del testo). Verificato con `AppTest` a ogni passaggio (nessuna
   eccezione); server live riavviato.
+
+- **2026-07-16** — TESTO ESPLICATIVO ESTESO NEL TAB "DETTAGLIO TECNICO" DI
+  ANALISI TEMPORALE. Richiesta esplicita dell'utente: le 4 metriche
+  (Mann-Kendall, MK p-value, Sen's slope, Regressione °C/decade) e la
+  scomposizione STL avevano solo didascalie molto brevi — "non capisco
+  cosa c'è scritto, è poco chiara". Chiesto di spiegarle in linguaggio
+  umano e discorsivo, senza riferimenti alle funzioni del codice.
+
+  Scritto un blocco esplicativo per ciascuna delle 4 metriche statistiche:
+  Mann-Kendall descritto come confronto di ogni possibile coppia di anni
+  (quante volte il più recente è più caldo del più vecchio vs il
+  contrario), MK p-value come "probabilità che il risultato sia solo
+  caso, se non ci fosse alcun trend reale", Sen's slope come mediana delle
+  pendenze tra tutte le coppie di punti (perché la mediana invece della
+  media: resistenza a un singolo anno anomalo), Regressione °C/decade come
+  la classica retta di tendenza (più sensibile agli estremi ma standard
+  nei report climatici) — chiusura con una frase che lega i 4 numeri tra
+  loro (Mann-Kendall+p-value dicono se fidarsi, Sen's slope+regressione
+  dicono quanto è ripido).
+
+  Per la STL: aggiunta una premessa sul *perché* si scompone una serie
+  giornaliera (il segnale di riscaldamento è lento e nascosto sotto
+  oscillazioni stagionali/giornaliere molto più grandi), poi una
+  spiegazione per ciascuno dei 3 grafici (trend, stagionalità, residuo) su
+  cosa mostra e cosa guardare, non solo una definizione di una riga come
+  prima.
+
+  Riscritta anche la sezione "Metodologia" da elenco puntato terso a
+  domande e risposte esplicite (perché due pendenze diverse tra tab
+  Panoramica e Dettaglio tecnico, perché le stagioni sono meteorologiche e
+  non astronomiche, perché la baseline delle anomalie è fissa, cosa sono i
+  riferimenti nazionale/globale) — stessa informazione della versione
+  precedente, ma nella forma di domanda che l'utente si farebbe
+  realmente guardando la pagina, invece di un bullet secco.
+
+  Verificato con `py_compile` + `AppTest`, sia sul comune di default
+  (Torino) sia con l'aggregato "Piemonte" attivo (nessuna eccezione in
+  entrambi i casi); server live riavviato.
+
+  Pagina aggiornata: `dashboard.md` (descrizione Analisi Temporale, nuovo
+  paragrafo sul testo esplicativo esteso).
