@@ -1088,3 +1088,106 @@ Log cronologico append-only. Ogni riga: data, azione, pagine toccate.
 
   Pagina aggiornata: `dashboard.md` (descrizione Analisi Temporale, nuovo
   paragrafo sul testo esplicativo esteso).
+
+- **2026-07-16** — TESTO ESPLICATIVO ESTESO NEL TAB "DETTAGLIO TECNICO" DI
+  ANALISI SPAZIALE. Stessa richiesta esplicita già fatta per Analisi
+  Temporale, applicata qui a K-means e indice di Moran: "non capisco cosa
+  c'è scritto, è poco chiara", con la richiesta aggiuntiva di spiegare
+  bene i cluster climatici, suddividere i 3 gruppi trovati e spiegare
+  perché sono stati divisi così.
+
+  **K-means**: spiegato passo per passo l'algoritmo (si fissa in anticipo
+  il numero di gruppi desiderato — qui k=3, scelta pratica per avere zone
+  descrivibili a parole, **non** derivata da un metodo tipo elbow/silhouette
+  — poi si assegna ogni comune al centro più vicino guardando temperatura
+  media e giorni sopra 30°C/35°C **standardizzati**, si ricalcolano i
+  centri sulla media dei comuni assegnati, si ripete finché i gruppi non
+  cambiano più) e perché servono i valori standardizzati (senza,
+  "giorni sopra 30°C" con range 0-60+ peserebbe molto più della
+  temperatura media che varia di pochi gradi). Chiarito esplicitamente che
+  l'algoritmo **non guarda la posizione geografica dei comuni** — se i
+  gruppi risultano compatti sulla mappa (zone alpine, di pianura, ecc.) è
+  un risultato dell'analisi, non un'ipotesi di partenza incorporata
+  nell'algoritmo.
+
+  **Suddivisione dinamica dei 3 cluster** (non hardcoded): la richiesta
+  era di "suddividere i tre cluster e spiegare perché sono stati divisi in
+  questo modo" — invece di scrivere testo fisso tipo "Cluster 0 = zona
+  alpina" (fragile: se si ri-esegue `spatial_analysis.py`, K-means può
+  assegnare id diversi agli stessi gruppi, o persino trovare un'altra
+  soluzione), il codice ora **ordina i 3 gruppi trovati dal più fresco al
+  più caldo** in base alla temperatura media effettiva e genera la
+  descrizione (temperatura media, giorni sopra 30°C, elenco comuni,
+  etichetta "il più fresco"/"un profilo intermedio"/"il più caldo") al
+  volo dai dati correnti — resta corretta anche se l'analisi viene
+  ri-eseguita e l'assegnazione numerica dei cluster cambia.
+
+  **Indice di Moran**: aggiunta la distinzione esplicita dai cluster
+  K-means (Moran guarda la geografia — comuni vicini con temperature
+  simili — K-means no, raggruppa solo per somiglianza climatica), spiegato
+  il calcolo (peso inversamente proporzionale alla distanza tra i centri
+  comunali, combinato con quanto ciascun comune si discosta dalla
+  temperatura media generale) e perché il p-value viene da una
+  permutazione (si mescolano le temperature a caso tra i comuni migliaia
+  di volte, tenendo ferma la geografia, e si confronta il valore osservato
+  con quelli ottenuti a caso) invece che da una formula diretta.
+
+  **Metodologia** riscritta in domande e risposte (perché proprio 3 fasce
+  altitudinali con quelle soglie, perché il confronto isola di calore è
+  solo illustrativo, perché la mappa del trend non si aggiorna col filtro
+  anni), stesso trattamento già applicato ad Analisi Temporale.
+
+  Verificato con `py_compile` + `AppTest` (nessuna eccezione); server live
+  riavviato.
+
+  Pagina aggiornata: `dashboard.md` (descrizione Analisi Spaziale, nuovo
+  paragrafo sul testo esplicativo esteso e sulla suddivisione dinamica dei
+  cluster).
+
+- **2026-07-16** — ETICHETTE CLUSTER RINUMERATE ALLA FONTE (0=FRESCO,
+  1=INTERMEDIO, 2=CALDO). L'utente ha notato che l'assegnazione dei 3
+  cluster non seguiva "una logica di ordinamento" e ha chiesto di
+  imporre esplicitamente: cluster 0 il più fresco, 1 intermedio, 2 il più
+  caldo. Causa: sklearn's `KMeans.fit_predict()` assegna le etichette
+  grezze (0, 1, 2) in un ordine **arbitrario**, deciso dall'inizializzazione
+  interna dell'algoritmo, senza alcun legame con quanto è caldo o freddo
+  il gruppo — la sessione precedente aveva già ordinato dinamicamente la
+  *descrizione testuale* per temperatura nella dashboard, ma il dato
+  grezzo sottostante (`climate_cluster` in `spatial_analysis.csv`, i
+  colori sulla mappa, il numero mostrato nei tooltip) restava nell'ordine
+  arbitrario originale.
+
+  Fix alla fonte, non solo nel testo: `climate_clustering()` in
+  `src/analysis/spatial_analysis.py` ora calcola la temperatura media di
+  ciascuna etichetta grezza, le ordina in modo crescente, e costruisce una
+  mappa {etichetta grezza → rank} per rinumerare i risultati prima di
+  restituirli — cluster 0 diventa sempre il più fresco, l'ultimo sempre il
+  più caldo, indipendentemente da come sklearn li aveva numerati
+  internamente.
+
+  **Rieseguito** `python -m src.analysis.spatial_analysis`: risultato
+  verificato — cluster 0 = Acceglio/Aisone/Alagna Valsesia/Bardonecchia/
+  Ceresole Reale/Formazza/Macugnaga/Rorà (3.8°C, alpino), cluster 1 = 17
+  comuni pedemontani/collinari (11.1°C), cluster 2 = 19 comuni di pianura
+  (12.9°C) — stessa identica composizione di gruppi di prima (l'algoritmo
+  non è cambiato, solo la numerazione), confermato anche dal test unitario
+  `test_separates_two_clearly_distinct_groups` (ancora verde).
+
+  **Colori aggiornati di conseguenza**: `CLUSTER_COLORS` in
+  `dashboard/components/constants.py` passa da {0: blu, 1: rosso, 2: verde}
+  (arbitrario) a {0: blu, 1: arancio, 2: rosso} (stessa logica blu→rosso
+  della colormap di temperatura usata nel resto del sito, ora coerente
+  anche qui: cluster freddo = blu, cluster caldo = rosso). Stesso
+  aggiornamento fatto nella mappa QGIS `hotspot_analysis.qgz`
+  (`qgis_projects/build_maps.py`), **rigenerata** con
+  `python-qgis-ltr.bat build_maps.py` per riflettere sia il nuovo
+  `spatial_analysis.csv` sia i nuovi colori.
+
+  Verificato con `pytest` (cluster test ancora verde), `py_compile` +
+  `AppTest` sulla pagina Analisi Spaziale (nessuna eccezione); server live
+  riavviato.
+
+  Pagine aggiornate: `statistical-analysis.md` (etichette cluster
+  rinumerate, composizione con id 0/1/2 espliciti), `gis-maps.md` (nota su
+  `hotspot_analysis.qgz` rigenerata), `dashboard.md` (nuovo paragrafo sul
+  fix alla fonte).

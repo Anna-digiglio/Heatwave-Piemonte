@@ -235,6 +235,51 @@ Moran (contenuto già esistente, spostato qui), nota di metodologia sui
 limiti delle sezioni sopra (fasce altitudinali semplificate, confronto UHI
 illustrativo, mappa trend non ricalcolata sul filtro anni).
 
+**Testo esplicativo esteso nel tab Dettaglio tecnico (2026-07-16)**: stessa
+richiesta e stesso trattamento già fatto per Analisi Temporale ("non capisco
+cosa c'è scritto, è poco chiara"). K-means spiegato passo per passo (si
+fissa in anticipo il numero di gruppi, k=3 — scelta pratica per avere zone
+descrivibili a parole, non calcolata con un metodo statistico tipo elbow —
+poi l'algoritmo assegna ogni comune al centro più vicino sulla base di
+temperatura/giorni caldi *standardizzati*, sposta i centri, ripete),
+chiarito esplicitamente che il raggruppamento non guarda la posizione
+geografica dei comuni (se i cluster risultano compatti sulla mappa è un
+risultato, non un'ipotesi di partenza). **Suddivisione dinamica dei 3
+cluster**: invece di descriverli con etichette fisse ("alpino"/"pianura"/
+"intermedio", fragili se l'analisi viene ri-eseguita e la numerazione dei
+cluster cambia), il codice ora ordina i 3 gruppi trovati dal più fresco al
+più caldo in base alla temperatura media reale e genera la descrizione al
+volo (temperatura media, giorni sopra 30°C, elenco comuni) — sempre corretta
+anche se `spatial_analysis.py` venisse ri-eseguito con un'assegnazione di
+cluster diversa.
+
+**Aggiornamento 2026-07-16**: l'utente ha notato che l'assegnazione delle
+etichette 0/1/2 non seguiva "una logica di ordinamento" — sklearn assegna
+le etichette grezze di K-means in un ordine arbitrario, senza legame con
+la temperatura. Corretto **alla fonte**, non solo nel testo della
+dashboard: `climate_clustering()` in `src/analysis/spatial_analysis.py`
+ora rinumera le etichette per temperatura media crescente prima di
+salvarle (0 = più fresco, 2 = più caldo — vedi
+[Analisi Statistica](statistical-analysis.md)). La logica di
+ordinamento-per-temperatura già scritta lato dashboard (paragrafo sopra)
+resta com'era — ora è ridondante rispetto al dato già ordinato alla fonte,
+ma non dannosa, ed è comunque una difesa in più se in futuro l'analisi
+cambiasse. Aggiornati anche i colori: `CLUSTER_COLORS` in
+`components/constants.py` passa da 3 colori categorici senza relazione
+con la temperatura a blu→arancio→rosso (stessa logica della colormap di
+temperatura usata altrove nel sito), e lo stesso schema colori è stato
+applicato anche alla mappa QGIS `hotspot_analysis.qgz`
+(`qgis_projects/build_maps.py`), rigenerata di conseguenza.
+
+Indice di Moran: aggiunta la distinzione esplicita
+rispetto ai cluster K-means (Moran guarda la geografia, K-means no), spiegato
+il calcolo (peso inversamente proporzionale alla distanza tra comuni,
+combinato con quanto ciascuno si discosta dalla media) e perché il p-value
+viene da una permutazione (si mescolano le temperature a caso migliaia di
+volte e si confronta il valore osservato con quelli casuali) invece che da
+una formula diretta. **Metodologia** riscritta in domande e risposte, come
+per Analisi Temporale.
+
 ### Ondate di Calore (`04_ondate_di_calore.py`) — ampliata il 2026-07-15
 4 metriche in alto (n. ondate nel filtro attuale, n. ondate nell'ultimo
 anno della finestra, durata media, intensità media). Tab **Panoramica**:

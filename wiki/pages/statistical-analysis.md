@@ -96,7 +96,14 @@ CLI: `python -m src.analysis.spatial_analysis`
   l'approssimazione normale asintotica classica, più robusta con un
   campione piccolo
 - `climate_clustering()` — K-means (k=3) su temperatura media, giorni
-  >30°C, giorni >35°C standardizzati
+  >30°C, giorni >35°C standardizzati. **Etichette rinumerate per
+  temperatura crescente (2026-07-16)**: le etichette grezze di sklearn
+  (0/1/2) sono assegnate in un ordine arbitrario, senza legame con quanto
+  è caldo il gruppo — su richiesta dell'utente ("non c'è una logica di
+  ordinamento"), rimappate così che il cluster **0 sia sempre il più
+  fresco e il 2 sempre il più caldo**, una convenzione stabile anche se
+  l'analisi viene ri-eseguita e sklearn assegna le etichette grezze in un
+  ordine diverso.
 - Output: `output/spatial_analysis.csv`, `output/morans_i_summary.csv`
 
 **Aggiornamento 2026-07-15 — da 8 a 44 comuni**: il campione iniziale di 8
@@ -114,19 +121,21 @@ questo limite. Risultato:
   per caso: il segnale climatico ha una struttura spaziale reale, non è
   rumore geografico. Con 44 unità il test ha ora la sensibilità per
   rilevarlo.
-- Clustering K-means (k=3), ora molto più nitido geograficamente:
-  - **Cluster alpino** (3.8°C medi): Acceglio, Aisone, Alagna Valsesia,
+- Clustering K-means (k=3), ora molto più nitido geograficamente (etichette
+  0/1/2 = dal più fresco al più caldo, vedi sopra):
+  - **Cluster 0, alpino** (3.8°C medi): Acceglio, Aisone, Alagna Valsesia,
     Bardonecchia, Ceresole Reale, Formazza, Macugnaga, Rorà — tutti comuni
     di alta quota, ai margini montani nord e sud-ovest della regione.
-  - **Cluster di pianura calda** (12.9°C medi): Alessandria, Asti, Torino,
-    Vercelli e altri comuni della pianura centro-orientale.
-  - **Cluster intermedio** (11.1°C medi): comuni pedemontani/collinari
+  - **Cluster 1, intermedio** (11.1°C medi): comuni pedemontani/collinari
     (Biella, Cuneo, Verbania, ecc.).
-  
+  - **Cluster 2, pianura calda** (12.9°C medi): Alessandria, Asti, Torino,
+    Vercelli e altri comuni della pianura centro-orientale.
+
   Verificato visivamente anche nelle mappe QGIS (`hotspot_analysis.qgz`,
   vedi [Mappe GIS](gis-maps.md)): il pattern geografico è visibilmente
-  coerente (verde=alpino ai margini montani, rosso=pianura calda al
-  centro-est), non più solo un'etichetta statistica.
+  coerente (blu=alpino ai margini montani, rosso=pianura calda al
+  centro-est — stessa palette blu→rosso della dashboard, non più colori
+  categorici arbitrari), non più solo un'etichetta statistica.
 
 Restano comunque solo 44 dei 1180 comuni piemontesi — un'analisi ancora
 più esaustiva richiederebbe temperature per un sottoinsieme più ampio

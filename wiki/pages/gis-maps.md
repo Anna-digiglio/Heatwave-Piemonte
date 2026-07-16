@@ -11,7 +11,7 @@ di consegnarle, dato che aprirle visivamente richiede QGIS Desktop
 | Mappa | Descrizione | Stato |
 |---|---|---|
 | `temperature_heatmap.qgz` | Coropletica della temperatura media 2000-2025 sui 44 comuni con dati reali | ✅ generata e verificata |
-| `hotspot_analysis.qgz` | Cluster climatici K-means (k=3, da `spatial_analysis.py`) | ✅ generata e verificata — pattern geografico ora nitido (alpino/pianura/intermedio) |
+| `hotspot_analysis.qgz` | Cluster climatici K-means (k=3, da `spatial_analysis.py`) | ✅ generata e verificata — pattern geografico ora nitido (alpino/intermedio/pianura); rigenerata il 2026-07-16 con etichette cluster 0/1/2 rinumerate per temperatura crescente e colori blu→arancio→rosso coerenti (vedi [Analisi Statistica](statistical-analysis.md)) |
 | `evolution_animation.qgz` | Animazione temporale 2000-2025 (controllo temporale nativo QGIS) | ✅ generata e verificata (frame 2000 vs 2025 confermano il riscaldamento) |
 | Heatwave Index (composito intensità/frequenza) | Non implementata | ⬜ pianificata, non fatta in questa sessione |
 
