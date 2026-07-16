@@ -18,8 +18,8 @@ from streamlit_folium import st_folium
 from components.constants import (
     CAPOLUOGHI, CLUSTER_COLORS, TEMPERATURE_COLORSCALE, TREND_COLORSCALE, elevation_band,
 )
-from components.filters import render_sidebar_filters
-from components.maps import wkt_to_geojson
+from components.filters import render_province_filter, render_year_range_filter
+from components.maps import render_gradient_legend, wkt_to_geojson
 from components.queries import (
     get_kpi_annual,
     get_kpi_annual_by_province,
@@ -37,7 +37,12 @@ inject_custom_css()
 st.title("🗺️ Analisi Spaziale")
 st.caption("Ci sono zone del Piemonte più calde di altre? Il riscaldamento è uguale ovunque? La quota conta?")
 
-year_start, year_end, provinces = render_sidebar_filters()
+col_year, col_prov = st.columns(2)
+with col_year:
+    year_start, year_end = render_year_range_filter(key='spaziale_year_range')
+with col_prov:
+    provinces = render_province_filter(key='spaziale_province')
+st.caption("Entrambi i filtri sopra si applicano a tutte le mappe e i grafici di questa pagina.")
 
 with st.expander("ℹ️ Come si legge questa pagina"):
     st.markdown(
@@ -131,6 +136,11 @@ with tab_overview:
                 style_function=lambda _, c=color: {'fillColor': c, 'color': '#555', 'weight': 1, 'fillOpacity': 0.75},
             ).add_to(m1)
         st_folium(m1, width=None, height=420, returned_objects=[], key='map_temp_province')
+        render_gradient_legend(
+            cmap_temp, vmin, vmax,
+            labels=["Più fresco", "Fresco", "Nella media", "Caldo", "Più caldo"],
+            unit="°C", title="Legenda — temperatura media",
+        )
     else:
         st.info("Nessun dato di temperatura per le province/periodo selezionati.")
 
@@ -166,6 +176,12 @@ with tab_overview:
                 tooltip=f"{row['municipality_name']}: {row['lr_slope_per_decade']:+.2f} °C/decade",
             ).add_to(m2)
         st_folium(m2, width=None, height=420, returned_objects=[], key='map_trend_points')
+        render_gradient_legend(
+            cmap_trend, -max_abs_slope, max_abs_slope,
+            labels=["Raffreddamento", "Riscaldamento lento", "Riscaldamento moderato",
+                    "Riscaldamento sostenuto", "Riscaldamento rapido"],
+            unit="°C/decade", title="Legenda — velocità di riscaldamento", signed=True,
+        )
 
     st.subheader("Temperatura per fascia altitudinale")
     st.caption(
