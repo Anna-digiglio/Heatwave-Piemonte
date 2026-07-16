@@ -77,7 +77,13 @@ TEMPERATURE_COLORSCALE = "RdYlBu_r"
 # un significato preciso (nessun cambiamento) che va sempre al centro.
 TREND_COLORSCALE = "RdBu_r"
 
-CLUSTER_COLORS = {0: "#3498db", 1: "#e74c3c", 2: "#2ecc71", 3: "#f39c12"}
+# Cluster climatici: `climate_clustering()` in
+# `src/analysis/spatial_analysis.py` rinumera le etichette grezze di K-means
+# per temperatura media crescente (0 = più fresco ... k-1 = più caldo), non
+# più un ordine arbitrario di sklearn - i colori qui seguono la stessa
+# convenzione blu→rosso della colormap di temperatura, invece di colori
+# categorici senza relazione con "quanto è caldo" il gruppo.
+CLUSTER_COLORS = {0: "#3498db", 1: "#f39c12", 2: "#e74c3c"}
 
 # Colore neutro di base per elementi non critici; il rosso "caldo" è
 # riservato a evidenziare anomalie/eventi/valori sopra soglia, per non
