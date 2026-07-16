@@ -59,6 +59,11 @@ results/
 *.qgz~
 *~
 
+# Dati geografici grezzi di grandi dimensioni (es. CORINE Land Cover
+# scaricato da Copernicus) - superano il limite di 100MB di GitHub
+*.gpkg
+*.gdb/
+
 # Streamlit
 .streamlit/
 
