@@ -129,18 +129,32 @@ def climate_clustering(df: pd.DataFrame, k: int = 3) -> pd.Series:
     K-means clustering dei comuni in zone climatiche, su feature
     standardizzate (temperatura media, giorni >30°C, giorni >35°C).
 
+    Le etichette grezze di K-means (0, 1, 2, ...) sono assegnate da sklearn
+    in un ordine arbitrario, senza alcun legame con quanto è caldo o freddo
+    il gruppo. Qui vengono rinumerate in base alla temperatura media reale
+    del gruppo, in ordine crescente: il cluster 0 è sempre il più fresco,
+    l'ultimo è sempre il più caldo — una convenzione stabile che rende
+    l'etichetta di cluster leggibile di per sé (in tooltip, mappe, tabelle)
+    senza dover ogni volta consultare quale sia il più freddo o il più caldo.
+
     Args:
         df (pd.DataFrame): feature per comune
         k (int): numero di cluster (default 3)
 
     Returns:
-        pd.Series: etichetta di cluster per riga
+        pd.Series: etichetta di cluster per riga (0 = più fresco, k-1 = più caldo)
     """
     features = df[['temp_mean_avg', 'days_gt_30c_avg', 'days_gt_35c_avg']]
     standardized = (features - features.mean()) / features.std()
 
     kmeans = KMeans(n_clusters=k, random_state=RANDOM_SEED, n_init=10)
-    labels = kmeans.fit_predict(standardized)
+    raw_labels = kmeans.fit_predict(standardized)
+
+    raw_series = pd.Series(raw_labels, index=df.index)
+    temp_by_raw_label = df['temp_mean_avg'].groupby(raw_series).mean().sort_values()
+    remap = {raw_label: rank for rank, raw_label in enumerate(temp_by_raw_label.index)}
+
+    labels = raw_series.map(remap)
     return pd.Series(labels, index=df.index, name='climate_cluster')
 
 
