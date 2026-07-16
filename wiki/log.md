@@ -985,3 +985,32 @@ Log cronologico append-only. Ogni riga: data, azione, pagine toccate.
 
   Pagina aggiornata: `dashboard.md` (sezione "Filtri", nota sul default
   vuoto del multiselect provincia).
+
+- **2026-07-16** — SPOSTATA LA SPIEGAZIONE "COS'È UN'ONDATA DI CALORE" +
+  BILANCIATE LE 3 CARD DELLA HOME. Due richieste dell'utente in un solo
+  messaggio.
+
+  (1) Rimosso da `Home.py` il riquadro `st.expander("ℹ️ Cos'è un'ondata di
+  calore?")`: la home è overview, non il posto giusto per una spiegazione
+  di metodologia specifica di una sola sotto-analisi. Integrato il
+  contenuto nel riquadro "ℹ️ Come si legge questa pagina" già esistente in
+  `04_ondate_di_calore.py`, aggiungendo la sfumatura presente solo nella
+  versione della home e mancante in quella della pagina Ondate ("una
+  scelta semplificata: i climatologi usano spesso soglie che variano da
+  località a località, non un valore fisso"), invece di perderla.
+
+  (2) La card "🔥 Ondate di Calore" tra le 3 di navigazione risultava più
+  bassa delle altre due: Streamlit non equalizza automaticamente l'altezza
+  di `st.container(border=True)` tra colonne, ogni card si dimensiona sul
+  proprio contenuto — la sua didascalia era semplicemente più corta (~113
+  caratteri contro i ~124-136 delle altre due), quindi andava a capo su
+  meno righe. Fix: allungata la didascalia per portarla a un numero di
+  righe comparabile alle altre due, aggiungendo dettaglio reale già
+  presente in pagina (frequenza, durata, concentrazione geografica) invece
+  di riempitivo senza contenuto.
+
+  Verificato con `py_compile` + `AppTest` su `Home.py` e
+  `04_ondate_di_calore.py` (nessuna eccezione); server live riavviato.
+
+  Pagina aggiornata: `dashboard.md` (sezione Home, rimosso riferimento
+  all'expander spostato, aggiunta nota sullo spostamento).

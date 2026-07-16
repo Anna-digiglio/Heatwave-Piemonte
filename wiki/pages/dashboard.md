@@ -124,10 +124,19 @@ davvero:
 ## Contenuto delle pagine (dati reali)
 
 ### Home
-Intro in linguaggio semplice, 3 card di navigazione, spiegazione di cosa
-conta come "ondata di calore", metriche generali (righe di temperatura,
-periodo, comuni con dati reali, ondate identificate) con didascalie, mappa
-dei 44 comuni e tabella trend di riscaldamento — nessun filtro (vedi sopra).
+Intro in linguaggio semplice, 3 card di navigazione, metriche generali
+(righe di temperatura, periodo, comuni con dati reali, ondate identificate)
+con didascalie, mappa dei 44 comuni e tabella trend di riscaldamento —
+nessun filtro (vedi sopra).
+
+**Spiegazione "cos'è un'ondata di calore" spostata (2026-07-16)**: era un
+riquadro `st.expander` a sé nella home. Su richiesta dell'utente, rimossa
+da qui — la home è una pagina di overview, non il posto giusto per una
+spiegazione di metodologia che appartiene a una pagina specifica — e
+integrata nel riquadro "ℹ️ Come si legge questa pagina" già esistente in
+`04_ondate_di_calore.py`, insieme alla sfumatura che nella home era presente
+ma nella pagina Ondate mancava ("i climatologi usano spesso soglie che
+variano da località a località, non un valore fisso").
 
 **Mappa colorata per trend, non più tutta rossa (2026-07-16)**: la mappa
 mostrava tutti i 44 comuni con lo stesso rosso fisso (serviva solo a
