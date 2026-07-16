@@ -130,6 +130,14 @@ città).
   dichiarare: CLC2018 è uno scatto statico usato contro temperature
   2000-2025 e popolazione stimata 2026 — accettabile (l'uso del suolo
   cambia lentamente) ma va detto esplicitamente, non nascosto.
+- **Sotto-classi urbane — [FATTO] lo stesso giorno**: scomposizione di
+  `pct_urban` in residenziale/industriale-commerciale/trasporti/verde
+  urbano/estrattivo-cantieri — risponde direttamente all'ipotesi originale
+  del paper su città **e industria**. Verificato: Grugliasco (34%
+  industriale, 64% urbano) e Beinasco (33%, 67% urbano) sono le zone a
+  maggiore componente industriale, coerente con la nota geografia
+  industriale della cintura torinese — un segnale che `pct_urban`
+  aggregato da solo non avrebbe potuto mostrare.
 - Modello: dato che Moran's I è risultato significativo (§3.4), un OLS
   classico violerebbe l'indipendenza dei residui — pianificato un modello
   a errore/lag spaziale, con controllo VIF per multicollinearità

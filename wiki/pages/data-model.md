@@ -54,6 +54,22 @@ può divergere leggermente, in caso di conflitto fidati dello script SQL).
   67-84% agricolo (dominante agricolo, coerente con la vocazione
   risicola/cerealicola della pianura); Bardonecchia/Formazza >94%
   forest_seminatural (dominante forestale, comuni alpini).
+- **Sotto-classi urbane aggiunte lo stesso 2026-07-16** (`pct_residential`,
+  `pct_industrial_commercial`, `pct_transport`, `pct_urban_green`,
+  `pct_extraction_construction`, sommano a `pct_urban`): scomposizione dei
+  codici CLC 1xx (111/112 residenziale, 121 industriale/commerciale,
+  122-124 trasporti, 141-142 verde urbano, 131-133 estrattivo/cantieri) —
+  motivata dall'ipotesi originale del paper su città/industria come fattori
+  esplicativi, che un unico `pct_urban` confondeva. Valori verificati:
+  Grugliasco 34.20% industriale/commerciale (64.24% urbano totale), Beinasco
+  33.40% (67.26% totale), Settimo Torinese 26.07% — le vere zone industriali
+  della cintura torinese, coerente con la geografia industriale nota
+  dell'area metropolitana. **Bug trovato e corretto durante lo sviluppo**:
+  `DataFrame.div(Series, axis=0)` fa un allineamento di indice che
+  introduce righe `NaN` per i comuni senza nessuna intersezione urbana (non
+  coperti da `reindex(fill_value=...)`, che riempie solo le righe assenti
+  dall'indice, non i `NaN` già presenti) — serviva un `.fillna(0.0)`
+  esplicito dopo la divisione.
 - `elevation_m`: **popolato il 2026-07-15** ma solo per i 44 comuni con dati
   di temperatura reali (resta `NULL` per gli altri 1136) — fonte: Open-Meteo
   Elevation API sul centroide di ciascun comune (vedi

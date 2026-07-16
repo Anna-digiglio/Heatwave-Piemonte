@@ -140,6 +140,40 @@ Da citare, organizzata per ruolo nel paper:
   increase in extreme heat events in the Apennines* (2025); variabilità
   termica Po Valley da radiosondaggi (arXiv).
 
+## Idee da esplorare (non implementate, tracciate il 2026-07-16)
+
+Discusse con l'utente, non ancora avviate — l'utente ha scelto di procedere
+prima con la scomposizione urbana (vedi sopra) e di aspettare i 300 comuni
+prima del resto.
+
+**1. Aggiungere popolazione/uso del suolo alla dashboard** — fattibile
+subito, non dipende dai 300 comuni (i dati coprono già tutti i 1180
+comuni):
+- Mappa coropletica della classe dominante di uso del suolo (o della %
+  urbana/industriale) per comune.
+- Mappa di densità di popolazione.
+- Sostituire il confronto "isola di calore urbana" attuale nella pagina
+  Analisi Spaziale — oggi dichiarato esplicitamente "solo illustrativo"
+  (Torino vs media provincia, vedi [Dashboard](dashboard.md)) — con
+  qualcosa basato su dati reali (%urbano/%industriale/densità
+  demografica), ora possibile.
+
+**2. Altre covariate esplicative candidate**, in ordine di sforzo
+crescente:
+- NDVI/verde da satellite (Sentinel-2/Copernicus) — misura continua di
+  vegetazione, complementare alle classi discrete CORINE.
+- Pendenza ed esposizione del versante da un DEM (es. Copernicus GLO-30) —
+  più dettagliato della sola elevazione del centroide già disponibile; un
+  versante esposto a sud scalda diversamente da uno a nord, specie in
+  montagna.
+- Distanza dal Po/dai laghi — più precisa dell'attuale `pct_water` (che è
+  0 per la maggior parte dei comuni pur essendo vicini all'acqua senza
+  contenerla).
+- Densità stradale/edificato da OpenStreetMap — proxy di traffico/
+  urbanizzazione; il progetto ha già un `OpenStreetMapDownloader` in
+  `src/data_acquisition/download_data.py`, mai attivato di default (vedi
+  [Fonti dati](data-sources.md)).
+
 ## Manoscritto
 
 Lo scheletro vero e proprio del paper (Abstract/Intro/Metodi/Risultati/

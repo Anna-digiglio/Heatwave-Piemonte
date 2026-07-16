@@ -1389,3 +1389,56 @@ Log cronologico append-only. Ogni riga: data, azione, pagine toccate.
   Pagine aggiornate: `data-model.md` (nuova tabella
   `municipality_land_cover`), `data-sources.md` (nuova sezione, inclusi i
   due tentativi), `paper-scientifico.md`.
+
+- **2026-07-16** — SCOMPOSIZIONE DI "URBANO" IN SOTTO-CLASSI (RESIDENZIALE
+  VS INDUSTRIALE). Su richiesta esplicita dell'utente, che ha scelto questa
+  opzione tra tre proposte (le altre: aggiungere subito i dati a dashboard,
+  o fermarsi ad aspettare) perche' quasi gratis (dato gia' scaricato) e
+  perche' risponde direttamente all'ipotesi originale del paper su
+  citta'/industria come cause delle differenze di temperatura — un unico
+  `pct_urban` aggregato non distingueva residenziale da industriale.
+
+  Aggiunte 5 colonne a `municipality_land_cover` (`sql/03_land_cover.sql`,
+  via `ALTER TABLE ADD COLUMN IF NOT EXISTS`): `pct_residential` (codici
+  CLC 111/112), `pct_industrial_commercial` (121), `pct_transport`
+  (122-124), `pct_urban_green` (141-142), `pct_extraction_construction`
+  (131-133) — sommano a `pct_urban`. Esteso
+  `src/data_acquisition/process_land_cover.py` per calcolarle riusando lo
+  stesso overlay geopandas gia' fatto (nessun overlay aggiuntivo, solo un
+  secondo `groupby` sulle sole righe con `level1=='urban'`).
+
+  **Bug trovato e corretto rieseguendo lo script**: prima esecuzione,
+  0 righe con errori evidenti ma valori `NaN` silenziosi per
+  `pct_industrial_commercial` (e le altre sotto-classi) in tutti i comuni
+  con **zero** intersezione urbana (nessuna riga in `overlay` con
+  `level1=='urban'` per quel comune) — scoperto ordinando per
+  `pct_industrial_commercial DESC` e vedendo `NaN` in cima invece che 0.
+  Causa: `DataFrame.div(Series, axis=0)` allinea gli indici e produce
+  `NaN` per le righe assenti da un lato; il successivo
+  `.reindex(fill_value=0.0)` **non** sostituisce questi `NaN` (riempie solo
+  le righe del tutto assenti dall'indice, non quelle gia' presenti ma
+  `NaN`) — serviva un `.fillna(0.0)` esplicito dopo la divisione, aggiunto
+  sia per le sotto-classi urbane sia per le categorie di Livello 1 (stesso
+  rischio in linea di principio, anche se non si era manifestato).
+  Rieseguito: 0 righe `NULL`/`NaN` su 1180.
+
+  **Risultato reale**: Grugliasco 34.20% industriale/commerciale (64.24%
+  urbano totale), Beinasco 33.40% (67.26% totale), Settimo Torinese 26.07%
+  — le vere zone a vocazione industriale della cintura torinese (non
+  Torino stessa, che ha piu' residenziale: 45.47% vs 20.56% industriale),
+  coerente con la geografia industriale nota dell'area metropolitana.
+
+  Pagine aggiornate: `data-model.md` (nuove colonne + bug documentato),
+  `paper/manoscritto.md` (§2.4, nuovo punto sulle sotto-classi urbane).
+
+- **2026-07-16** — TO-DO AGGIUNTI ALLA WIKI (dashboard + altri dati
+  esplicativi), su richiesta esplicita dell'utente. Non implementati in
+  questa sessione, solo tracciati in
+  [Articolo scientifico](paper-scientifico.md) sotto "Idee da esplorare":
+  (1) aggiungere popolazione/uso del suolo alla dashboard (mappa classe
+  dominante o % urbana, mappa densita' di popolazione, sostituire il
+  confronto isola di calore "solo illustrativo" con uno basato su dati
+  reali); (2) altre covariate candidate in ordine di sforzo crescente:
+  NDVI da satellite, pendenza/esposizione da un DEM, distanza dal Po/dai
+  laghi, densita' stradale/edificato da OpenStreetMap (downloader gia'
+  presente nel codice, mai attivato).
