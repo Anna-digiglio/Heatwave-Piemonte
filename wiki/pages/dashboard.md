@@ -194,9 +194,16 @@ illustrativo, mappa trend non ricalcolata sul filtro anni).
 4 metriche in alto (n. ondate nel filtro attuale, n. ondate nell'ultimo
 anno della finestra, durata media, intensità media). Tab **Panoramica**:
 grafico a barre a doppio asse (n. eventi + durata media per anno);
-intensità media per anno; **conteggio cumulato** dal 2000 per mostrare se il
+intensità media per anno, con **legenda a 5 fasce** (2026-07-16, "Bassa" →
+"Estrema" — i colori delle barre vengono campionati dalla stessa
+colorscale Plotly del grafico, `plotly.colors.sample_colorscale()`, non
+approssimati con una colormap diversa: legenda e barre garantite
+identiche); **conteggio cumulato** dal 2000 per mostrare se il
 fenomeno accelera; mappa di concentrazione geografica (coropletica per
-comune, quante ondate nel filtro attuale); **heatmap "calendario"** (anno ×
+comune, quante ondate nel filtro attuale, con **legenda a 5 fasce**
+2026-07-16 — "Poche" → "Molto alto", stessa funzione
+`render_gradient_legend()` delle altre mappe, qui con `integer=True` per
+non mostrare range decimali su un conteggio di eventi); **heatmap "calendario"** (anno ×
 giorno dell'anno, colore = quanti comuni in ondata quel giorno) per vedere
 se gli eventi si spostano verso primavera/autunno. Tab **Dettaglio
 tecnico**: confronto con una **definizione alternativa** di ondata di

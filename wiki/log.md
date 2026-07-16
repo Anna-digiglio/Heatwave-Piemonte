@@ -909,3 +909,52 @@ Log cronologico append-only. Ogni riga: data, azione, pagine toccate.
 
   Pagina aggiornata: `dashboard.md` (sezione Home, nuovo paragrafo sulla
   mappa colorata per trend).
+
+- **2026-07-16** — LEGENDA ANCHE SULLA MAPPA DI ONDATE DI CALORE. Richiesta
+  ambigua dell'utente ("metti una legenda anche sotto le tabelle nella
+  pagina ondate di calore") — la pagina ha 2 tabelle testuali senza colori
+  (Statistiche per comune, Elenco ondate) e una mappa colorata (Dove si
+  concentrano geograficamente le ondate) senza legenda. Chiesto
+  esplicitamente all'utente quale delle due intendesse: confermato che
+  serviva la legenda colori sulla mappa, non un'interpretazione delle
+  tabelle testuali.
+
+  Estesa `components/maps.py::render_gradient_legend()` con un parametro
+  `integer: bool = False`: la mappa di concentrazione colora per un
+  **conteggio** di ondate (`n_heatwaves_filtro`), non una grandezza
+  continua come temperatura/trend — senza questo, la legenda avrebbe
+  mostrato range come "3.4 – 6.8 ondate", non sensati per un numero
+  intero. Aggiunta la legenda sotto la mappa in `04_ondate_di_calore.py`,
+  5 fasce "Poche" → "Molto alto".
+
+  Verificato con `py_compile` + `AppTest` su tutte e 3 le pagine che usano
+  `render_gradient_legend()` (Home, Analisi Spaziale, Ondate di Calore) per
+  assicurarsi che il nuovo parametro non rompesse le chiamate esistenti;
+  server live riavviato.
+
+  Pagina aggiornata: `dashboard.md` (descrizione Ondate di Calore, nota
+  sulla legenda a fasce intere).
+
+- **2026-07-16** — LEGENDA COLORI ANCHE SUL GRAFICO A BARRE "INTENSITÀ
+  MEDIA PER ANNO". Richiesta esplicita dell'utente. A differenza delle
+  mappe (Folium, colorate con `branca.colormap.LinearColormap`), questo è
+  un grafico Plotly (`px.bar` con `color_continuous_scale`) — la sua
+  colorscale era già disabilitata (`coloraxis_showscale=False`, scelta
+  della sessione precedente per evitare una colorbar verticale ingombrante
+  su un grafico dove il colore è già ridondante con l'altezza delle
+  barre). `render_gradient_legend()` si aspetta una colormap "callable"
+  (branca), non compatibile direttamente con una colorscale Plotly —
+  invece di introdurre una seconda colormap branca che avrebbe rischiato
+  di non corrispondere esattamente ai colori disegnati da Plotly, usato
+  `plotly.colors.sample_colorscale()` per campionare **la stessa identica
+  colorscale** (`TEMPERATURE_COLORSCALE`) del grafico, garantendo che lo
+  swatch in legenda sia sempre coerente con la barra reale. Aggiunto anche
+  `range_color=(0, vmax_intensity)` esplicito al grafico, per evitare che
+  Plotly scegliesse un range colore leggermente diverso da quello usato
+  per calcolare la legenda. Etichette di gravità: "Bassa" → "Estrema".
+
+  Verificato con `py_compile` + `AppTest` (nessuna eccezione); server live
+  riavviato.
+
+  Pagina aggiornata: `dashboard.md` (descrizione Ondate di Calore, nota
+  sulla legenda del grafico intensità).
