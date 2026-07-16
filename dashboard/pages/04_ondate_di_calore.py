@@ -14,13 +14,14 @@ import plotly.express as px
 import plotly.graph_objects as go
 import streamlit as st
 from branca.colormap import LinearColormap
+from plotly.colors import sample_colorscale
 from plotly.subplots import make_subplots
 from streamlit_folium import st_folium
 
 from components.constants import TEMPERATURE_COLORSCALE
 from components.filters import render_province_filter, render_year_range_filter
 from components.heatwave_definitions import identify_heatwaves_percentile
-from components.maps import wkt_to_geojson
+from components.maps import render_gradient_legend, wkt_to_geojson
 from components.queries import (
     get_daily_temperature,
     get_heatwave_events,
@@ -119,13 +120,25 @@ with tab_overview:
         "non solo più frequenti ma anche più estreme)."
     )
     if not freq_f.empty:
+        vmax_intensity = max(freq_f['avg_intensity'].max(), 1)
         fig_int = px.bar(
             freq_f, x='year', y='avg_intensity',
             labels={'year': 'Anno', 'avg_intensity': 'Intensità media'},
             color='avg_intensity', color_continuous_scale=TEMPERATURE_COLORSCALE,
+            range_color=(0, vmax_intensity),
         )
         fig_int.update_layout(height=300, margin=dict(t=10, b=10), coloraxis_showscale=False)
         st.plotly_chart(fig_int, width='stretch')
+
+        def _intensity_colormap(value, _vmax=vmax_intensity):
+            norm = max(0.0, min(1.0, value / _vmax))
+            return sample_colorscale(TEMPERATURE_COLORSCALE, [norm])[0]
+
+        render_gradient_legend(
+            _intensity_colormap, 0, vmax_intensity,
+            labels=["Bassa", "Moderata", "Alta", "Molto alta", "Estrema"],
+            unit="", title="Legenda — intensità media",
+        )
 
     st.subheader("Il fenomeno sta accelerando? Conteggio cumulato")
     st.caption(
@@ -165,6 +178,11 @@ with tab_overview:
                 style_function=lambda _, c=color: {'fillColor': c, 'color': '#555', 'weight': 1, 'fillOpacity': 0.8},
             ).add_to(m)
         st_folium(m, width=None, height=420, returned_objects=[], key='map_heatwave_concentration')
+        render_gradient_legend(
+            cmap, 0, vmax,
+            labels=["Poche", "Basso", "Moderato", "Alto", "Molto alto"],
+            unit="ondate", title="Legenda — concentrazione ondate", integer=True,
+        )
 
     st.subheader("Distribuzione nell'anno: si spostano verso primavera/autunno?")
     st.caption(
