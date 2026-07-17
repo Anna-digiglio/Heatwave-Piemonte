@@ -14,7 +14,7 @@ ogni sessione di lavoro rilevante (vedi workflow di ingest in `CLAUDE.md`).
 | Struttura repo | ✅ | ✅ |
 | Schema DB (`01_init_database.sql`) | ✅ | ✅ completo: 6 tabelle, 2 viste, 1 funzione, 25+ indici. **Eseguito per la prima volta su un DB reale il 2026-07-04** (Postgres 16 + PostGIS locale) — trovati e risolti 4 bug mai emersi finché nessuno l'aveva davvero eseguito (vedi [ETL](etl-pipeline.md) e [Modello Dati](data-model.md)) |
 | Script download (`download_data.py`) | pianificato | ✅ scritto, bug di import **risolto il 2026-07-04** (vedi [Fonti Dati](data-sources.md)); aggiunto anche retry/backoff per rate limit Open-Meteo |
-| Download dati 2000-2026 | ⬜ | ✅ **eseguito il 2026-07-04, esteso il 2026-07-15** — 417.868 righe reali, **44 comuni** (8 capoluoghi + 36 extra), 2000-2025 (2026 non incluso, API storica non accetta date future) |
+| Download dati 2000-2026 | ⬜ | ✅ **eseguito il 2026-07-04, esteso il 2026-07-15 e il 2026-07-17** — 610.785+ righe reali, **63 comuni** (8 capoluoghi + 55 extra), dal 2000 **fino a oggi** (non più fermo al 31/12/2025) |
 | Dati geografici (ISTAT comuni/province) | ⬜ | ✅ **caricati il 2026-07-04** — 1180 comuni reali in `municipalities` (DB Postgres/PostGIS locale), 8 province con codici ISTAT corretti |
 | Python environment / requirements | ⬜ | `.venv` presente, `requirements.txt` presente e dettagliato |
 
@@ -24,8 +24,8 @@ ogni sessione di lavoro rilevante (vedi workflow di ingest in `CLAUDE.md`).
 |---|---|---|
 | `DataCleaner` completo | pianificato | ✅ scritto, **ma non era mai stato eseguibile** fino al 2026-07-04 (`SyntaxError` da newline letterali corrotte + bug che scartava il 99,9% dei dati — vedi [ETL](etl-pipeline.md)). Eseguito su 75.976 righe (8 comuni) e poi su altre 341.892 (36 comuni extra, 2026-07-15), senza modifiche al codice |
 | Caricamento `temperature` nel DB | pianificato | ✅ **eseguito il 2026-07-04, esteso il 2026-07-15** — **417.868 righe reali, 44 comuni**, in `temperature`, batch insert (vedi [ETL](etl-pipeline.md)) |
-| `identify_heatwaves()` eseguita | pianificato | ✅ eseguita il 2026-07-12 su 8 comuni (51 ondate), **rieseguita il 2026-07-15** su 44 comuni dopo `TRUNCATE` (non idempotente) — **145 ondate totali** (vedi [Modello Dati](data-model.md)) |
-| KPI calcolati | pianificato | ✅ viste materializzate rinfrescate il 2026-07-12 (208 righe, 8 comuni), **rinfrescate di nuovo il 2026-07-15** — `kpi_annual_by_municipality` ora 1144 righe (44 comuni × 26 anni) |
+| `identify_heatwaves()` eseguita | pianificato | ✅ eseguita il 2026-07-12 su 8 comuni (51 ondate), **rieseguita il 2026-07-15** su 44 comuni (145 ondate) e **il 2026-07-17** su 63 comuni dopo `TRUNCATE` (non idempotente) — **190 ondate totali**, incluse 16 nel 2026 (vedi [Modello Dati](data-model.md)) |
+| KPI calcolati | pianificato | ✅ viste materializzate rinfrescate il 2026-07-12 (208 righe, 8 comuni), il 2026-07-15 (1144 righe, 44 comuni) e **il 2026-07-17** — `kpi_annual_by_municipality` ora 1701 righe (63 comuni × 27 anni, 2000-2026) |
 | Query SQL (10+) | pianificato | 3 query scritte in `02_common_queries.sql` |
 
 ## Settimana 3 — Visualizzazione & Deployment
@@ -128,6 +128,39 @@ scaricato per davvero da Open-Meteo Elevation API per i 44 comuni con dati
 (scelta confermata con l'utente, invece di un placeholder "non
 disponibile") — vedi [Fonti Dati](data-sources.md) e
 [Modello Dati](data-model.md).
+
+**Aggiornamento 2026-07-17 (estensione a 63 comuni + dati fino ad oggi)**:
+su richiesta esplicita dell'utente ("coprimi i 1180 comuni piemontesi, e
+aggiorna la data fino ad oggi"). Obiettivo iniziale enorme (1180 comuni)
+ridimensionato insieme all'utente dopo aver spiegato costi/rischi reali
+(vedi [Fonti Dati](data-sources.md) per il dettaglio): tentativi falliti a
+300 e poi 56 comuni extra per lo stesso motivo — **Open-Meteo ha un limite
+giornaliero di richieste** (non solo "al minuto" come già noto), scoperto
+nel modo peggiore (~5h40 di download quasi tutto sprecato il primo giorno,
+perso perché lo script salvava solo a fine esecuzione). Corretto alla
+radice: salvataggio incrementale (ogni comune scaricato viene subito
+scritto su disco) in `download_extra_municipalities.py` e nel nuovo
+`update_recent_data.py`, così nessuna interruzione futura fa più perdere
+progresso. Risultato netto in due giorni: **44 → 63 comuni** (19
+aggiuntivi, selezionati con lo stesso campionamento "farthest-point" di
+prima) e **tutti i 63 comuni ora arrivano fino a oggi** (non più fermi al
+31/12/2025) — non i 1180 completi, ma un incremento reale ottenuto in modo
+sostenibile invece di un tentativo fallito in blocco. Vedi
+[Fonti Dati](data-sources.md) per il dettaglio della scoperta del rate
+limit giornaliero, [ETL](etl-pipeline.md) per il flusso incrementale, e
+[Analisi Statistica](statistical-analysis.md) per i risultati ricalcolati
+(Moran's I ora 0.132, p=0.001, ancora più significativo che con 44 comuni).
+
+Nello stesso aggiornamento, **2 bug reali trovati e corretti** per via del
+nuovo dato che arriva fino al 2026 (non più fermo al 2025): (1)
+`frequency_by_year()` in `heatwave_stats.py` aveva un `reindex` fisso
+`range(2000, 2026)` che scartava in silenzio le ondate del 2026 (16 ondate
+nascoste, trovate verificando l'output dopo l'estensione) — reso
+dinamico sul range anni realmente presente nei dati; (2) lo slider
+dell'intervallo anni nella dashboard (`components/filters.py`) aveva
+`YEAR_MIN, YEAR_MAX = 2000, 2025` fissi nel codice, che avrebbe reso
+impossibile selezionare il 2026 una volta arrivati i dati più recenti —
+resi dinamici dalla data reale più vecchia/più recente in `temperature`.
 
 Prossimi passi, in ordine (tutti minori/non bloccanti — il nucleo
 pianificato del progetto è completo):

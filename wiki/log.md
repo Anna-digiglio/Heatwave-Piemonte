@@ -1488,3 +1488,117 @@ Log cronologico append-only. Ogni riga: data, azione, pagine toccate.
 
   Pagine aggiornate: `dashboard.md` (nuova sezione + bug documentato),
   `paper-scientifico.md` (to-do 1 segnato fatto).
+
+- **2026-07-17** — ESTENSIONE A 63 COMUNI + DATI FINO AD OGGI (obiettivo
+  iniziale: tutti i 1180 comuni). Richiesta esplicita dell'utente:
+  "coprimi i 1180 comuni piemontesi, e aggiorna la data fino ad oggi".
+  Sessione lunga e accidentata, con un vero e proprio processo di
+  scoperta empirica del rate limit di Open-Meteo. Cronologia:
+
+  1. **Stima iniziale ottimista**: spiegato all'utente il costo reale di
+     1180 comuni (~11M righe, ma soprattutto ore di download per il rate
+     limit già noto). Consigliata una via di mezzo (200-300 comuni),
+     accettata. Chiesto anche un parere su leggibilità delle mappe con
+     300 punti: convertita la mappa del trend in Analisi Spaziale da
+     marker a cerchio a poligoni colorati (stesso trattamento delle altre
+     3 mappe), eliminando il rischio di sovrapposizione visiva.
+  2. **Tentativo 1 (256 comuni extra, obiettivo 300 totali)**: lanciato in
+     background. Dopo **~5h40** di download continuo (monitorato a
+     intervalli), solo 37/256 comuni riusciti, 123 falliti
+     definitivamente. Interrotto — e siccome
+     `download_extra_municipalities.py::download_all()` collezionava
+     tutto in una lista Python scrivendo il CSV **solo a fine
+     esecuzione**, l'interruzione ha fatto perdere **tutto** il progresso
+     (nessun file scritto). Lezione durissima ma chiara.
+  3. **Tentativo 2 (56 comuni, obiettivo ridotto a 100)**: bloccato
+     **immediatamente**, anche su una singola richiesta di test isolata
+     (429). Il corpo della risposta ha rivelato la causa: `"Daily API
+     request limit exceeded. Please try again tomorrow."` — un limite
+     **giornaliero**, non solo "al minuto" come già documentato. La
+     finestra di 5h40 sprecata aveva già esaurito la quota di giornata.
+  4. **Fix strutturale** (prima di riprovare, non dopo): salvataggio
+     **incrementale** in `download_extra_municipalities.py` (ogni comune
+     scaricato subito appeso al CSV, `mode='a'`) — così un'interruzione
+     futura non fa più perdere lavoro.
+  5. **Discussione sulle alternative**: l'utente ha chiesto se non ci
+     fossero altri modi per scaricare i dati (manualmente, altre fonti).
+     Risposta onesta: Copernicus CDS ha un'interfaccia web per download
+     manuali (bypassa Open-Meteo, ma richiede account, è un dataset
+     diverso — ERA5 a griglia, non per stazione — e la pipeline di
+     parsing NetCDF non è mai stata testata); ARPA Piemonte copre solo le
+     poche stazioni reali, non abbastanza comuni. Nessuna alternativa
+     chiaramente migliore dell'aspettare; l'utente ha scelto di aspettare
+     e riprovare il giorno dopo con lotti più piccoli.
+  6. **Giorno successivo (2026-07-17)**: quota resettata (verificato con
+     un test leggero). Reso `download_extra_municipalities.py`
+     **parametrico** (`--count`, allocazione per provincia calcolata dal
+     vivo con `compute_target_per_province()` invece di pesi fissi nel
+     codice) su richiesta dell'utente di provare lotti da 10 per volta
+     per scoprire la soglia esatta. Un lotto di 50 ha **rivelato
+     empiricamente**: si blocca sempre intorno a **19-20 richieste
+     "pesanti"** (26 anni di storico ciascuna) — dal 20° comune in poi,
+     ogni tentativo falliva dopo 5 retry. Fermato subito (zero perdita,
+     grazie al fix del punto 4): **19 comuni aggiuntivi** salvati con
+     successo (44 → 63 comuni). Chiesto conferma all'utente se procedere
+     subito con la pipeline sui 63 disponibili o aspettare altri giorni
+     per arrivare a 94: scelto di procedere subito.
+  7. **Delta a oggi per tutti i 63 comuni**: scritto nuovo script
+     `src/data_acquisition/update_recent_data.py` (stesso fix di
+     salvataggio incrementale fin dall'inizio, lezione già imparata).
+     Scoperta interessante: le richieste piccole (~198 giorni ciascuna,
+     invece di 26 anni) **non hanno mai incontrato il rate limit** —
+     tutti e 63 i comuni aggiornati con successo in un solo lotto, zero
+     errori. La quota sembra legata al volume di dati per richiesta, non
+     a un conteggio piatto (osservazione empirica, non verificata contro
+     documentazione ufficiale).
+  8. **Caricamento nel DB**: filtrato il CSV pulito ai soli
+     `municipality_id` non ancora presenti prima di caricarlo (nessun
+     vincolo di unicità `(municipality_id, date)` in `temperature`: un
+     caricamento ingenuo dell'intero file avrebbe duplicato i 36 comuni
+     già presenti dalla sessione precedente). Elevazione ricalcolata per
+     tutti i 63 comuni (query batch singola, economica).
+  9. **Ricalcolo di tutta la catena a valle**: `TRUNCATE` +
+     `identify_heatwaves()` (190 ondate, +16 rispetto a prima grazie al
+     2026), refresh viste materializzate (1701 righe), tutti e 4 i moduli
+     `src/analysis/` (STL ~30 minuti data la mole, eseguita in
+     background), mappe QGIS rigenerate.
+  10. **2 bug reali trovati grazie al dato 2026** (mai emersi prima
+      perché la serie storica non aveva mai superato il 2025): (a)
+      `frequency_by_year()` in `heatwave_stats.py` aveva un
+      `reindex(range(2000, 2026))` fisso che scartava in silenzio le 16
+      ondate del 2026 dal grafico della dashboard — nessun errore, solo
+      dati mancanti; scoperto confrontando il conteggio diretto da
+      `heatwave_events` con l'output della funzione. Fix: range dinamico
+      dal min/max anno realmente presente. (b) Stesso identico tipo di
+      bug in `dashboard/components/filters.py`
+      (`YEAR_MIN, YEAR_MAX = 2000, 2025` fissi) — avrebbe reso
+      impossibile selezionare il 2026 nello slider. Fix: dinamico da
+      `get_overview_stats()`.
+  11. **Aggiornamento testi dashboard**: `Home.py` reso completamente
+      dinamico (nessun numero di comuni/anno più hardcoded, tutto da
+      `get_overview_stats()`), stesso trattamento parziale sulle altre
+      pagine per gli help text/caption più visibili; le narrazioni
+      storiche di log/dashboard.md che descrivono sessioni precedenti
+      **non sono state riscritte** (coerente con la natura append-only
+      della documentazione).
+
+  **Risultato finale**: 44 → **63 comuni** (8 capoluoghi + 55 extra),
+  **610.785 righe**, dal 2000 **fino a oggi** — non i 1180 comuni
+  richiesti inizialmente, ma un incremento reale, verificato, e ottenuto
+  senza perdite nonostante due tentativi fintiti falliti. Moran's I
+  migliora ulteriormente (0.132, p=0.001). Trend: 54/63 comuni
+  significativi; scoperto un caso controcorrente (Briga Alta, unico
+  raffreddamento significativo, -0.63°C/decade) segnalato onestamente
+  invece che ignorato.
+
+  Verificato con `py_compile` + `AppTest` su tutte le pagine dopo ogni
+  round di modifiche (nessuna eccezione); server live riavviato con i
+  dati aggiornati.
+
+  Pagine aggiornate: `data-sources.md` (racconto completo della scoperta
+  del rate limit, 2 nuovi script documentati), `etl-pipeline.md`
+  (sezione estensione + bug), `data-model.md` (conteggi righe/comuni/anni
+  aggiornati), `statistical-analysis.md` (nuova sezione risultati
+  ricalcolati + bug), `gis-maps.md` (mappe rigenerate), `dashboard.md`
+  (nota di aggiornamento + bug), `project-status.md` (nuova sezione
+  cronologica con tutti i dettagli).

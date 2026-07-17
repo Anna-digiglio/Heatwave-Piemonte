@@ -120,23 +120,97 @@ non un `429` — il retry-on-429 esistente non copriva questo caso), riscaricati
 con una seconda passata mirata. Risultato finale: 36/36 comuni, 341.892
 righe, nessun dato mancante.
 
-## Dati realmente scaricati/caricati (2026-07-04 → 2026-07-15)
+## Scoperto il limite giornaliero di Open-Meteo (2026-07-17)
+
+Richiesta dell'utente: coprire tutti i 1180 comuni piemontesi e portare i
+dati fino ad oggi. Il bug noto sopra ("rate limit al minuto") non era
+tutta la storia — esiste anche un **limite giornaliero** di richieste,
+scoperto nel modo peggiore:
+
+1. **Tentativo 1 (256 comuni extra, obiettivo 300 totali)**: dopo **~5h40**
+   di download continuo, solo 37/256 comuni riusciti e 123 falliti
+   definitivamente (rate limit sempre più severo). Interrotto il processo
+   — e siccome `download_all()` collezionava tutto in una lista Python e
+   scriveva il CSV **solo alla fine**, l'interruzione ha fatto perdere
+   **tutto** il lavoro delle 5h40 (nessun file scritto su disco).
+2. **Tentativo 2 (56 comuni, obiettivo ridotto a 100 totali)**: bloccato
+   **immediatamente** — anche una singola richiesta di test isolata (senza
+   nessun batch in corso) restituiva `429`. Il corpo della risposta ha
+   rivelato la causa reale: `{"error":true,"reason":"Daily API request
+   limit exceeded. Please try again tomorrow."}` — un limite **giornaliero**,
+   non "al minuto": la finestra di 5h40 sprecata il giorno prima aveva
+   già esaurito la quota per l'intera giornata.
+3. **Fix strutturale prima di riprovare**: salvataggio **incrementale** —
+   ogni comune scaricato con successo viene subito appeso al CSV
+   (`mode='a'`), non solo a fine esecuzione — sia in
+   `download_extra_municipalities.py` sia nel nuovo
+   `update_recent_data.py`. Un'interruzione futura, per qualunque motivo,
+   non fa più perdere il lavoro già fatto.
+4. **Giorno successivo (2026-07-17)**: quota resettata (verificato con una
+   richiesta di test leggera prima di lanciare qualunque batch). Su
+   richiesta esplicita dell'utente, lotti prudenti e **parametrici**
+   (`--count`, non più un target fisso nel codice) invece di un unico
+   tentativo grande. Un lotto di 50 comuni ha **rivelato empiricamente la
+   soglia**: si blocca sempre intorno a **19-20 richieste "pesanti"**
+   (26 anni di storico ciascuna) — dopo il 19° comune, ogni tentativo
+   successivo falliva con "rate limit persistente dopo 5 tentativi".
+   Fermato subito (nessuna perdita, grazie al fix del punto 3): **19
+   comuni aggiuntivi salvati con successo** (44 → 63 comuni totali).
+5. **Scoperta interessante**: il limite sembra legato al **volume di dati
+   per richiesta**, non a un conteggio piatto di richieste. Il giorno
+   dopo, un aggiornamento "delta" (`update_recent_data.py`, richieste
+   piccole di ~198 giorni ciascuna invece di 26 anni interi) ha
+   completato **tutti e 63 i comuni in un solo lotto, zero errori** — ben
+   oltre la soglia di ~19-20 vista con le richieste "pesanti". Non è stato
+   verificato in modo rigoroso (nessuna documentazione ufficiale
+   consultata sul funzionamento esatto della quota), ma è coerente con i
+   fatti osservati: richieste piccole "costano" meno quota di richieste
+   grandi.
+
+**Risultato netto**: 44 → **63 comuni** (19 aggiuntivi, stesso
+campionamento "farthest-point" per copertura spaziale), e **tutti i 63
+comuni portati fino a oggi** (non più fermi al 31/12/2025) tramite il
+delta incrementale. Non i 1180 comuni completi richiesti inizialmente, ma
+un incremento reale ottenuto in modo sostenibile — vedi
+[Stato del Progetto](project-status.md) per la sintesi della decisione
+presa insieme all'utente (costi/rischi di 1180 comuni spiegati prima di
+ridimensionare l'obiettivo).
+
+## `update_recent_data.py` — estensione a oggi per tutti i comuni (2026-07-17)
+
+Nuovo script: a differenza di `download_extra_municipalities.py` (comuni
+mai scaricati prima), questo estende **comuni già presenti** in
+`temperature` fino alla data più recente disponibile. Per ciascun comune,
+calcola `MAX(date)` già in DB e scarica solo il **delta** (dal giorno
+successivo a oggi) — mai l'intero storico, evitando duplicati (nessun
+vincolo di unicità `(municipality_id, date)` in `temperature`: un doppio
+insert sullo stesso periodo creerebbe righe duplicate silenziosamente).
+Stesso fix di salvataggio incrementale di `download_extra_municipalities.py`.
+
+**Esecuzione reale**: 63/63 comuni aggiornati con successo, zero errori —
+44 comuni con un delta di ~198 giorni (dal 1/1/2026), 19 comuni (appena
+scaricati) con un delta di un solo giorno. 8.731 righe totali.
+
+## Dati realmente scaricati/caricati (2026-07-04 → 2026-07-17)
 
 - `data/raw/temperature_data.csv`: 75.976 righe — 8 province × 9.497 giorni
   (2000-01-01 → 2025-12-31), nessun valore nullo. Il 2026 non è incluso
   (l'API storica non accetta date future oltre il giorno corrente). I numeri
   "1.7M record" citati in README/PROJECT_SUMMARY restano una stima
   pianificata (verosimilmente basata su dati orari, non giornalieri).
-- `data/raw/temperature_data_extra.csv` (2026-07-15): 341.892 righe — 36
-  comuni extra × 9.497 giorni, stesso periodo.
+- `data/raw/temperature_data_extra.csv`: 526.078 righe — cresciuto da 36 a
+  **55 comuni extra** (2026-07-15 → 2026-07-17), stesso periodo di base
+  (2000 → 16/07/2026 per i 19 comuni più recenti).
+- `data/raw/temperature_data_recent.csv` (2026-07-17): 8.731 righe — delta
+  fino a oggi per tutti i 63 comuni (vedi `update_recent_data.py` sopra).
 - `data/external/municipalities.csv` + tabella `municipalities` nel DB:
   1180 comuni piemontesi reali, geometrie tutte valide (`ST_IsValid`),
-  nomi corretti (encoding fix del 2026-07-15). `population` ed
-  `elevation_m` restano `NULL` (non presenti nello shapefile dei confini,
-  serve un dataset ISTAT demografico separato — non fatto in questa
-  sessione, l'utente ha dato priorità all'estensione delle temperature).
-- Tabella `temperature`: **417.868 righe, 44 comuni** (8 capoluoghi +
-  36 extra), 2000-2025.
+  nomi corretti (encoding fix del 2026-07-15). `elevation_m` popolato solo
+  per i 63 comuni con dati di temperatura (Open-Meteo Elevation API);
+  `population` popolato per tutti i 1180 comuni il 2026-07-16 (vedi
+  sezione dedicata sotto).
+- Tabella `temperature`: **610.785 righe, 63 comuni** (8 capoluoghi +
+  55 extra), dal 2000 **fino a oggi** (non più fermo al 31/12/2025).
 
 ## `download_population.py` — popolazione residente reale per tutti i 1180 comuni (2026-07-16)
 

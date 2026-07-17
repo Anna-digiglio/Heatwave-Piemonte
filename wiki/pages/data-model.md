@@ -70,9 +70,9 @@ può divergere leggermente, in caso di conflitto fidati dello script SQL).
   coperti da `reindex(fill_value=...)`, che riempie solo le righe assenti
   dall'indice, non i `NaN` già presenti) — serviva un `.fillna(0.0)`
   esplicito dopo la divisione.
-- `elevation_m`: **popolato il 2026-07-15** ma solo per i 44 comuni con dati
-  di temperatura reali (resta `NULL` per gli altri 1136) — fonte: Open-Meteo
-  Elevation API sul centroide di ciascun comune (vedi
+- `elevation_m`: popolato il 2026-07-15, **esteso il 2026-07-17** ai 63
+  comuni con dati di temperatura reali (resta `NULL` per gli altri 1117) —
+  fonte: Open-Meteo Elevation API sul centroide di ciascun comune (vedi
   [Fonti Dati](data-sources.md), `src/data_acquisition/fetch_elevation.py`).
   Usato dalla pagina "Analisi Spaziale" della dashboard per il confronto per
   fascia altitudinale (pianura/collina/montagna).
@@ -87,10 +87,11 @@ può divergere leggermente, in caso di conflitto fidati dello script SQL).
   range fisico `-50..60 °C`
 - Indici: `date`, `(municipality_id, date)`, `(province_id, date)`,
   parziale su `temp_max > 30`, `data_source`
-- **Popolata il 2026-07-04, estesa il 2026-07-15**: 417.868 righe reali —
-  **44 comuni** (8 capoluoghi + 36 extra selezionati per copertura
-  spaziale), 2000-2025. Vedi [ETL](etl-pipeline.md) per la nota sulla
-  granularità (44 comuni, non tutti i 1180).
+- **Popolata il 2026-07-04, estesa il 2026-07-15 e il 2026-07-17**:
+  610.785 righe reali — **63 comuni** (8 capoluoghi + 55 extra selezionati
+  per copertura spaziale), dal 2000 **fino a oggi** (non più fermo al
+  31/12/2025). Vedi [ETL](etl-pipeline.md) per la nota sulla granularità
+  (63 comuni, non tutti i 1180).
 
 ### `heatwave_events` — ondate di calore identificate
 - PK `heatwave_id BIGSERIAL`, FK `municipality_id`, `province_id`
@@ -110,7 +111,11 @@ può divergere leggermente, in caso di conflitto fidati dello script SQL).
 - **Rieseguita il 2026-07-15** dopo l'estensione a 44 comuni (`TRUNCATE` +
   ri-esecuzione, dato che la funzione non è idempotente — ri-eseguirla
   senza svuotare prima la tabella duplicherebbe le ondate già trovate):
-  **145 ondate totali** su 44 comuni.
+  145 ondate totali su 44 comuni. **Rieseguita di nuovo il 2026-07-17**
+  dopo l'estensione a 63 comuni e a dati fino ad oggi: **190 ondate
+  totali**, incluse 16 nel 2026 (vedi [Analisi Statistica](statistical-analysis.md)
+  per il bug scoperto — queste 16 ondate venivano scartate in silenzio
+  dal grafico della dashboard prima del fix del 2026-07-17).
 
 ### `kpi` — aggregati annuali/mensili a 3 livelli
 - PK `kpi_id BIGSERIAL`, FK opzionali `municipality_id`/`province_id`
@@ -141,7 +146,9 @@ può divergere leggermente, in caso di conflitto fidati dello script SQL).
   **non si aggiornano da sole quando la tabella sottostante cambia**, va
   rifatto il refresh esplicitamente dopo ogni nuovo caricamento.
 - **Rinfrescate di nuovo il 2026-07-15** dopo l'estensione a 44 comuni:
-  `kpi_annual_by_municipality` ora 1144 righe (44 comuni × 26 anni).
+  `kpi_annual_by_municipality` a 1144 righe (44 comuni × 26 anni).
+  **Rinfrescate ancora il 2026-07-17** dopo l'estensione a 63 comuni e dati
+  fino ad oggi: **1701 righe** (63 comuni × 27 anni, 2000-2026).
 
 Nota: queste viste **duplicano concettualmente** la tabella `kpi`. La tabella
 `kpi` sembra pensata per KPI calcolati/persistiti dalla pipeline Python,

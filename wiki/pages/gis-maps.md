@@ -10,18 +10,19 @@ di consegnarle, dato che aprirle visivamente richiede QGIS Desktop
 
 | Mappa | Descrizione | Stato |
 |---|---|---|
-| `temperature_heatmap.qgz` | Coropletica della temperatura media 2000-2025 sui 44 comuni con dati reali | ✅ generata e verificata |
-| `hotspot_analysis.qgz` | Cluster climatici K-means (k=3, da `spatial_analysis.py`) | ✅ generata e verificata — pattern geografico ora nitido (alpino/intermedio/pianura); rigenerata il 2026-07-16 con etichette cluster 0/1/2 rinumerate per temperatura crescente e colori blu→arancio→rosso coerenti (vedi [Analisi Statistica](statistical-analysis.md)) |
-| `evolution_animation.qgz` | Animazione temporale 2000-2025 (controllo temporale nativo QGIS) | ✅ generata e verificata (frame 2000 vs 2025 confermano il riscaldamento) |
+| `temperature_heatmap.qgz` | Coropletica della temperatura media sui 63 comuni con dati reali | ✅ generata e verificata |
+| `hotspot_analysis.qgz` | Cluster climatici K-means (k=3, da `spatial_analysis.py`) | ✅ generata e verificata — pattern geografico ora nitido (alpino/intermedio/pianura); rigenerata il 2026-07-16 con etichette cluster 0/1/2 rinumerate per temperatura crescente e colori blu→arancio→rosso coerenti, **rigenerata di nuovo il 2026-07-17** con 63 comuni (vedi [Analisi Statistica](statistical-analysis.md)) |
+| `evolution_animation.qgz` | Animazione temporale 2000 → oggi (controllo temporale nativo QGIS) | ✅ generata e verificata (frame 2000 vs 2025 confermano il riscaldamento) |
 | Heatwave Index (composito intensità/frequenza) | Non implementata | ⬜ pianificata, non fatta in questa sessione |
 
-**Nota di granularità**: tutte le mappe mostrano i **44 comuni con dati
-reali** a colori (8 capoluoghi + 36 extra, dal 2026-07-15 — vedi
-[ETL](etl-pipeline.md)), sopra uno sfondo grigio con tutti i 1180 comuni
-piemontesi (da `data/external/istat_municipalities.geojson`/tabella
+**Nota di granularità**: tutte le mappe mostrano i **63 comuni con dati
+reali** a colori (8 capoluoghi + 55 extra, esteso 2026-07-15 → 2026-07-17
+— vedi [ETL](etl-pipeline.md)), sopra uno sfondo grigio con tutti i 1180
+comuni piemontesi (da `data/external/istat_municipalities.geojson`/tabella
 `municipalities`), per essere onesti sulla copertura reale invece di
-nasconderla. Rigenerate lo stesso giorno dopo l'estensione dei dati (erano
-inizialmente costruite sugli 8 capoluoghi soltanto).
+nasconderla. **Rigenerate il 2026-07-17** (`python-qgis-ltr.bat
+build_maps.py`) dopo l'estensione dei dati — stesso script, nessuna
+modifica necessaria oltre ai colori dei cluster già documentati sopra.
 
 ## Come sono state generate
 
@@ -111,6 +112,7 @@ non ho potuto verificare end-to-end.
   etichette~~ — **fatto e confermato dall'utente il 2026-07-15**
 - Eventualmente costruire la mappa "Heatwave Index" (non fatta in questa
   sessione)
-- Se si vuole coprire più dei 44 comuni attuali, servirebbe scaricare
-  temperature reali per un sottoinsieme ancora più ampio (vedi
-  [Analisi Statistica](statistical-analysis.md))
+- Se si vuole coprire più dei 63 comuni attuali, servirebbe scaricare
+  temperature reali per un sottoinsieme ancora più ampio — vincolato dal
+  rate limit giornaliero di Open-Meteo scoperto il 2026-07-17 (vedi
+  [Fonti Dati](data-sources.md))

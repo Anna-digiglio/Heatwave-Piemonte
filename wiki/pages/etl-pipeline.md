@@ -157,13 +157,50 @@ CLI: `python -m src.database.load_to_db` → `DatabaseLoader`
   script su un DB parzialmente inizializzato — aggiunto `IF NOT EXISTS`
   a tutti (24 occorrenze).
 
-**Stato attuale (2026-07-15)**: pipeline Extract → Transform → Load
+**Stato attuale (2026-07-17)**: pipeline Extract → Transform → Load
 completa ed eseguita end-to-end su dati reali. Non esiste ancora un
 orchestratore unico `etl_pipeline.py` (si lanciano gli script separatamente,
 in ordine); i `models.py` menzionati in `PROJECT_SUMMARY.md` non esistono.
-Il "Load" reale oggi copre: schema + 8 province + 1180 comuni + 417.868
-righe di temperatura per **44 comuni** (8 capoluoghi + 36 extra selezionati
-per copertura spaziale, 2000-2025).
+Il "Load" reale oggi copre: schema + 8 province + 1180 comuni + 610.785
+righe di temperatura per **63 comuni** (8 capoluoghi + 55 extra selezionati
+per copertura spaziale), dal 2000 **fino a oggi** (non più fermo al
+31/12/2025).
+
+### Estensione a 63 comuni + dati fino ad oggi (2026-07-17)
+
+Su richiesta dell'utente di coprire tutti i 1180 comuni e portare i dati
+fino ad oggi, scoperto un **limite giornaliero** delle richieste
+Open-Meteo (oltre a quello "al minuto" già noto) — vedi
+[Fonti Dati](data-sources.md) per il racconto completo (due tentativi
+falliti, ~5h40 di download perso perché il primo script salvava solo a
+fine esecuzione). Obiettivo ridimensionato da 1180 a un incremento
+sostenibile: **+19 comuni** (44→63), scaricati a lotti piccoli con
+salvataggio incrementale (fix strutturale: ogni comune scaricato viene
+subito scritto su disco, non solo alla fine).
+
+Nuovo script `src/data_acquisition/update_recent_data.py`: estende **tutti
+i comuni già presenti** (non solo i nuovi) fino alla data più recente
+disponibile, scaricando solo il **delta** (dal giorno dopo l'ultima data
+nota) per ciascuno — evita di ri-scaricare 26 anni di storico già
+presenti, e soprattutto evita duplicati (`temperature` non ha un vincolo
+di unicità `(municipality_id, date)`).
+
+`download_extra_municipalities.py` reso **parametrico** (`--count`,
+allocazione proporzionale per provincia calcolata dal vivo via
+`compute_target_per_province()`, non più pesi fissi tarati per un numero
+specifico di comuni) — permette lotti piccoli (anche 10) per scoprire
+empiricamente la soglia del rate limit senza dover editare il codice ogni
+volta.
+
+**Bug reale trovato grazie ai dati 2026**: `frequency_by_year()` in
+`src/analysis/heatwave_stats.py` aveva un `reindex(range(2000, 2026))`
+fisso — scartava in silenzio le ondate rilevate nel 2026 (16 ondate
+nascoste) ora che la serie storica arriva oltre il 2025 per la prima
+volta. Fix: range dinamico dal min/max anno realmente presente nei dati.
+Stesso bug, stessa causa (limite fisso scritto quando "andava bene così",
+mai più rivisitato), trovato anche in `dashboard/components/filters.py`
+(`YEAR_MIN, YEAR_MAX = 2000, 2025` fisso) — reso dinamico dalla data reale
+in `temperature`.
 
 ## Passaggi pianificati ma non ancora scritti
 

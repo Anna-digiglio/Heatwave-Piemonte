@@ -16,6 +16,21 @@ vedi sotto). Verificata senza browser reale via
 **Rinominata da `app.py` a `Home.py` il 2026-07-15** su richiesta
 dell'utente (vedi sotto).
 
+**Aggiornamento 2026-07-17**: copertura estesa da 44 a **63 comuni**, dati
+portati **fino ad oggi** (non più fermi al 31/12/2025) — vedi
+[Fonti Dati](data-sources.md) e [ETL](etl-pipeline.md) per il racconto
+completo (scoperta di un limite giornaliero di Open-Meteo). Due bug reali
+trovati e corretti grazie all'arrivo di dati 2026: lo slider anni
+(`components/filters.py`) aveva `YEAR_MIN`/`YEAR_MAX` fissi a `2000, 2025`
+nel codice — reso dinamico dalla data reale in `temperature`, altrimenti
+il 2026 non sarebbe mai stato selezionabile; e `frequency_by_year()`
+(`src/analysis/heatwave_stats.py`) scartava in silenzio le ondate 2026 dal
+grafico per lo stesso motivo (reindex con anno finale fisso). Tutti i
+riferimenti a "44 comuni" nel resto di questa pagina descrivono lo stato
+al 2026-07-15 e sono stati aggiornati dove riguardano il comportamento
+attuale della dashboard; le narrazioni storiche di sessioni precedenti
+restano invariate (coerente con la natura non-riscritta del log).
+
 ## Struttura reale
 
 ```

@@ -7,13 +7,65 @@ Implementata ed eseguita per la prima volta su dati reali il 2026-07-15,
 dopo che la pipeline ETL (vedi [ETL](etl-pipeline.md)) aveva reso disponibili
 75.976 righe di temperatura, 51 ondate di calore e le viste KPI popolate.
 
-**Granularità**: inizialmente sugli 8 comuni capoluogo di provincia, poi
-**estesa a 44 comuni lo stesso giorno** (8 capoluoghi + 36 comuni scelti
-per copertura spaziale — vedi [ETL](etl-pipeline.md)), su richiesta
-esplicita dell'utente per rendere Moran's I e il clustering
-statisticamente più robusti. Tutti i numeri qui sotto sono aggiornati alla
-versione a 44 comuni; dove rilevante è indicato anche il risultato
-precedente a 8 per confronto.
+**Granularità**: 8 comuni capoluogo → 44 comuni (2026-07-15) → **63 comuni
+(2026-07-17)**, sempre con lo stesso campionamento "farthest-point" per
+copertura spaziale (vedi [ETL](etl-pipeline.md)). Dal 2026-07-17 il
+periodo coperto arriva anche **fino a oggi**, non più fermo al 31/12/2025.
+Tutti i numeri qui sotto sono aggiornati alla versione a 63 comuni; dove
+rilevante è indicato anche il risultato precedente per confronto.
+
+## Aggiornamento 2026-07-17 — da 44 a 63 comuni, dati fino ad oggi
+
+Richiesta esplicita dell'utente: coprire tutti i 1180 comuni piemontesi e
+portare i dati fino ad oggi. Obiettivo ridimensionato insieme all'utente
+dopo aver scoperto (nel modo peggiore) che **Open-Meteo ha un limite
+giornaliero di richieste**, non solo "al minuto" come già documentato —
+vedi [Fonti Dati](data-sources.md) per il racconto completo (due tentativi
+falliti, uno sprecato per ~5h40 perché lo script non salvava
+incrementalmente). Risultato netto: **+19 comuni** (44→63) più
+l'estensione temporale a tutti e 63 fino a oggi, ottenuti in modo
+sostenibile con lotti piccoli invece che un tentativo unico in blocco.
+
+**Risultati ricalcolati (63 comuni, 2000 - oggi)**:
+- **Trend**: 54/63 comuni con trend significativo (p<0.05), da -0.63 a
+  +1.31 °C/decade. Novità: **Briga Alta è l'unico comune con un
+  raffreddamento significativo** (-0.63°C/decade, p=0.0014) — un risultato
+  controcorrente rispetto al resto del campione, non ancora indagato a
+  fondo (possibili cause: microclima locale, breve serie rispetto alla
+  variabilità, o semplice rumore anche se il p-value è basso — un solo
+  comune anomalo su 63 non permette conclusioni, ma è onesto segnalarlo
+  invece di ometterlo).
+- **Ondate di calore**: **190 ondate totali** (145 fino al 2025 + 16 nuove
+  nel solo 2026, primi 7 mesi dell'anno — coerente con un'estate 2026
+  già calda). La disponibilità di dati 2026 ha anche fatto emergere un bug
+  (vedi sotto).
+- **Moran's I = 0.1319** (atteso sotto casualità: -0.016), **p=0.001 —
+  ancora più significativo che con 44 comuni** (era 0.1006, p=0.002).
+- **Cluster K-means (k=3)**, ricomposizione con i 19 comuni nuovi:
+  - **Cluster 0, alpino** (3.7°C medi, 14 comuni): Acceglio, Aisone,
+    Alagna Valsesia, Bardonecchia, Briga Alta, Ceresole Reale, Claviere,
+    Entracque, Formazza, Gravere, Macugnaga, Rorà, Sauze di Cesana,
+    Usseglio.
+  - **Cluster 1, intermedio** (11.4°C medi, 30 comuni): la maggioranza dei
+    comuni pedemontani/collinari (Biella, Cuneo, Verbania, ecc.) più molti
+    dei 19 nuovi.
+  - **Cluster 2, pianura calda** (13.1°C medi, 18 comuni): Alessandria,
+    Asti, Torino, Vercelli, Novara e altri comuni di pianura.
+
+**Bug reale trovato e corretto grazie al dato 2026**: `frequency_by_year()`
+in `heatwave_stats.py` aveva un `reindex(range(2000, 2026))` fisso nel
+codice — un anno finale hardcoded che, con dati fermi al 2025, non aveva
+mai fatto danni, ma che con l'arrivo dei dati 2026 **scartava in silenzio
+le 16 ondate di quest'anno** dal grafico a barre della dashboard (nessun
+errore, semplicemente sparivano). Scoperto confrontando il conteggio
+diretto da `heatwave_events` (190) con l'output della funzione (174,
+mancavano esattamente le 16 del 2026). Fix: range dinamico
+(`df['year'].min()`/`.max()`) invece di limiti fissi nel codice — stesso
+tipo di bug, root cause diversa, del reindex già visto altrove nel
+progetto (vincoli "temporanei" scritti come costanti fisse che invecchiano
+male). Stesso bug trovato e corretto anche nella dashboard
+(`components/filters.py`: `YEAR_MIN, YEAR_MAX = 2000, 2025` fisso, reso
+dinamico dalla data reale in `temperature`).
 
 ## `trend_analysis.py` — trend di riscaldamento
 
@@ -83,6 +135,19 @@ Mann-Kendall/regressione lineare (l'entità numerica differisce
 leggermente per via della metodologia diversa: STL confronta due medie
 annuali sulla componente smussata, la regressione lineare usa tutti i 26
 anni).
+
+**Rieseguita il 2026-07-17 su 63 comuni** (~27 minuti, eseguita in
+background per via del tempo di calcolo su 63 serie giornaliere estese
+fino ad oggi): componente di trend in aumento in **62 comuni su 63**.
+L'unica eccezione è ora **Briga Alta** (-1.56°C di variazione totale di
+trend), uno dei 19 comuni aggiunti — **stesso identico comune** segnalato
+come raffreddamento significativo da Mann-Kendall/regressione lineare
+(-0.63°C/decade, p=0.0014). Le due metodologie, completamente
+indipendenti (STL confronta medie smussate a inizio/fine periodo, Mann-
+Kendall+regressione guardano l'intera serie annuale), **concordano sullo
+stesso comune anomalo** — un indizio che il segnale è reale e non un
+artefatto di un singolo metodo, pur restando un solo caso su 63 che non
+permette conclusioni forti sulle cause.
 
 ## `spatial_analysis.py` — Moran's I e clustering climatico
 
