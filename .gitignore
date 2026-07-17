@@ -59,10 +59,14 @@ results/
 *.qgz~
 *~
 
-# Dati geografici grezzi di grandi dimensioni (es. CORINE Land Cover
-# scaricato da Copernicus) - superano il limite di 100MB di GitHub
+# Dati geografici grezzi di grandi dimensioni (es. CORINE Land Cover,
+# raster NDVI Copernicus Global Land Service) - superano il limite di
+# 100MB di GitHub (il file NDVI globale scaricato il 2026-07-17 e' 1.3GB)
 *.gpkg
 *.gdb/
+*.tif
+*.tiff
+data/external/ndvi/
 
 # Streamlit
 .streamlit/
