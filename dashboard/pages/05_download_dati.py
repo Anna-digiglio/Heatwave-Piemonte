@@ -20,7 +20,7 @@ st.caption("Tutti i dati e i risultati mostrati in questo sito, scaricabili in f
 
 FILES = [
     (
-        "Temperature pulite (giornaliere, 2000-2025)",
+        "Temperature pulite (giornaliere, 8 capoluoghi)",
         "Una riga per ogni giorno e comune: temperatura minima/media/massima, precipitazione. È la fonte di tutti i grafici del sito.",
         Path(config.get('paths.processed_data')) / 'temperature_clean.csv',
     ),
