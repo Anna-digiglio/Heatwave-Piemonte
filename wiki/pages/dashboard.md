@@ -43,10 +43,11 @@ dashboard/
 │   └── 05_download_dati.py         # export CSV (dati puliti + risultati di analisi)
 └── components/
     ├── __init__.py                 # bootstrap sys.path (vedi bug sotto)
-    ├── constants.py                # palette colori, soglie fasce altitudinali, capoluoghi, riferimenti letteratura, etichette Mann-Kendall (2026-07-15)
+    ├── constants.py                # palette colori, soglie fasce altitudinali, capoluoghi, riferimenti letteratura, etichette Mann-Kendall (2026-07-15); token identità "calore" THEME_*/FONT_*/MAP_TILES (2026-07-17)
     ├── filters.py                  # filtri anni/provincia, inline per pagina (non più sidebar dal 2026-07-15)
     ├── heatwave_definitions.py     # definizione alternativa (percentile) di ondata di calore, solo per confronto metodologico (2026-07-15)
-    ├── styling.py                  # CSS condiviso, iniettato in ogni pagina (2026-07-15)
+    ├── styling.py                  # CSS condiviso + componenti HTML (hero/card/numeri chiave), iniettato in ogni pagina (2026-07-15, ampliato 2026-07-17)
+    ├── charts.py                   # tema condiviso per i grafici Plotly (sfondo trasparente) — nuovo 2026-07-17
     ├── queries.py                  # accesso dati (DB + CSV di output), cache_data
     └── maps.py                     # conversione WKT → GeoJSON per folium
 
@@ -58,8 +59,11 @@ dashboard/
 `Home.py` stesso è la home page, che è la convenzione standard di Streamlit
 (l'entry point mostra già il contenuto della prima pagina; il nome
 `Home.py`, non `app.py`, è la convenzione più diffusa nelle app Streamlit
-multipage — vedi nota sotto). Niente `components/charts.py` separato — i
-grafici Plotly sono scritti direttamente nelle pagine che li usano.
+multipage — vedi nota sotto). **Aggiornamento 2026-07-17**: `components/charts.py`
+esiste ora (vedi sezione "Restyling identità visiva" più sotto) — i grafici
+Plotly restano scritti direttamente nelle pagine che li usano (traccia,
+altezza, margini), `charts.py` aggiunge solo una rifinitura condivisa
+(sfondo trasparente) richiamata prima di ogni `st.plotly_chart`.
 
 **Rinominato `app.py` → `Home.py` il 2026-07-15**, su richiesta esplicita
 dell'utente ("dobbiamo trovare un altro nome per la pagina principale, non
@@ -460,14 +464,15 @@ etichette lunghe come "🔍 Nessun trend chiaro" tagliato a metà dentro
   capo su due righe invece di sparire. Chiamata una volta per pagina,
   subito dopo `st.set_page_config()`, in `Home.py` e in tutte le pagine di
   `pages/`.
-- **Deliberatamente non fatto**: non sono stati cercati selettori CSS per
-  "abbellire" i riquadri di `st.container(border=True)` (card della home) —
-  Streamlit li renderizza con classi generate dinamicamente
-  (`st-emotion-cache-*`), non con un `data-testid` stabile; un selettore
-  indovinato si sarebbe rotto al primo aggiornamento di Streamlit. Il loro
-  aspetto (angoli arrotondati, bordo) viene comunque dal nuovo
-  `baseRadius`/`borderColor` del tema, che si applica "alla maggior parte
-  degli elementi UI" a livello di framework, senza bisogno di CSS fragile.
+- **Claim superato il 2026-07-17**: questa sezione diceva che le card della
+  home non erano stilizzabili via CSS perché Streamlit le renderizza con
+  classi generate dinamicamente (`st-emotion-cache-*`). Streamlit 1.58
+  (la versione installata anche allora) espone in realtà `st.container(key=...)`,
+  che aggiunge una classe **stabile** `st-key-<key>` al wrapper (verificato
+  nel bundle JS installato, funzione `iV()` che genera `st-key-` + slug) —
+  la limitazione non era nel framework ma nel non aver ancora scoperto/usato
+  questo parametro. Le card della home sono state riscritte di conseguenza,
+  vedi sezione "Restyling identità visiva" più sotto.
 
 **Verifica**: tutte le pagine compilate (`py_compile`) e ri-verificate con
 `AppTest` (nessuna eccezione) dopo l'aggiunta di `inject_custom_css()`;
@@ -475,6 +480,90 @@ server live riavviato (i cambi a `.streamlit/config.toml` richiedono un
 riavvio completo, non bastano l'hot-reload di Streamlit) e verificato con
 un solo processo in ascolto sulla porta 8501 (vedi bug dei processi
 duplicati sotto).
+
+## Restyling identità visiva "calore" (2026-07-17)
+
+Su richiesta esplicita dell'utente ("frontend troppo minimalista e piatto,
+sembra un PDF"): restyling della Home, propagato a tipografia/mappe/grafici
+delle altre 4 pagine. Processo: prima un **mockup HTML statico** (Artifact,
+non nel repository) per validare la direzione visiva senza iterare
+direttamente nel codice Streamlit — un giro di feedback ("sfondo troppo
+nero") ha spostato la base da quasi-nero (`#0a0e14`) a grigio ardesia
+(`#1c2130`/`#262c3d`) prima di implementare.
+
+**Scelta chiave**: niente palette nuova — `THEME_COLD`/`THEME_MID`/`THEME_HOT`
+in `components/constants.py` riusano gli stessi hex già usati nei grafici
+(`NEUTRAL_COLOR`/`ALERT_COLOR` esistenti + un arancio `#f39c12` già presente
+come colore letterale in più punti). L'interfaccia eredita il linguaggio
+cromatico dei dati (freddo→caldo), non il contrario.
+
+**Cosa segue il tema chiaro/scuro nativo di Streamlit, cosa no**: `st.plotly_chart`
+usa di default `theme="streamlit"` (verificato in
+`streamlit/elements/plotly_chart.py` del pacchetto installato), che adatta
+già da solo font/colori dei grafici al tema chiaro/scuro attivo — per
+questo `components/charts.py::apply_chart_theme()` tocca **solo** lo sfondo
+(trasparente) e non i colori del testo: fissarli avrebbe rotto
+l'adattamento automatico se l'utente passa al tema chiaro. Per lo stesso
+motivo la tipografia globale (Fraunces per i titoli, Manrope per il corpo,
+JetBrains Mono per le cifre di `st.metric`) cambia solo i font, mai i
+colori. Hero, card di navigazione e striscia "numeri chiave" in `Home.py`
+sono invece componenti **nuovi** (non widget nativi Streamlit) con
+un'identità scura **fissa**, scelta deliberata come il mockup approvato,
+non un tentativo di inseguire il toggle chiaro/scuro.
+
+- **`components/constants.py`**: nuovi token `THEME_INK/SURFACE/BORDER/TEXT/...`,
+  `FONT_DISPLAY` (Fraunces), `FONT_BODY` (Manrope), `FONT_MONO` (JetBrains
+  Mono), `MAP_TILES` (vedi nota sotto: tornato a `"CartoDB positron"` dopo
+  un giro di feedback).
+- **`components/styling.py`**: `@import` Google Fonts; tipografia globale
+  (h1/h2/h3 → Fraunces, corpo → Manrope, `st.metric` → monospace tabulare);
+  hover/attivo sulla nav della sidebar via `[data-testid="stSidebarNavLink"]`
+  + `[aria-current="page"]` (API stabili, verificate nel bundle JS
+  installato — non classi hashate); tre nuove funzioni: `render_hero()`,
+  `render_nav_card_header()`, `render_stats_row()`.
+- **`components/charts.py`** (nuovo): `apply_chart_theme(fig)`, richiamato
+  prima di ogni `st.plotly_chart` in `02_analisi_temporale.py` (5 grafici),
+  `03_analisi_spaziale.py` (2) e `04_ondate_di_calore.py` (4).
+- **Mappe Folium — provato e poi ripristinato**: tentativo iniziale con
+  `MAP_TILES = "CartoDB dark_matter"` nelle 7 mappe di `Home.py`,
+  `03_analisi_spaziale.py` e `04_ondate_di_calore.py`. **Respinto
+  dall'utente lo stesso giorno** ("mappe brutte, scure, troppi casini") —
+  le etichette/strade del tile scuro competevano con i poligoni colorati
+  sovrapposti, e non era mai stato validato su un mockup reale (quello
+  approvato mostrava una mappa come illustrazione SVG statica, non un vero
+  tile Folium). `MAP_TILES` è tornato a `"CartoDB positron"` (comportamento
+  pre-restyling); vedi `wiki/log.md` per il dettaglio del giro di feedback.
+- **`Home.py`**: hero termico (eyebrow + titolo in Fraunces con gradiente
+  di testo + aurora di sfondo animata, `prefers-reduced-motion` rispettato);
+  le 3 card di navigazione ora sono veri `st.container(key="navcard-<slug>")`
+  con bordo a gradiente diverso per card (cold/mid/hot) e hover
+  lift+glow, `st.page_link` nativo mantenuto dentro lo stesso container per
+  non rompere la navigazione SPA con un `<a>` costruito a mano; striscia
+  "numeri chiave" con sparkline SVG inline (illustrativa, non calcolata
+  dalla serie storica reale — dichiarato nel docstring di
+  `render_stats_row()`).
+
+**Bug reale trovato dopo il primo giro** (l'utente ha riaperto la dashboard
+e ha visto sfondo ancora nero + HTML grezzo a schermo): `render_hero()` e
+`_stat_tile_html()` costruivano l'HTML con f-string multi-riga indentate
+secondo lo stile del codice Python. CommonMark (il parser di `st.markdown`,
+anche con `unsafe_allow_html=True`) tratta una riga indentata di 4+ spazi
+come **blocco di codice letterale**, non come HTML — hero/card/stats non
+diventavano mai HTML vero, da cui il testo grezzo visibile e lo sfondo
+scuro nativo di Streamlit al posto di `THEME_INK`. Fix: entrambe le
+funzioni riscritte su una sola riga (nessun `\n`/indentazione nell'output),
+stesso pattern già usato con successo in `render_nav_card_header()`.
+Verificato con `AppTest` che nessuno dei blocchi markdown della Home
+inizi più con whitespace/newline.
+
+**Verifica** (nessun browser disponibile in questa sessione): `py_compile`
+su tutti i file toccati; `streamlit.testing.v1.AppTest` su tutte e 5 le
+pagine con il database reale — nessuna eccezione; server live avviato
+(`streamlit run dashboard/Home.py`), `curl` con esito 200, poi fermato
+correttamente (un solo processo, verificato con `netstat` prima di
+`taskkill`). La verifica visiva effettiva (hover/gradiente/font renderizzati
+davvero) resta da fare in un browser reale — non è stata affermata come
+completata.
 
 ## Come verificare senza aprire un browser
 

@@ -31,7 +31,7 @@ dubbio, la sorgente grezza (codice/SQL/config) prevale sempre sulla wiki.
 ## Visualizzazione
 
 - [Mappe GIS](pages/gis-maps.md) — 3 progetti QGIS, **generati via PyQGIS ed eseguiti su dati reali**
-- [Dashboard](pages/dashboard.md) — dashboard Streamlit, **implementata, eseguita su dati reali e ampliata** (5 pagine, sidebar filtri, mappe coropletiche PostGIS)
+- [Dashboard](pages/dashboard.md) — dashboard Streamlit, **implementata, eseguita su dati reali e ampliata** (5 pagine, mappe coropletiche PostGIS), **restyling identità "calore" 2026-07-17** (hero/card/tipografia/mappe scure)
 
 ## Qualità del codice
 

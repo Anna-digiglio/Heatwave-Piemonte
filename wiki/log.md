@@ -1670,3 +1670,104 @@ Log cronologico append-only. Ogni riga: data, azione, pagine toccate.
   Global Land Service)"), `data-model.md` (nuova tabella
   `municipality_ndvi`), `paper-scientifico.md` (voce "NDVI" in "Idee da
   esplorare" segnata "in corso"), `project-status.md`.
+
+- **2026-07-17** — INGEST. Restyling identità visiva "calore" della
+  dashboard Streamlit, su richiesta esplicita dell'utente ("frontend troppo
+  minimalista e piatto, sembra un PDF"). Processo: analisi della struttura
+  reale (`dashboard/`), mockup HTML statico (Artifact) per validare la
+  direzione visiva prima di toccare il codice — un giro di feedback
+  dell'utente ("sfondo troppo nero") ha spostato la base da quasi-nero a
+  grigio ardesia prima dell'implementazione. Palette derivata dai colori
+  già usati nei grafici (non introdotta ex novo). Toccati: `constants.py`
+  (nuovi token `THEME_*`/`FONT_*`/`MAP_TILES`), `styling.py` (tipografia
+  Fraunces/Manrope/JetBrains Mono, hero, card di navigazione via
+  `st.container(key=...)`, striscia "numeri chiave"), nuovo `charts.py`
+  (sfondo trasparente per Plotly, deliberatamente senza toccare i colori
+  del testo per non rompere l'adattamento automatico chiaro/scuro di
+  `st.plotly_chart(theme="streamlit")`), `Home.py` (hero/card/stats),
+  tile Folium passate da chiare a scure (`CartoDB dark_matter`) in tutte
+  le 7 mappe di `Home.py`/`03_analisi_spaziale.py`/`04_ondate_di_calore.py`.
+  Corretto un claim non più valido nella wiki: una nota del 2026-07-15
+  diceva che le card non erano stilizzabili via CSS per mancanza di un
+  selettore stabile — falso, `st.container(key=...)` (già disponibile
+  nella versione installata) espone la classe stabile `st-key-<key>`.
+  Verificato con `py_compile` + `AppTest` su tutte e 5 le pagine (nessuna
+  eccezione, database reale) e un avvio/arresto di server live; verifica
+  visiva in browser reale non eseguita in questa sessione (nessun tool di
+  automazione browser disponibile) — dichiarato esplicitamente come tale,
+  non spacciato per completo.
+
+  Pagine aggiornate: `dashboard.md` (nuova sezione "Restyling identità
+  visiva", struttura cartelle aggiornata, claim obsoleto corretto),
+  `index.md` (riga di sintesi dashboard).
+
+- **2026-07-17** — LINT/FIX urgente. L'utente ha riaperto la dashboard dopo
+  il restyling sopra e ha segnalato tre problemi: sfondo ancora nero (non
+  il grigio ardesia atteso), **codice HTML grezzo visibile a schermo**,
+  mappe scure giudicate "brutte, troppi casini". Diagnosi:
+  - **Bug reale**: `render_hero()` e `_stat_tile_html()` in `styling.py`
+    costruivano l'HTML con f-string multi-riga indentate secondo lo stile
+    del codice Python (8 spazi). CommonMark (il parser usato da
+    `st.markdown`, anche con `unsafe_allow_html=True`) tratta una riga
+    indentata di 4+ spazi come **blocco di codice letterale**, non come
+    HTML da renderizzare — da qui il codice visibile a schermo. Di
+    conseguenza hero/card/stats non diventavano mai HTML vero: lo sfondo
+    "nero" visto dall'utente era semplicemente il tema scuro nativo di
+    Streamlit (`#0e1117` da `.streamlit/config.toml`), non il token
+    `THEME_INK` che non veniva mai applicato. Fix: entrambe le funzioni
+    riscritte come singola riga (nessun `\n`/indentazione nell'HTML
+    prodotto), stesso pattern già usato (e funzionante) in
+    `render_nav_card_header()`. Verificato con `AppTest` che nessuno dei
+    7 blocchi markdown della Home inizi più con whitespace/newline.
+  - **Regressione non approvata**: le tile Folium scure
+    (`CartoDB dark_matter`) non erano mai state validate su un mockup reale
+    (quello approvato mostrava una mappa come illustrazione SVG statica,
+    non un vero tile Folium) — le etichette/strade del tile scuro
+    competevano visivamente con i poligoni colorati sovrapposti.
+    **`MAP_TILES` riportato a `"CartoDB positron"`** su richiesta esplicita
+    dell'utente, con commento nel codice per non riprovare senza
+    rivalidazione.
+  - Causa separata già risolta in questa stessa giornata (vedi voce
+    precedente più `dashboard.md`): un processo Streamlit rimasto vivo da
+    *prima* delle modifiche aveva ancora in cache la vecchia
+    `components/constants.py` (`ImportError: MAP_TILES`) — non lo stesso
+    bug, ma ha reso la diagnosi iniziale più confusa. Terminato l'intero
+    albero di processi e riavviato pulito.
+
+  Pagine aggiornate: `dashboard.md` (correzione nella sezione "Restyling
+  identità visiva").
+
+- **2026-07-17** — FIX. Dopo il fix del bug HTML sopra, l'utente ha
+  confermato le card corrette ma segnalato che **lo sfondo resta piatto e
+  nero**, con un accenno di blu isolato "a lato". Causa root, distinta dal
+  bug precedente: `.streamlit/config.toml` → `[theme.dark]` usava ancora
+  `backgroundColor = "#0e1117"` / `secondaryBackgroundColor = "#161a23"`,
+  i valori quasi-neri della sessione 2026-07-15, **mai aggiornati** quando
+  sono stati introdotti i token `THEME_INK`/`THEME_SURFACE` (grigio
+  ardesia) in `constants.py` più sopra in questa stessa giornata. L'utente
+  usa il tema **scuro** di Streamlit (il default dichiarato in
+  `[theme]` è `base = "light"`, ma l'esperienza riportata — sfondo nero,
+  non bianco — implica che l'abbia selezionato manualmente dal menu
+  Streamlit): quindi vedeva lo sfondo nativo quasi-nero ovunque, con hero e
+  card (di poco più chiari) che vi galleggiavano sopra senza fondersi —
+  letto come "sfondo sempre nero" nonostante il restyling. Fix: allineati
+  `[theme.dark]` e `[theme.dark.sidebar]` ai token `THEME_INK` (`#1c2130`),
+  `THEME_SURFACE` (`#262c3d`), `THEME_TEXT` (`#f1f3f8`) e `primaryColor`
+  portato a `THEME_COLD` (`#3498db`, invece del blu `#60a5fa` scollegato
+  dalla palette) — così lo sfondo nativo di **tutte e 5 le pagine** (non
+  solo gli elementi custom della Home) coincide con l'identità "calore".
+  Verificato con `AppTest` (nessuna eccezione) e riavvio completo del
+  server (i cambi a `config.toml` non si applicano con l'hot-reload,
+  richiedono restart — nota già presente in `dashboard.md` dalla sessione
+  2026-07-15). Tema chiaro (`[theme]`) non toccato: il problema segnalato
+  riguardava solo il tema scuro.
+
+  Pagine aggiornate: nessuna ancora — sezione dedicata da aggiungere a
+  `dashboard.md` se l'utente conferma che il fix risolve.
+
+  **Seguito, stesso giorno**: l'utente ha confermato lo sfondo corretto ma
+  chiesto un colore diverso per la sidebar (prima identica al contenuto
+  principale). Aggiunto `THEME_INK_SIDEBAR = "#161a26"` (leggermente più
+  scuro di `THEME_INK`) in `constants.py`, applicato a
+  `[theme.dark.sidebar].backgroundColor` in `config.toml`. Restart completo
+  del server (richiesto per i cambi a `config.toml`).
