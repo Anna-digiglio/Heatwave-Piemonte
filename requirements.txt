@@ -30,6 +30,8 @@ xarray==2026.4.0
 pymannkendall==1.4.3
 scikit-learn==1.9.0
 statsmodels==0.14.6
+libpysal==4.15.0
+spreg==1.9.0
 
 # --- Visualization ---
 matplotlib==3.10.9
