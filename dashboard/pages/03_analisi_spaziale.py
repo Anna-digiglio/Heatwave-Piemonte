@@ -16,8 +16,9 @@ import streamlit as st
 from branca.colormap import LinearColormap
 from streamlit_folium import st_folium
 
+from components.charts import apply_chart_theme
 from components.constants import (
-    CLUSTER_COLORS, LAND_COVER_COLORS, LAND_COVER_LABELS,
+    CLUSTER_COLORS, LAND_COVER_COLORS, LAND_COVER_LABELS, MAP_TILES,
     TEMPERATURE_COLORSCALE, TREND_COLORSCALE, elevation_band,
 )
 from components.filters import render_province_filter, render_year_range_filter
@@ -133,7 +134,7 @@ with tab_overview:
         vmin, vmax = merged_province['temp_mean_annual'].min(), merged_province['temp_mean_annual'].max()
         cmap_temp = LinearColormap(['#3498db', '#f7f7f7', '#e74c3c'], vmin=vmin, vmax=vmax)
 
-        m1 = folium.Map(location=[45.0, 8.0], zoom_start=8, tiles='CartoDB positron')
+        m1 = folium.Map(location=[45.0, 8.0], zoom_start=8, tiles=MAP_TILES)
         for _, row in merged_province.iterrows():
             if pd.isna(row['temp_mean_annual']):
                 color = '#cccccc'
@@ -175,7 +176,7 @@ with tab_overview:
         cmap_trend = LinearColormap(
             ['#3498db', '#f7f7f7', '#e74c3c'], vmin=-max_abs_slope, vmax=max_abs_slope
         )
-        m2 = folium.Map(location=[45.0, 8.0], zoom_start=8, tiles='CartoDB positron')
+        m2 = folium.Map(location=[45.0, 8.0], zoom_start=8, tiles=MAP_TILES)
         for _, row in trend_points_f.iterrows():
             color = cmap_trend(row['lr_slope_per_decade'])
             folium.GeoJson(
@@ -214,7 +215,7 @@ with tab_overview:
             labels={'fascia': 'Fascia altitudinale', 'temp_mean_annual': 'Temp. media annuale (°C)'},
         )
         fig_elev.update_layout(height=350, margin=dict(t=10, b=10), showlegend=False)
-        st.plotly_chart(fig_elev, width='stretch')
+        st.plotly_chart(apply_chart_theme(fig_elev), width='stretch')
 
     st.subheader("Uso del suolo per comune")
     st.caption(
@@ -232,7 +233,7 @@ with tab_overview:
     if lc_geo_f.empty:
         st.info("Nessun comune per il filtro provincia scelto.")
     else:
-        m_lc = folium.Map(location=[45.0, 8.0], zoom_start=8, tiles='CartoDB positron')
+        m_lc = folium.Map(location=[45.0, 8.0], zoom_start=8, tiles=MAP_TILES)
         for _, row in lc_geo_f.iterrows():
             color = LAND_COVER_COLORS.get(row['dominant_class'], '#cccccc')
             folium.GeoJson(
@@ -266,7 +267,7 @@ with tab_overview:
     else:
         log_density = np.log10(pop_geo_f['pop_density'].clip(lower=0.1))
         cmap_pop = LinearColormap(['#fef0d9', '#fc8d59', '#b30000'], vmin=log_density.min(), vmax=log_density.max())
-        m_pop = folium.Map(location=[45.0, 8.0], zoom_start=8, tiles='CartoDB positron')
+        m_pop = folium.Map(location=[45.0, 8.0], zoom_start=8, tiles=MAP_TILES)
         for (_, row), log_val in zip(pop_geo_f.iterrows(), log_density):
             color = cmap_pop(log_val)
             folium.GeoJson(
@@ -326,7 +327,7 @@ with tab_overview:
         if x_variable == 'pop_density':
             fig_scatter.update_xaxes(type='log')
         fig_scatter.update_layout(height=380, margin=dict(t=10, b=10), legend=dict(orientation='h'))
-        st.plotly_chart(fig_scatter, width='stretch')
+        st.plotly_chart(apply_chart_theme(fig_scatter), width='stretch')
 
         corr = scatter_df[x_variable].corr(scatter_df['temp_mean_annual'])
         st.metric("Correlazione (Pearson r, tutti i comuni nel filtro)", f"{corr:+.2f}")
@@ -373,7 +374,7 @@ with tab_detail:
         merged = geo_df.merge(spatial_df, on='municipality_name')
         col_map, col_info = st.columns([3, 2])
         with col_map:
-            m3 = folium.Map(location=[45.0, 8.0], zoom_start=8, tiles='CartoDB positron')
+            m3 = folium.Map(location=[45.0, 8.0], zoom_start=8, tiles=MAP_TILES)
             for _, row in merged.iterrows():
                 color = CLUSTER_COLORS.get(int(row['climate_cluster']), '#95a5a6')
                 folium.GeoJson(
