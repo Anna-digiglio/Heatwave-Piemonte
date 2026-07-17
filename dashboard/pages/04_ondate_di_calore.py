@@ -18,7 +18,8 @@ from plotly.colors import sample_colorscale
 from plotly.subplots import make_subplots
 from streamlit_folium import st_folium
 
-from components.constants import TEMPERATURE_COLORSCALE
+from components.charts import apply_chart_theme
+from components.constants import MAP_TILES, TEMPERATURE_COLORSCALE
 from components.filters import render_province_filter, render_year_range_filter
 from components.heatwave_definitions import identify_heatwaves_percentile
 from components.maps import render_gradient_legend, wkt_to_geojson
@@ -110,7 +111,7 @@ with tab_overview:
         fig_freq.update_layout(height=350, margin=dict(t=10, b=10), legend=dict(orientation='h'))
         fig_freq.update_yaxes(title_text='N. ondate', secondary_y=False)
         fig_freq.update_yaxes(title_text='Durata media (gg)', secondary_y=True)
-        st.plotly_chart(fig_freq, width='stretch')
+        st.plotly_chart(apply_chart_theme(fig_freq), width='stretch')
         st.caption(
             "2003 e 2019 emergono come gli anni con più ondate, coerente con le "
             "note ondate di calore europee di quegli anni."
@@ -131,7 +132,7 @@ with tab_overview:
             range_color=(0, vmax_intensity),
         )
         fig_int.update_layout(height=300, margin=dict(t=10, b=10), coloraxis_showscale=False)
-        st.plotly_chart(fig_int, width='stretch')
+        st.plotly_chart(apply_chart_theme(fig_int), width='stretch')
 
         def _intensity_colormap(value, _vmax=vmax_intensity):
             norm = max(0.0, min(1.0, value / _vmax))
@@ -157,7 +158,7 @@ with tab_overview:
     )
     fig_cum.update_traces(line=dict(color='#e74c3c', width=3))
     fig_cum.update_layout(height=300, margin=dict(t=10, b=10))
-    st.plotly_chart(fig_cum, width='stretch')
+    st.plotly_chart(apply_chart_theme(fig_cum), width='stretch')
 
     st.subheader("Dove si concentrano geograficamente le ondate")
     st.caption("Colore più intenso = più ondate rilevate in quel comune (periodo/filtro attuale).")
@@ -172,7 +173,7 @@ with tab_overview:
     else:
         vmax = max(merged_geo['n_heatwaves_filtro'].max(), 1)
         cmap = LinearColormap(['#fee5d9', '#fb6a4a', '#a50f15'], vmin=0, vmax=vmax)
-        m = folium.Map(location=[45.0, 8.0], zoom_start=8, tiles='CartoDB positron')
+        m = folium.Map(location=[45.0, 8.0], zoom_start=8, tiles=MAP_TILES)
         for _, row in merged_geo.iterrows():
             color = cmap(row['n_heatwaves_filtro'])
             folium.GeoJson(
@@ -209,7 +210,7 @@ with tab_overview:
             labels={'x': 'Giorno dell\'anno', 'y': 'Anno', 'color': 'N. comuni in ondata'},
         )
         fig_cal.update_layout(height=400, margin=dict(t=10, b=10))
-        st.plotly_chart(fig_cal, width='stretch')
+        st.plotly_chart(apply_chart_theme(fig_cal), width='stretch')
 
 st.subheader("Statistiche per comune")
 st.caption("Quale comune ha avuto più ondate, più lunghe, o più intense (su tutto il periodo disponibile)?")
