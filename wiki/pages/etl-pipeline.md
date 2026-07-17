@@ -214,7 +214,8 @@ seconda macchina, senza accesso diretto al DB del titolare, comuni
 mancanti dedotti dalle preview PNG dei progetti QGIS).
 
 **File consegnati** (fuori da Git, `data/raw/` — recuperati dal canale
-usato per la consegna, non da `git pull`):
+usato per la consegna, non da `git pull`), **poi uniti e rimossi come file
+separati** (vedi in fondo alla sezione):
 
 - `data/raw/temperature_data_extra_helper_35comuni.csv` — 339.325 righe,
   35 comuni, 2000-01-01 → 2026-07-17. Colonne:
@@ -255,6 +256,28 @@ chiamare `insert_temperature_for_municipalities()`.
   modello di regressione spaziale) rieseguiti su 98 comuni — vedi
   [Analisi Statistica](statistical-analysis.md) per i risultati.
 - Mappe QGIS rigenerate (`python-qgis-ltr.bat build_maps.py`).
+
+**Pulizia dei file consegnati (stessa sessione, su richiesta dell'utente)**:
+una volta importati i dati nel DB, i due file consegnati dalla
+collaboratrice erano ridondanti (il loro contenuto vive già in
+`temperature` e in questa pagina). Uniti invece di lasciarli come file
+separati: le 339.325 righe di `temperature_data_extra_helper_35comuni.csv`
+sono state riformattate allo schema di `data/raw/temperature_data_extra.csv`
+(`istat_code` → `municipality_id`, stessa risoluzione già fatta per
+l'import) e appese in coda (526.078 → **865.403 righe**). `temperature_data_extra.csv`
+resta quindi l'unico file raw per i comuni "extra" (oltre agli 8
+capoluoghi in `temperature_data.csv`), a prescindere da quale sessione o
+macchina abbia scaricato quali righe. `riepilogo_35_comuni_extra.csv`
+eliminato senza sostituto: era solo una tabella di comodo per ispezionare
+il file senza aprirlo, resa inutile dall'import. Entrambi i file
+originali della collaboratrice **non esistono più** in `data/raw/` —
+questa sezione ne descrive il contenuto e il flusso per intero, dato che
+la wiki resta la sola documentazione di come sono stati ottenuti e
+importati. **Non toccato** `data/processed/temperature_extra_35_clean.csv`
+(versione già pulita, prodotta durante l'import): resta un file separato,
+stesso pattern di frammentazione già esistente in `data/processed/` per
+le altre estensioni (`temperature_clean_extra.csv`,
+`temperature_clean_extra_delta.csv`, `temperature_clean_recent.csv`).
 
 ## Passaggi pianificati ma non ancora scritti
 
