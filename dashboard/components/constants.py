@@ -91,6 +91,40 @@ CLUSTER_COLORS = {0: "#3498db", 1: "#f39c12", 2: "#e74c3c"}
 NEUTRAL_COLOR = "#3498db"
 ALERT_COLOR = "#e74c3c"
 
+# --- Design tokens per l'identità visiva "calore" della dashboard ---------
+# Riusano la stessa palette freddo→caldo già impiegata nei grafici sopra
+# (NEUTRAL_COLOR, ALERT_COLOR) invece di introdurne una nuova: l'interfaccia
+# eredita il linguaggio cromatico dei dati, non il contrario. Usati da
+# `styling.py` (CSS di hero/card/sidebar) e `charts.py` (tema Plotly).
+THEME_COLD = NEUTRAL_COLOR
+THEME_MID = "#f39c12"
+THEME_HOT = ALERT_COLOR
+THEME_HOT_DEEP = "#c0392b"
+
+# Grigio ardesia (non nero puro): scelta dopo un giro di feedback sul mockup
+# della Home ("sfondo troppo nero"), vedi wiki/log.md 2026-07-17.
+THEME_INK = "#1c2130"
+THEME_INK_SIDEBAR = "#161a26"  # leggermente più scuro dell'ink principale, per distinguere il pannello laterale dal contenuto
+THEME_SURFACE = "#262c3d"
+THEME_SURFACE_RAISED = "#2d3448"
+THEME_BORDER = "rgba(255,255,255,0.10)"
+THEME_BORDER_STRONG = "rgba(255,255,255,0.18)"
+THEME_TEXT = "#f1f3f8"
+THEME_TEXT_MUTED = "#a3adc2"
+THEME_TEXT_FAINT = "#737e97"
+
+FONT_DISPLAY = "'Fraunces', 'Iowan Old Style', 'Palatino Linotype', Georgia, serif"
+FONT_BODY = "'Manrope', -apple-system, 'Segoe UI', system-ui, sans-serif"
+FONT_MONO = "'JetBrains Mono', ui-monospace, 'Cascadia Code', 'SFMono-Regular', monospace"
+
+# Tornata a "CartoDB positron" (2026-07-17): il tentativo con
+# "CartoDB dark_matter" è stato respinto dall'utente ("mappe brutte, scure,
+# troppi casini") — le etichette/strade del tile scuro competono con i
+# poligoni colorati sovrapposti, mai validato su un mockup reale (nel
+# mockup approvato la mappa era un'illustrazione SVG statica, non un vero
+# tile Folium). Non riprovare senza rivalidare la scelta con l'utente.
+MAP_TILES = "CartoDB positron"
+
 # Uso del suolo (CORINE Land Cover, vedi municipality_land_cover e
 # wiki/pages/data-sources.md): colori vicini alla palette ufficiale CLC per
 # ciascuna categoria di Livello 1 (presa da data/external/clc_legend.csv,
