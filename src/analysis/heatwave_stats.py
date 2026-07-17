@@ -105,8 +105,14 @@ def frequency_by_year(df: pd.DataFrame) -> pd.DataFrame:
         avg_duration_days=('duration_days', 'mean'),
         avg_intensity=('intensity_index', 'mean'),
     )
+    # Range dinamico (non più un fisso 2000-2025): un anno finale hardcoded
+    # nascondeva silenziosamente le ondate rilevate nell'anno corrente
+    # quando la serie storica è stata estesa fino ad oggi (bug reale
+    # trovato il 2026-07-17: 16 ondate del 2026 scartate dal reindex).
+    first_year = int(df['year'].min())
+    last_year = int(df['year'].max())
     return (
-        yearly.reindex(range(2000, 2026), fill_value=0)
+        yearly.reindex(range(first_year, last_year + 1), fill_value=0)
         .round(2)
         .reset_index()
         .rename(columns={'index': 'year'})
