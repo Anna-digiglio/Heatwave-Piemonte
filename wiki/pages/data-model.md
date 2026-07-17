@@ -77,6 +77,23 @@ può divergere leggermente, in caso di conflitto fidati dello script SQL).
   Usato dalla pagina "Analisi Spaziale" della dashboard per il confronto per
   fascia altitudinale (pianura/collina/montagna).
 
+## `municipality_ndvi` (nuova tabella, `sql/04_ndvi.sql`, 2026-07-17)
+
+- PK `municipality_id` (FK 1:1 verso `municipalities`, `ON DELETE CASCADE`)
+- `ndvi_mean/min/max/stddev` (NUMERIC(5,4), range -0.08..0.92), `pct_valid_pixels`
+  (quota di area del comune non mascherata da nuvole/neve/acqua nel
+  composito usato), `vegetation_class` (bucket categorico da `ndvi_mean`:
+  `no_vegetation`/`sparse`/`moderate`/`dense`/`very_dense`),
+  `acquisition_period`, `source_product` (default `'CGLS NDVI 300m V3'`), `computed_at`
+- Tabella satellite separata (stesso pattern di `municipality_land_cover`)
+  invece di colonne su `municipalities` — misura continua di vegetazione,
+  complementare alle classi discrete di `municipality_land_cover` (CORINE):
+  vedi [Fonti dati](data-sources.md) per la motivazione completa e la
+  fonte (Copernicus Global Land Service).
+- **Non ancora popolata** (2026-07-17): script `src/data_acquisition/process_ndvi.py`
+  e tabella pronti, manca il download manuale del GeoTIFF NDVI (Copernicus
+  Data Space Ecosystem) da parte dell'utente — vedi [Fonti dati](data-sources.md).
+
 ### `temperature` — tabella principale, serie storica giornaliera
 - PK `temperature_id BIGSERIAL`
 - FK `municipality_id`, `province_id`

@@ -284,3 +284,61 @@ comune per l'uso del suolo (cambia lentamente, un'epoca CLC copre ~6 anni),
 ma da dichiarare esplicitamente come limite nel paper, non da nascondere.
 
 Vedi [Stato del Progetto](project-status.md).
+
+## NDVI (Copernicus Global Land Service) — verde da satellite, in corso (2026-07-17)
+
+Motivazione: terza covariata esplicativa per il paper scientifico (vedi
+[Articolo scientifico](paper-scientifico.md)), complementare a
+`municipality_land_cover` — CORINE da' classi discrete di uso del suolo,
+l'NDVI da' una misura continua di densita' della vegetazione (utile anche
+*dentro* una classe, es. un comune "urbano" con molti alberi vs uno senza).
+
+**Decisione presa con l'utente (2026-07-17)**, stessa logica costi/benefici
+gia' applicata a CORINE: scartate le opzioni Sentinel-2 vero (via Google
+Earth Engine o Copernicus Data Space Ecosystem Statistical API — 10m di
+risoluzione ma richiedono un account aggiuntivo, cloud-masking, e nel caso
+CDSE lo stesso tipo di friction gia' visto con le API Copernicus/ISTAT del
+progetto), a favore di **Copernicus Global Land Service NDVI 300m V3**: un
+prodotto NDVI gia' calcolato (composito 10-giornaliero, dal 2014 a oggi),
+scaricabile come GeoTIFF, nessuna elaborazione di bande grezze richiesta.
+Risoluzione piu' bassa di Sentinel-2 (300m vs 10m) ma i comuni piemontesi
+sono quasi tutti piu' grandi di un pixel, quindi la media per comune resta
+sensata (limite da dichiarare esplicitamente nel paper, come gia' fatto per
+la staticita' temporale di CLC2018).
+
+**Nota su dove si scarica**: a differenza di CLC (portale
+`land.copernicus.eu`, tool "Download by area" dedicato), l'accesso ai dati
+NDVI globali e' migrato al **Copernicus Data Space Ecosystem**
+(`dataspace.copernicus.eu`, Copernicus Browser) — richiede un account
+gratuito separato da quello EU Login usato per CLC. Non ancora verificato
+se il Browser espone un ritaglio diretto sull'area del Piemonte o se
+richiede di scaricare tile globali/continentali e ritagliare in locale;
+va documentato qui il percorso reale una volta completato (stesso spirito
+dei "vicoli ciechi" documentati per popolazione/CLC sopra).
+
+**Formato dati**: raster GeoTIFF a 8 bit, EPSG:4326 (grid geografica
+globale — a differenza di CLC/EPSG:3035, qui non serve riproiezione per il
+calcolo delle percentuali). DN (digital number) 0-250 sono NDVI reale via
+`NDVI = DN * 0.004 - 0.08` (range -0.08..0.92); DN 251-255 sono flag
+dedicati (251=missing/bad quality, 252=cloud/shadow, 253=snow/ice,
+254=sea/water, 255=background/nodata) — dettaglio verificato via
+documentazione tecnica Copernicus (Product User Manual NDVI 300m V3 e
+documentazione Sentinel Hub/CDSE), non ancora verificato empiricamente su
+un file scaricato per il Piemonte (rischio noto in questo progetto: i PDF
+Copernicus a volte non corrispondono esattamente al comportamento reale
+del file, vedi i due tentativi di CLC).
+
+**Metodo**: `src/data_acquisition/process_ndvi.py` — zonal stats via
+`rasterstats` (non overlay vettoriale come CLC, qui la sorgente e' un
+raster) tra le geometrie comunali e il raster NDVI, con `all_touched=True`
+per includere anche i pixel solo parzialmente coperti dai comuni piu'
+piccoli (approssimazione nota a 300m di risoluzione). Popola
+`municipality_ndvi` (vedi [Modello Dati](data-model.md)):
+`ndvi_mean/min/max/stddev`, `pct_valid_pixels` (quota di area del comune
+non mascherata da nuvole/neve/acqua nel composito scelto), un
+`vegetation_class` categorico di lettura rapida.
+
+**Stato**: script e tabella pronti, **non ancora eseguito** — manca il
+download manuale del GeoTIFF (da fare dall'utente) e la scelta del
+composito 10-giornaliero da usare (es. un periodo estivo senza troppa
+copertura nuvolosa, per coerenza con l'uso "statico" gia' fatto per CLC).

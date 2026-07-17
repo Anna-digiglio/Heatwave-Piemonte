@@ -201,6 +201,22 @@ pianificato del progetto è completo):
    aggiornamento automatico se in futuro si ricaricano dati nuovi). Vedi
    [Dashboard](dashboard.md).
 
+**Aggiornamento 2026-07-17 (NDVI — predisposizione, non ancora eseguito)**:
+terza covariata esplicativa per il paper (dopo popolazione e CORINE, fatte
+il 2026-07-16) — vedi [Articolo scientifico](paper-scientifico.md).
+Decisione presa con l'utente: Copernicus Global Land Service NDVI 300m V3
+(prodotto gia' calcolato, download manuale) invece di Sentinel-2 vero
+(10m, via GEE o CDSE Statistical API — piu' fedele al nome citato
+originariamente ma piu' complesso, stesso tipo di rischio gia' visto con
+le API Copernicus/ISTAT del progetto). Predisposti `sql/04_ndvi.sql`
+(tabella `municipality_ndvi`) e `src/data_acquisition/process_ndvi.py`
+(zonal stats via `rasterstats`, formula DN→NDVI verificata via
+documentazione Copernicus/Sentinel Hub ma non ancora su un file reale).
+**Manca il download manuale del GeoTIFF** (Copernicus Data Space
+Ecosystem, account diverso da quello EU Login usato per CLC) — compito
+dell'utente, poi l'esecuzione dello script. Vedi [Fonti dati](data-sources.md)
+per il dettaglio completo.
+
 ## Discrepanze da tenere a mente quando si presenta il progetto
 
 `README.md` e `PROJECT_SUMMARY.md` descrivono metriche come "1.7M record",

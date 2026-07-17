@@ -155,8 +155,14 @@ confronto "isola di calore urbana" (Torino vs media provincia, dichiarato
 
 **2. Altre covariate esplicative candidate**, in ordine di sforzo
 crescente:
-- NDVI/verde da satellite (Sentinel-2/Copernicus) — misura continua di
-  vegetazione, complementare alle classi discrete CORINE.
+- NDVI/verde da satellite — **in corso (2026-07-17)**. Scartato Sentinel-2
+  vero (10m, via Google Earth Engine o Copernicus Data Space Ecosystem
+  Statistical API) a favore di Copernicus Global Land Service NDVI 300m V3
+  (prodotto gia' calcolato, stesso pattern low-effort di CLC), decisione
+  presa con l'utente. Tabella `municipality_ndvi` e script
+  `src/data_acquisition/process_ndvi.py` pronti; manca il download manuale
+  del GeoTIFF. Dettaglio completo in [Fonti dati](data-sources.md) e
+  [Modello dati](data-model.md).
 - Pendenza ed esposizione del versante da un DEM (es. Copernicus GLO-30) —
   più dettagliato della sola elevazione del centroide già disponibile; un
   versante esposto a sud scalda diversamente da uno a nord, specie in

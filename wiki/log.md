@@ -1602,3 +1602,60 @@ Log cronologico append-only. Ogni riga: data, azione, pagine toccate.
   ricalcolati + bug), `gis-maps.md` (mappe rigenerate), `dashboard.md`
   (nota di aggiornamento + bug), `project-status.md` (nuova sezione
   cronologica con tutti i dettagli).
+
+- **2026-07-17** — NDVI (VERDE DA SATELLITE): PREDISPOSIZIONE TABELLA +
+  SCRIPT, DOWNLOAD ANCORA DA FARE. Su richiesta dell'utente, avviata la
+  terza covariata esplicativa per il paper scientifico (dopo popolazione e
+  CORINE Land Cover, entrambe fatte il 2026-07-16) — vedi
+  [Articolo scientifico](paper-scientifico.md), "Idee da esplorare".
+
+  **Decisione di scoping presa con l'utente** (stessa logica costi/
+  benefici gia' applicata a CORINE): tre opzioni presentate — Sentinel-2
+  vero via Google Earth Engine (10m, richiede account GEE), Sentinel-2 vero
+  via Copernicus Data Space Ecosystem Statistical API (10m, OAuth,
+  rischio di friction gia' visto con le altre API Copernicus/ISTAT del
+  progetto), o Copernicus Global Land Service NDVI 300m V3 (prodotto gia'
+  calcolato, download manuale, nessun account nuovo oltre a quello CDSE per
+  il solo download). Scelta: **CGLS NDVI 300m V3**, stesso pattern
+  low-effort che ha funzionato per CORINE.
+
+  **Ricerca tecnica** (via web, per evitare di indovinare la formula come
+  gia' successo in passato con bug di encoding/scaling): il prodotto e' un
+  GeoTIFF a 8 bit, EPSG:4326 (nessuna riproiezione necessaria, a
+  differenza di CLC/EPSG:3035). DN 0-250 -> NDVI reale via
+  `NDVI = DN * 0.004 - 0.08`; DN 251-255 sono flag dedicati (251=missing,
+  252=cloud, 253=snow/ice, 254=sea, 255=background) — confermato da PDF
+  ufficiale Copernicus (parzialmente, il rendering testuale del PDF era
+  degradato) e da documentazione Sentinel Hub/CDSE leggibile. **Non ancora
+  verificato empiricamente su un file scaricato per il Piemonte** — stesso
+  tipo di rischio gia' incontrato con CLC (i due tentativi prima del file
+  giusto), da tenere d'occhio alla prima esecuzione reale.
+
+  Anche il *dove* si scarica e' cambiato rispetto a CLC: l'accesso ai dati
+  NDVI globali e' migrato dal portale CLC (`land.copernicus.eu`, tool
+  "Download by area" gia' usato per CORINE) al Copernicus Data Space
+  Ecosystem (`dataspace.copernicus.eu`, Copernicus Browser) — richiede un
+  account gratuito separato da quello EU Login usato per CLC. Il percorso
+  esatto di ritaglio sul Piemonte non e' ancora stato verificato
+  praticamente (va documentato dopo il primo download reale, come gia'
+  fatto per CORINE con i suoi due tentativi).
+
+  **Predisposto in questa sessione** (codice, non ancora eseguito su dati
+  reali): `sql/04_ndvi.sql` (tabella `municipality_ndvi`, satellite 1:1
+  con `municipalities` come `municipality_land_cover`), `src/data_acquisition/process_ndvi.py`
+  (zonal stats via `rasterstats` invece dell'overlay vettoriale di CLC,
+  dato che qui la sorgente e' un raster; `all_touched=True` per i comuni
+  piccoli rispetto ai 300m di pixel), `rasterio`/`rasterstats` aggiunti a
+  `requirements.txt` (non ancora installati/verificati nel venv).
+
+  **Non fatto in questa sessione**: il download manuale del GeoTIFF
+  (compito dell'utente), l'esecuzione dello script, e quindi nessun dato
+  reale ancora in `municipality_ndvi` — a differenza delle sessioni CLC/
+  popolazione, qui il lavoro si e' fermato alla predisposizione perche' il
+  download richiede un account e un'interazione con un portale esterno che
+  l'utente deve fare in prima persona.
+
+  Pagine aggiornate: `data-sources.md` (nuova sezione "NDVI (Copernicus
+  Global Land Service)"), `data-model.md` (nuova tabella
+  `municipality_ndvi`), `paper-scientifico.md` (voce "NDVI" in "Idee da
+  esplorare" segnata "in corso"), `project-status.md`.
