@@ -70,13 +70,14 @@ with st.expander("ℹ️ Come si legge questa pagina"):
         "*dove* lo sono."
     )
 
-st.info(
-    "44 comuni con dati reali su 1180 totali (8 capoluoghi + 36 scelti per "
-    "coprire il territorio). Le mappe provinciali aggregano solo i comuni "
-    "disponibili in ciascuna provincia — vedi `wiki/pages/etl-pipeline.md`."
-)
-
 metadata = get_municipality_metadata()
+
+st.info(
+    f"{len(metadata)} comuni con dati reali su 1180 totali (8 capoluoghi + "
+    f"{len(metadata) - 8} scelti per coprire il territorio). Le mappe "
+    "provinciali aggregano solo i comuni disponibili in ciascuna provincia "
+    "— vedi `wiki/pages/etl-pipeline.md`."
+)
 metadata_f = metadata[metadata['province_name'].isin(provinces)]
 
 tab_overview, tab_detail = st.tabs(["📊 Panoramica", "🔬 Dettaglio tecnico / metodologia"])
@@ -112,7 +113,7 @@ k1.metric("Provincia più calda", top_hot['province_name'] if top_hot is not Non
 k1.caption(f"Media {year_start}-{year_end}")
 k2.metric("Provincia con trend più rapido", top_trend_row['province_name'] if top_trend_row is not None else "n/d",
           f"{top_trend_row['lr_slope_per_decade']:+.2f} °C/decade" if top_trend_row is not None else None)
-k2.caption("Media dei comuni con dati nella provincia, 2000-2025")
+k2.caption("Media dei comuni con dati nella provincia, intero periodo disponibile")
 k3.metric("Comune più in quota", top_elev['municipality_name'] if top_elev is not None else "n/d",
           f"{top_elev['elevation_m']:.0f} m" if top_elev is not None else None)
 k3.caption("Tra i comuni filtrati")
@@ -476,13 +477,14 @@ with tab_detail:
         "progetto ma non ancora costruito.\n"
         "- **Da dove viene l'uso del suolo, e che limite ha?** CORINE Land "
         "Cover 2018 (Copernicus) — uno scatto del 2018, confrontato qui "
-        "con temperature 2000-2025 e popolazione stimata 2026. L'uso del "
+        "con le temperature dell'intero periodo disponibile e popolazione "
+        "stimata 2026. L'uso del "
         "suolo cambia lentamente (un'epoca CORINE copre ~6 anni), quindi è "
         "un compromesso accettabile, ma non un dato perfettamente "
         "allineato nel tempo con gli altri due.\n"
         "- **Perché la mappa del trend non si aggiorna con il filtro anni?** "
         "Usa la pendenza di riscaldamento già calcolata sull'intero periodo "
-        "2000-2025 per ciascun comune. Ricalcolarla ogni volta che cambi "
+        "disponibile per ciascun comune. Ricalcolarla ogni volta che cambi "
         "l'intervallo richiederebbe rileggere l'intera serie giornaliera di "
         "ogni comune a ogni interazione, troppo lento per una mappa "
         "interattiva — per questo resta un riferimento fisso, mentre la "
