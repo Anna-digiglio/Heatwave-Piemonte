@@ -35,11 +35,14 @@ st.set_page_config(
 )
 inject_custom_css()
 
+stats = get_overview_stats()
+n_years = stats['date_end'].year - stats['date_start'].year + 1
+
 st.title("🌡️ Heatwave Piemonte")
-st.caption("Analisi spazio-temporale delle ondate di calore in Piemonte (2000-2025)")
+st.caption(f"Analisi spazio-temporale delle ondate di calore in Piemonte ({stats['date_start'].year}-{stats['date_end'].year})")
 
 st.markdown(
-     "Questo progetto analizza **26 anni di dati meteorologici reali** per "
+    f"Questo progetto analizza **{n_years} anni di dati meteorologici reali** per "
     "capire come sta cambiando il clima in Piemonte: le temperature stanno "
     "davvero salendo? Ci sono zone della regione più colpite di altre? E "
     "quanto sono diventate più frequenti e intense le **ondate di calore**?"
@@ -77,14 +80,13 @@ with card3:
 st.divider()
 
 st.warning(
-    "**Limite importante dei dati**: le temperature reali coprono **44 dei "
-    "1180 comuni piemontesi** — gli 8 capoluoghi di provincia più 36 comuni "
+    f"**Limite importante dei dati**: le temperature reali coprono "
+    f"**{stats['n_municipalities_with_data']} dei {stats['n_municipalities']} "
+    "comuni piemontesi** — gli 8 capoluoghi di provincia più altri comuni "
     "scelti per coprire bene il territorio (zone di montagna, pianura, "
     "collina), non un censimento completo. Ogni grafico e mappa di questo "
-    "sito riflette solo questi 44 comuni. "
+    f"sito riflette solo questi {stats['n_municipalities_with_data']} comuni."
 )
-
-stats = get_overview_stats()
 
 st.subheader("Il progetto in numeri")
 col1, col2, col3, col4 = st.columns(4)
@@ -94,9 +96,9 @@ col2.metric(
     "Periodo coperto",
     f"{stats['date_start'].year}–{stats['date_end'].year}",
 )
-col2.caption("26 anni di storia climatica")
+col2.caption(f"{n_years} anni di storia climatica")
 col3.metric("Comuni con dati reali", f"{stats['n_municipalities_with_data']} / {stats['n_municipalities']}")
-col3.caption("8 capoluoghi + 36 comuni scelti per coprire il territorio")
+col3.caption("8 capoluoghi + altri comuni scelti per coprire il territorio")
 col4.metric("Ondate di calore identificate", stats['n_heatwaves'])
 col4.caption("Sequenze di 3+ giorni sopra i 35°C")
 
@@ -110,9 +112,10 @@ col_map, col_trend = st.columns([3, 2])
 with col_map:
     st.subheader("Velocità di riscaldamento per comune")
     st.caption(
-        "Colore = pendenza del trend 2000-2025 (°C/decade): rosso = si scalda "
-        "più in fretta, blu = più lentamente (o si raffredda). Passa il mouse "
-        "per il valore esatto — dettaglio nella tabella qui a fianco."
+        f"Colore = pendenza del trend {stats['date_start'].year}-{stats['date_end'].year} "
+        "(°C/decade): rosso = si scalda più in fretta, blu = più lentamente "
+        "(o si raffredda). Passa il mouse per il valore esatto — dettaglio "
+        "nella tabella qui a fianco."
     )
     m = folium.Map(location=[45.0, 8.0], zoom_start=8, tiles='CartoDB positron')
 
@@ -146,7 +149,7 @@ with col_map:
         )
 
 with col_trend:
-    st.subheader("Trend di riscaldamento (2000-2025)")
+    st.subheader(f"Trend di riscaldamento ({stats['date_start'].year}-{stats['date_end'].year})")
     st.caption("La temperatura media di ogni comune sta salendo, scendendo, o restando stabile?")
     if trend_df.empty:
         st.info("Esegui `python -m src.analysis.trend_analysis` per generare questi risultati.")
