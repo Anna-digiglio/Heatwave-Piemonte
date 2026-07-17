@@ -41,7 +41,7 @@ col_check, col_select = st.columns([1, 2])
 with col_check:
     is_aggregate = st.checkbox(
         "🌍 Intero Piemonte",
-        help="Calcola tutta la pagina sulla media dei 44 comuni con dati, invece che su un singolo comune.",
+        help=f"Calcola tutta la pagina sulla media dei {len(names)} comuni con dati, invece che su un singolo comune.",
     )
 with col_select:
     default_index = names.index('Torino') if 'Torino' in names else 0
@@ -51,10 +51,10 @@ subject_label = f"Piemonte (media di {len(names)} comuni)" if is_aggregate else 
 
 if is_aggregate:
     st.info(
-        "Stai guardando la **media aritmetica** (non pesata per popolazione o "
-        "superficie) dei 44 comuni con dati reali — non una stima ufficiale "
-        "della temperatura media del Piemonte, che richiederebbe pesare per "
-        "area/popolazione e includere tutti i 1180 comuni."
+        f"Stai guardando la **media aritmetica** (non pesata per popolazione o "
+        f"superficie) dei {len(names)} comuni con dati reali — non una stima "
+        "ufficiale della temperatura media del Piemonte, che richiederebbe "
+        "pesare per area/popolazione e includere tutti i 1180 comuni."
     )
 
 year_start, year_end = render_year_range_filter(key='temporale_year_range')
@@ -72,7 +72,7 @@ with st.expander("ℹ️ Come si legge questa pagina"):
         "lungo termine** dal semplice rumore anno-su-anno usiamo:\n\n"
         "- **Test di Mann-Kendall**: risponde a *\"c'è un trend reale?\"* "
         "(sì/no, con un livello di confidenza statistico), calcolato una "
-        "volta sull'intero periodo 2000-2025.\n"
+        "volta sull'intero periodo disponibile.\n"
         "- **Regressione lineare**: quantifica la pendenza in °C/decennio — "
         "qui ricalcolata **sul periodo selezionato nella sidebar**, così il "
         "grafico e la metrica in alto si aggiornano insieme se restringi "
@@ -408,7 +408,7 @@ with tab_detail:
         "pagina, per farti vedere \"quanto si è scaldato solo nel periodo che "
         "hai scelto\". I 4 numeri di questa tab (Mann-Kendall, p-value, Sen's "
         "slope, regressione) restano invece **fissi sull'intero periodo "
-        "disponibile** (tipicamente 2000-2025): servono come riferimento "
+        "disponibile**: servono come riferimento "
         "stabile, sempre uguale, per non confondere \"il trend di lungo periodo "
         "di questo comune\" con \"cosa è successo negli ultimi anni che hai "
         "scelto di guardare\".\n"
