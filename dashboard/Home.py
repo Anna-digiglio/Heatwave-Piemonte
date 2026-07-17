@@ -19,14 +19,14 @@ import streamlit as st
 from branca.colormap import LinearColormap
 from streamlit_folium import st_folium
 
-from components.constants import format_mk_trend
+from components.constants import MAP_TILES, THEME_COLD, THEME_HOT, THEME_MID, format_mk_trend
 from components.maps import render_gradient_legend, wkt_to_geojson
 from components.queries import (
     get_municipality_geometries_wkt,
     get_overview_stats,
     get_trend_analysis,
 )
-from components.styling import inject_custom_css
+from components.styling import inject_custom_css, render_hero, render_nav_card_header, render_stats_row
 from src.utils.config import config
 
 st.set_page_config(
@@ -38,42 +38,53 @@ inject_custom_css()
 stats = get_overview_stats()
 n_years = stats['date_end'].year - stats['date_start'].year + 1
 
-st.title("🌡️ Heatwave Piemonte")
-st.caption(f"Analisi spazio-temporale delle ondate di calore in Piemonte ({stats['date_start'].year}-{stats['date_end'].year})")
-
-st.markdown(
-    f"Questo progetto analizza **{n_years} anni di dati meteorologici reali** per "
-    "capire come sta cambiando il clima in Piemonte: le temperature stanno "
-    "davvero salendo? Ci sono zone della regione più colpite di altre? E "
-    "quanto sono diventate più frequenti e intense le **ondate di calore**?"
+render_hero(
+    eyebrow="Analisi spazio-temporale",
+    title="Heatwave Piemonte",
+    lede=(
+        f"<b>{n_years} anni di dati meteorologici reali</b> per capire come sta "
+        "cambiando il clima in Piemonte: le temperature stanno davvero salendo? "
+        "Ci sono zone della regione più colpite di altre? E quanto sono "
+        "diventate più frequenti e intense le <b>ondate di calore</b>?"
+    ),
+    meta=[
+        ("Periodo", f"{stats['date_start'].year}–{stats['date_end'].year}"),
+        ("Comuni con dati", f"{stats['n_municipalities_with_data']} / {stats['n_municipalities']}"),
+        ("Ultimo aggiornamento", stats['date_end'].strftime('%d/%m/%Y')),
+    ],
 )
 
 st.subheader("Esplora la dashboard")
-CARD_HEIGHT = 280  # altezza fissa: le 3 card devono avere la stessa dimensione a prescindere dalla lunghezza del testo
 card1, card2, card3 = st.columns(3)
 with card1:
-    with st.container(border=True, height=CARD_HEIGHT):
-        st.markdown("### 📈 Analisi Temporale")
-        st.caption(
-            "Le temperature stanno davvero salendo? Trend, anomalie, "
-            "confronto tra stagioni e variabilità nel tempo, comune per comune."
+    with st.container(key="navcard-temporale"):
+        render_nav_card_header(
+            icon="📈", title="Analisi Temporale",
+            description=(
+                "Le temperature stanno davvero salendo? Trend, anomalie, "
+                "confronto tra stagioni e variabilità nel tempo, comune per comune."
+            ),
         )
         st.page_link("pages/02_analisi_temporale.py", label="Vai alla pagina →")
 with card2:
-    with st.container(border=True, height=CARD_HEIGHT):
-        st.markdown("### 🗺️ Analisi Spaziale")
-        st.caption(
-            "Quali zone del Piemonte sono più calde o si scaldano più in "
-            "fretta? Mappe per provincia, fascia altitudinale, isola di "
-            "calore urbana."
+    with st.container(key="navcard-spaziale"):
+        render_nav_card_header(
+            icon="🗺️", title="Analisi Spaziale",
+            description=(
+                "Quali zone del Piemonte sono più calde o si scaldano più in "
+                "fretta? Mappe per provincia, fascia altitudinale, isola di "
+                "calore urbana."
+            ),
         )
         st.page_link("pages/03_analisi_spaziale.py", label="Vai alla pagina →")
 with card3:
-    with st.container(border=True, height=CARD_HEIGHT):
-        st.markdown("### 🔥 Ondate di Calore")
-        st.caption(
-            "Quando, dove e quanto intense sono state le ondate di calore "
-            "dal 2000 a oggi, e se il fenomeno sta accelerando."
+    with st.container(key="navcard-ondate"):
+        render_nav_card_header(
+            icon="🔥", title="Ondate di Calore",
+            description=(
+                "Quando, dove e quanto intense sono state le ondate di calore "
+                "dal 2000 a oggi, e se il fenomeno sta accelerando."
+            ),
         )
         st.page_link("pages/04_ondate_di_calore.py", label="Vai alla pagina →")
 
@@ -89,18 +100,28 @@ st.warning(
 )
 
 st.subheader("Il progetto in numeri")
-col1, col2, col3, col4 = st.columns(4)
-col1.metric("Righe di temperatura", f"{stats['n_temperature_rows']:,}".replace(',', '.'))
-col1.caption("Una misura al giorno, per comune, dal 2000 a oggi")
-col2.metric(
-    "Periodo coperto",
-    f"{stats['date_start'].year}–{stats['date_end'].year}",
-)
-col2.caption(f"{n_years} anni di storia climatica")
-col3.metric("Comuni con dati reali", f"{stats['n_municipalities_with_data']} / {stats['n_municipalities']}")
-col3.caption("8 capoluoghi + altri comuni scelti per coprire il territorio")
-col4.metric("Ondate di calore identificate", stats['n_heatwaves'])
-col4.caption("Sequenze di 3+ giorni sopra i 35°C")
+render_stats_row([
+    {
+        'label': "Righe di temperatura", 'unit': "righe", 'color': THEME_COLD,
+        'value': f"{stats['n_temperature_rows']:,}".replace(',', '.'),
+        'spark': [0.3, 0.35, 0.5, 0.45, 0.65, 0.6, 0.8, 1.0],
+    },
+    {
+        'label': "Periodo coperto", 'unit': f"{n_years} anni", 'color': THEME_MID,
+        'value': f"{stats['date_start'].year}–{stats['date_end'].year}",
+        'spark': [0.1, 0.2, 0.3, 0.4, 0.55, 0.7, 0.85, 1.0],
+    },
+    {
+        'label': "Comuni con dati reali", 'unit': f"/ {stats['n_municipalities']}", 'color': THEME_MID,
+        'value': str(stats['n_municipalities_with_data']),
+        'spark': [0.15, 0.15, 0.2, 0.3, 0.5, 0.7, 0.9, 1.0],
+    },
+    {
+        'label': "Ondate di calore identificate", 'unit': "eventi", 'color': THEME_HOT,
+        'value': str(stats['n_heatwaves']),
+        'spark': [0.05, 0.1, 0.15, 0.3, 0.4, 0.55, 0.75, 1.0],
+    },
+])
 
 st.divider()
 
@@ -117,7 +138,7 @@ with col_map:
         "(o si raffredda). Passa il mouse per il valore esatto — dettaglio "
         "nella tabella qui a fianco."
     )
-    m = folium.Map(location=[45.0, 8.0], zoom_start=8, tiles='CartoDB positron')
+    m = folium.Map(location=[45.0, 8.0], zoom_start=8, tiles=MAP_TILES)
 
     if trend_df.empty:
         for _, row in geo_df.iterrows():
