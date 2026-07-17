@@ -29,10 +29,21 @@ seleziona sempre e solo comuni non ancora scaricati (quindi è anche
 sicuro da rilanciare dopo un'interruzione, ripartendo da dove il CSV
 incrementale si era fermato).
 
+**2026-07-17**: il tentativo di 56 comuni del 2026-07-16 ha incontrato
+subito un secondo blocco (429 anche su una singola richiesta isolata di
+test) — il messaggio d'errore ha rivelato che è un **limite giornaliero**
+("Daily API request limit exceeded. Please try again tomorrow."), non
+orario: la finestra di 5h40 sprecata il giorno prima aveva già esaurito la
+quota. Su richiesta dell'utente, ridimensionato a lotti prudenti e
+**parametrici** via `--count` (default 50), per poter scendere anche a
+lotti da 10 e scoprire empiricamente a che volume scatta il blocco
+giornaliero, invece di un target fisso scritto nel codice.
+
 Usage:
-    python -m src.data_acquisition.download_extra_municipalities
+    python -m src.data_acquisition.download_extra_municipalities --count 10
 """
 
+import argparse
 from pathlib import Path
 
 import numpy as np
@@ -45,21 +56,6 @@ from src.utils.database import db_manager
 from src.utils.logger import get_logger
 
 logger = get_logger(__name__)
-
-# 56 comuni aggiuntivi (44 → 100 totali), allocati proporzionalmente al
-# numero reale di comuni per provincia (Torino 312, Cuneo 247, Alessandria
-# 187, Asti 117, Novara 87, Vercelli 82, Biella 74, VCO 74 - su 1180
-# totali), meno quelli già scaricati nelle tornate precedenti.
-TARGET_PER_PROVINCE = {
-    'Torino': 15,
-    'Cuneo': 12,
-    'Alessandria': 9,
-    'Asti': 5,
-    'Novara': 4,
-    'Vercelli': 3,
-    'Biella': 4,
-    'Verbano-Cusio-Ossola': 4,
-}
 
 REQUEST_SLEEP_SECONDS = 8
 
@@ -109,15 +105,38 @@ def farthest_point_sample(candidates: pd.DataFrame, anchors: pd.DataFrame, n: in
     return pd.concat(selected_rows, ignore_index=True)
 
 
-def select_extra_municipalities() -> pd.DataFrame:
-    """Seleziona i comuni aggiuntivi da scaricare, per provincia."""
+def compute_target_per_province(n_total: int, all_muni: pd.DataFrame) -> dict:
+    """
+    Ripartisce `n_total` comuni da scaricare tra le province, proporzionalmente
+    al numero reale di comuni di ciascuna (query live su `municipalities`,
+    non pesi fissi scritti nel codice - così vale per qualunque `n_total`,
+    anche i lotti piccoli usati per individuare il limite giornaliero).
+    Arrotondamento "largest remainder" per far tornare la somma esatta a
+    `n_total`.
+    """
+    counts = all_muni.groupby('province_name').size()
+    total = counts.sum()
+    raw = counts / total * n_total
+
+    floor = raw.astype(int)
+    remainder = n_total - int(floor.sum())
+    fractional = (raw - floor).sort_values(ascending=False)
+    for province_name in fractional.index[:remainder]:
+        floor[province_name] += 1
+
+    return floor.to_dict()
+
+
+def select_extra_municipalities(n_total: int) -> pd.DataFrame:
+    """Seleziona `n_total` comuni aggiuntivi da scaricare, ripartiti per provincia."""
     all_muni = load_all_municipalities()
     downloaded = already_downloaded_ids()
+    target_per_province = compute_target_per_province(n_total, all_muni)
 
     anchors_all = all_muni[all_muni['municipality_id'].isin(downloaded)]
     selections = []
 
-    for province_name, target in TARGET_PER_PROVINCE.items():
+    for province_name, target in target_per_province.items():
         province_muni = all_muni[
             (all_muni['province_name'] == province_name)
             & (~all_muni['municipality_id'].isin(downloaded))
@@ -138,7 +157,7 @@ def download_all(
     selection: pd.DataFrame,
     output_path: Path,
     start_date: str = '2000-01-01',
-    end_date: str = '2026-07-16',
+    end_date: str = None,
 ) -> int:
     """
     Scarica le temperature per tutti i comuni selezionati, **appendendo
@@ -175,11 +194,15 @@ def download_all(
 
 
 def main():
+    parser = argparse.ArgumentParser(description="Scarica temperature per comuni extra, in lotti dimensionabili.")
+    parser.add_argument('--count', type=int, default=50, help='Numero di comuni da scaricare in questo lotto (default 50)')
+    args = parser.parse_args()
+
     logger.info("=" * 70)
-    logger.info("DOWNLOAD TEMPERATURE — COMUNI EXTRA (oltre a quelli già presenti)")
+    logger.info(f"DOWNLOAD TEMPERATURE — COMUNI EXTRA (lotto di {args.count})")
     logger.info("=" * 70)
 
-    selection = select_extra_municipalities()
+    selection = select_extra_municipalities(args.count)
     logger.info(f"Totale comuni extra selezionati: {len(selection)}")
 
     output_path = Path(config.get('paths.raw_data')) / 'temperature_data_extra.csv'
