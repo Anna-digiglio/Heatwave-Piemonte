@@ -273,11 +273,45 @@ il file senza aprirlo, resa inutile dall'import. Entrambi i file
 originali della collaboratrice **non esistono più** in `data/raw/` —
 questa sezione ne descrive il contenuto e il flusso per intero, dato che
 la wiki resta la sola documentazione di come sono stati ottenuti e
-importati. **Non toccato** `data/processed/temperature_extra_35_clean.csv`
-(versione già pulita, prodotta durante l'import): resta un file separato,
-stesso pattern di frammentazione già esistente in `data/processed/` per
-le altre estensioni (`temperature_clean_extra.csv`,
-`temperature_clean_extra_delta.csv`, `temperature_clean_recent.csv`).
+importati. **Consolidamento anche di `data/processed/`** (stessa sessione, richiesta
+esplicita dell'utente subito dopo l'unione dei raw): la cartella aveva
+accumulato 5 file da sessioni diverse — `temperature_clean.csv` (8
+capoluoghi, fermo al 2025-12-31), `temperature_clean_extra.csv` (55
+comuni, già esteso fino al 2026-07-16), `temperature_clean_extra_delta.csv`
+(19 comuni, **sottoinsieme già interamente contenuto** in
+`temperature_clean_extra.csv` — verificato confrontando gli ID comune
+prima di toccare nulla), `temperature_clean_recent.csv` (delta
+2026-01-01→2026-07-17 per tutti i 63 comuni preesistenti, **zero righe in
+comune** con gli altri file, verificato su `(municipality_id, date)` prima
+di unire) e il neonato `temperature_extra_35_clean.csv`. Consolidati in
+due soli file, replicando esattamente la stessa distinzione già presente
+nei loader (`insert_temperature()` per nome vs
+`insert_temperature_for_municipalities()` per ID):
+
+- `temperature_clean.csv` — **solo 8 capoluoghi**: aggiunta la quota
+  2026 dei capoluoghi estratta da `temperature_clean_recent.csv` (1.584
+  righe). Attenzione alla colonna `province`: nel file di `update_recent_data.py`
+  usa il **nome del comune** (`"Verbania"`), mentre lo schema storico di
+  questo file usa il **nome della provincia** (`"Verbano-Cusio-Ossola"`) —
+  rinominato per coerenza interna prima di appendere, altrimenti un
+  futuro `insert_temperature()` non avrebbe trovato la provincia. 75.976
+  → **77.560 righe**.
+- `temperature_clean_extra.csv` — **tutti i comuni non-capoluogo (90)**:
+  unite le 339.325 righe di `temperature_extra_35_clean.csv` (tolta la
+  colonna `istat_code`, non più necessaria dato che il file ha già
+  `municipality_id`) e le 7.147 righe extra di
+  `temperature_clean_recent.csv` (aggiunta `province_name`, assente in
+  quel file, via join `municipality_id` → `provinces.name`). 526.078 →
+  **872.550 righe**.
+- Eliminati (contenuto assorbito, nessuna perdita):
+  `temperature_clean_extra_delta.csv`, `temperature_clean_recent.csv`,
+  `temperature_extra_35_clean.csv`.
+
+**Verificato prima di eliminare nulla**: zero righe duplicate su
+`(municipality_id, date)` nel file extra consolidato e su `(province,
+date)` nel file capoluoghi; **77.560 + 872.550 = 950.110**, combacia
+esattamente col totale in `temperature` nel DB. `data/processed/` ora
+contiene solo questi 2 file.
 
 ## Passaggi pianificati ma non ancora scritti
 
