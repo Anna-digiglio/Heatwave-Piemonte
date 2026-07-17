@@ -376,13 +376,13 @@ with tab_overview:
             "sono sia più caldi sia più urbanizzati. Un modello che isola "
             "l'effetto di ciascuna variabile dalle altre esiste già "
             "(`src/analysis/spatial_regression.py`, modello a errore "
-            "spaziale): controllando per elevazione, **% urbano risulta "
-            "davvero significativo** (segno atteso: più urbano → più "
-            "caldo), mentre l'NDVI resta significativo ma con segno "
-            "controintuitivo (più verde → più caldo, probabile "
+            "spaziale): controllando per elevazione, **% urbano non risulta "
+            "significativo** con il campione attuale (coefficiente positivo, "
+            "segno atteso, ma p=0.33), mentre l'NDVI resta significativo ma con "
+            "segno controintuitivo (più verde → più caldo, probabile "
             "confondimento con l'agricoltura di pianura) — vedi "
             "`wiki/pages/statistical-analysis.md` per il dettaglio "
-            "completo, risultato ancora provvisorio (n=63 comuni)."
+            "completo, risultato ancora provvisorio (n=98 comuni)."
         )
 
 with tab_detail:
