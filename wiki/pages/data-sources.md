@@ -214,9 +214,10 @@ pianificata (verosimilmente basata su dati orari, non giornalieri).
 - `data/external/municipalities.csv` + tabella `municipalities` nel DB:
   1180 comuni piemontesi reali, geometrie tutte valide (`ST_IsValid`),
   nomi corretti (encoding fix del 2026-07-15). `elevation_m` popolato solo
-  per i 63 comuni con dati di temperatura (Open-Meteo Elevation API);
-  `population` popolato per tutti i 1180 comuni il 2026-07-16 (vedi sotto).
-- Tabella `temperature`: **610.785 righe, 63 comuni** (8 capoluoghi + 55
+  per i comuni con dati di temperatura (Open-Meteo Elevation API, 98 dal
+  2026-07-17); `population` popolato per tutti i 1180 comuni il 2026-07-16
+  (vedi sotto).
+- Tabella `temperature`: **950.110 righe, 98 comuni** (8 capoluoghi + 90
   extra), dal 2000 **fino a oggi** (non più fermo al 31/12/2025).
 
 ## `download_population.py` — popolazione residente reale per tutti i 1180 comuni (2026-07-16)
@@ -441,7 +442,9 @@ già osservata dal titolare: il bug ha semplicemente sprecato parte della
 quota su richieste ridondanti, facendo scattare il blocco prima del
 dovuto.
 
-**Risultato netto**: **35 comuni nuovi**, non ancora nel DB del titolare
-(63 → 98 se importati). File consegnato: vedi
-[Pipeline ETL](etl-pipeline.md#comuni-extra-in-attesa-di-import-2026-07-17)
-per il formato esatto e i passi di import mancanti.
+**Risultato netto**: **35 comuni nuovi** scaricati da una macchina senza
+accesso al DB, poi **importati nel DB del titolare lo stesso giorno**
+(63 → 98 comuni, 950.110 righe totali in `temperature`). Vedi
+[Pipeline ETL](etl-pipeline.md#import-dei-35-comuni-extra-dalla-seconda-macchina-2026-07-17)
+per il dettaglio dell'import (risoluzione `istat_code` → `municipality_id`,
+pulizia, ricalcolo a valle di ondate/viste KPI/analisi).

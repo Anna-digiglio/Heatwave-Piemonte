@@ -307,6 +307,20 @@ con lo stesso pattern di uso del suolo/popolazione:
 Verificato con `AppTest` dopo le modifiche: nessuna eccezione, mappa NDVI
 e opzione scatter presenti.
 
+**Aggiornamento 2026-07-17 (pomeriggio) — testo corretto dopo l'estensione
+a 98 comuni**: dopo l'import dei 35 comuni extra da una seconda macchina
+(vedi [ETL](etl-pipeline.md)) e la conseguente ri-esecuzione di
+`spatial_regression.py` su n=98 (vedi [Analisi statistica](statistical-analysis.md)),
+il risultato descritto sopra (**% urbano significativo nel modello a
+errore spaziale**) non è più vero: a campione più ampio **% urbano non è
+più significativo** (p=0.334, coefficiente ancora positivo/atteso ma
+piccolo). Caption in `03_analisi_spaziale.py` corretta di conseguenza
+(non lasciata con un risultato ormai falso solo perché era vero quando
+scritta — a differenza delle voci di log storiche, i testi live nella UI
+devono riflettere lo stato attuale). Corretto anche un commento
+obsoleto in `components/queries.py` (`8 → 44 → 63` → `8 → 44 → 63 → 98`).
+Verificato con `AppTest`: nessuna eccezione.
+
 > **Bug corretto durante lo sviluppo**: le query di geometrie/uso del
 > suolo condividono la colonna `province_name` — un primo merge tra le due
 > produceva `province_name_x`/`province_name_y` invece del nome atteso

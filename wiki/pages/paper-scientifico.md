@@ -100,12 +100,21 @@ presente in dashboard (`03_analisi_spaziale.py`) è dichiarato esplicitamente
    Moran's I sui residui ancora significativo (I=0.081, p=0.001) → modello
    a **errore spaziale** (via `spreg`/`libpysal`, regola di Anselin non
    ambigua: LM-error fortemente significativo anche robusto, LM-lag no).
-   Risultato piu' rilevante: **% urbano diventa significativo con il segno
-   atteso solo nel modello spaziale** (l'OLS classico lo mascherava) —
-   prima conferma quantitativa, seppur provvisoria (n=63, da rifare al
-   crescere del campione), dell'ipotesi originale del paper. NDVI resta
-   significativo ma con segno controintuitivo (piu' verde → piu' caldo),
-   da indagare. Dettaglio completo, incluso il caveat sulla sensibilita'
+   Risultato piu' rilevante a n=63: **% urbano diventa significativo con
+   il segno atteso solo nel modello spaziale** (l'OLS classico lo
+   mascherava) — prima conferma quantitativa, seppur provvisoria (n=63, da
+   rifare al crescere del campione), dell'ipotesi originale del paper.
+   NDVI resta significativo ma con segno controintuitivo (piu' verde →
+   piu' caldo), da indagare. **Rieseguito lo stesso giorno (pomeriggio) su
+   n=98** dopo l'import di 35 comuni extra da una seconda macchina (vedi
+   [Fonti dati](data-sources.md)): a campione piu' ampio **% urbano non e'
+   piu' significativo** (p=0.334, coefficiente ancora positivo ma piccolo)
+   — il risultato di n=63 non si e' confermato. NDVI resta significativo
+   con lo stesso segno controintuitivo. Onesto registrare il cambio invece
+   di tenere solo il risultato "piu' favorevole": con un campione ancora
+   piccolo per la spatial econometrics, questo genere di risultato non
+   robusto al variare di n va aspettato e discusso nel paper stesso, non
+   nascosto. Dettaglio completo, incluso il caveat sulla sensibilita'
    alla matrice pesi spaziale, in
    [Analisi statistica](statistical-analysis.md).
 5. **Percorso di pubblicazione realistico senza affiliazione accademica**:
@@ -203,11 +212,12 @@ aggiornato di ETL/analisi. Con popolazione, uso del suolo e ora anche NDVI
 fatti (2026-07-16/17), e con una prima iterazione del modello statistico
 fatta il 2026-07-17 (vedi punto 4 sopra), restano aperti:
 (a) l'estensione del campione di comuni con temperatura (in corso lato
-utente, gradualmente — 44→63 al 2026-07-17, vedi
+utente, gradualmente — 44→63→98 al 2026-07-17, vedi
 [Fonti dati](data-sources.md)) — priorita' alta anche per la
-modellazione: n=63 e' piccolo per la spatial econometrics, e il campione
-crescente andra' rilanciato attraverso `spatial_regression.py` via via
-che arrivano nuovi comuni;
+modellazione: n=98 resta piccolo per la spatial econometrics (e il
+risultato sull'% urbano non e' stato stabile passando da 63 a 98, vedi
+punto 4 sopra), il campione crescente andra' rilanciato attraverso
+`spatial_regression.py` via via che arrivano nuovi comuni;
 (b) la validazione ARPA (mai risolta, vedi fase 1 sopra) — resta la
 priorita' piu' alta in assoluto, dato che le temperature Open-Meteo sono
 dati di rianalisi/modello (spazialmente "lisci" per costruzione), il che

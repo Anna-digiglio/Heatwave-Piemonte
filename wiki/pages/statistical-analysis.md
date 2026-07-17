@@ -9,12 +9,14 @@ dopo che la pipeline ETL (vedi [ETL](etl-pipeline.md)) aveva reso
 disponibili 75.976 righe di temperatura, 51 ondate di calore e le viste
 KPI popolate.
 
-**Granularità**: 8 comuni capoluogo → 44 comuni (2026-07-15) → **63 comuni
-(2026-07-17)**, sempre con lo stesso campionamento "farthest-point" per
-copertura spaziale (vedi [ETL](etl-pipeline.md)). Dal 2026-07-17 il
-periodo coperto arriva anche **fino a oggi**, non più fermo al 31/12/2025.
-Tutti i numeri qui sotto sono aggiornati alla versione a 63 comuni; dove
-rilevante è indicato anche il risultato precedente per confronto.
+**Granularità**: 8 comuni capoluogo → 44 comuni (2026-07-15) → 63 comuni
+(2026-07-17 mattina) → **98 comuni (2026-07-17 pomeriggio**, dopo l'import
+di 35 comuni scaricati da una seconda macchina, vedi [ETL](etl-pipeline.md)),
+sempre con lo stesso campionamento "farthest-point" per copertura spaziale.
+Dal 2026-07-17 il periodo coperto arriva anche **fino a oggi**, non più
+fermo al 31/12/2025. Tutti i numeri qui sotto sono aggiornati alla
+versione a 98 comuni; dove rilevante è indicato anche il risultato
+precedente per confronto.
 
 ## Aggiornamento 2026-07-17 — da 44 a 63 comuni, dati fino ad oggi
 
@@ -66,6 +68,53 @@ tentativo unico in blocco.
 > invecchiano male). Stesso bug trovato e corretto anche nella dashboard
 > (`components/filters.py`: `YEAR_MIN, YEAR_MAX = 2000, 2025` fisso, reso
 > dinamico dalla data reale in `temperature`).
+
+## Aggiornamento 2026-07-17 (pomeriggio) — da 63 a 98 comuni
+
+Import dei 35 comuni scaricati la mattina stessa da una seconda macchina
+(collaboratrice senza accesso al DB del titolare, vedi
+[ETL](etl-pipeline.md) e [Fonti Dati](data-sources.md)): pulizia +
+risoluzione `istat_code` → `municipality_id`, caricamento in `temperature`
+(63 → 98 comuni, 950.110 righe), elevazione ri-scaricata per tutti i
+comuni con dati, `TRUNCATE` + `identify_heatwaves()`, refresh viste KPI,
+poi rieseguiti tutti e 5 i moduli di `src/analysis/` (inclusa
+`spatial_regression.py`, prima esecuzione dopo la sua introduzione lo
+stesso giorno).
+
+**Risultati ricalcolati (98 comuni, 2000 - oggi)**:
+
+- **Trend**: 86/98 comuni con trend significativo (p<0.05). **Briga Alta
+  resta l'unico comune con raffreddamento significativo**
+  (-0.63°C/decade, p=0.0014, invariato rispetto alla versione a 63
+  comuni) — tra i 12 comuni non significativi, nessun altro mostra un
+  segno negativo: sono tutti "no trend" (p tra 0.06 e 0.77), non
+  raffreddamenti mascherati. Estremo positivo: Castelnuovo Nigra
+  (+1.45°C/decade, p<0.001).
+- **Ondate di calore**: **331 ondate totali** (da 190). Alessandria resta
+  il comune con più ondate (15), seguita da Casalnoceto (14, uno dei 35
+  nuovi) e Asti (13). 45/98 comuni non hanno mai raggiunto 3 giorni
+  consecutivi sopra i 35°C (prevalentemente comuni alpini/di alta quota).
+- **Moran's I = 0.1523** (atteso sotto casualità: -0.0105), **p=0.001 su
+  999 permutazioni** — leggero miglioramento rispetto a 63 comuni
+  (0.1319, p=0.001): il segnale di autocorrelazione spaziale resta stabile
+  e significativo al crescere del campione.
+- **Cluster K-means (k=3)**, ricomposizione con i 35 comuni nuovi:
+
+  | Cluster | Temp. media | N. comuni | Esempi |
+  |---|---|---|---|
+  | 0 — alpino | 5.2°C | 31 | Acceglio, Aisone, Bardonecchia, Briga Alta, Carrega Ligure, Ceresole Reale, Formazza, Macugnaga, Rorà, Usseglio, Valprato Soana |
+  | 1 — intermedio | 12.2°C | 40 | Biella, Cuneo, Verbania e la maggioranza dei comuni pedemontani/collinari, inclusi molti dei 35 nuovi (Bosio, Gremiasco, Villadossola, ecc.) |
+  | 2 — pianura calda | 13.1°C | 26 | Alessandria, Asti, Torino, Vercelli, Novara e altri comuni di pianura, inclusi i nuovi Casalnoceto, Cerano, Fubine Monferrato |
+
+- **Regressione spaziale (`spatial_regression.py`, prima riesecuzione)**:
+  a n=98 il quadro cambia rispetto alla prima iterazione a n=63 — vedi
+  sezione dedicata sotto per il dettaglio completo. In sintesi: **% urbano
+  non è più significativo** (era p=0.011 a n=63, ora p=0.334), mentre NDVI
+  resta significativo con lo stesso segno controintuitivo. Un promemoria
+  concreto che risultati su campioni ancora piccoli per la spatial
+  econometrics possono non essere stabili al crescere di n — motivo in
+  più per continuare a estendere la copertura prima di trarre conclusioni
+  nel paper.
 
 ## `trend_analysis.py` — trend di riscaldamento
 
@@ -302,6 +351,48 @@ Con questo modello:
 > econometrics con campioni piccoli, da rivalutare quando il campione di
 > comuni con temperatura crescerà (l'utente sta estendendo la copertura
 > gradualmente, vedi [Fonti Dati](data-sources.md)).
+
+### Aggiornamento 2026-07-17 (pomeriggio) — rieseguito su 98 comuni
+
+Rilanciato lo stesso giorno dopo l'import dei 35 comuni extra da una
+seconda macchina (63 → 98 comuni, vedi [ETL](etl-pipeline.md)) — esattamente
+il caso d'uso per cui il caveat sopra era stato scritto ("da rivalutare
+quando il campione crescerà").
+
+**Fase 1 (OLS, n=98)**: R²=0.980, elevazione ancora dominante
+(-0.0057°C/m, p<0.001). Popolazione (p=0.501) e % urbano (p=0.570) **non
+significativi** nell'OLS classico (stesso quadro qualitativo di n=63).
+NDVI significativo (p=0.007), stesso segno controintuitivo. Moran's I sui
+residui OLS = 0.1189 (p=0.001) — ancora significativo, l'OLS resta
+inadeguato per l'inferenza.
+
+**Fase 2 (modello a errore spaziale, KNN k=5, n=98)**: stesso esito della
+regola di Anselin (LM-error fortemente significativo anche robusto
+p<0.0001, LM-lag non robusto p=0.929) → **errore spaziale**, lambda=0.803
+(p<0.001).
+
+| Variabile | n=63 (mattina) | n=98 (pomeriggio) |
+|---|---|---|
+| Elevazione | -0.0055°C/m, p<0.001 | -0.0057°C/m, p<0.001 — dominante in entrambi |
+| Popolazione | p=0.116, non signif. | p=0.968, non signif. |
+| **% urbano** | **p=0.011, significativo, segno atteso** | **p=0.334, non più significativo** (coefficiente ancora positivo ma piccolo) |
+| NDVI | p=0.0037, signif., segno controintuitivo | p=0.0085, signif., stesso segno controintuitivo |
+
+**Il risultato più rilevante del giorno precedente non si è confermato**:
+a n=63 il modello a errore spaziale rendeva % urbano significativo con il
+segno atteso (prima "conferma" quantitativa dell'ipotesi del paper su
+città/urbanizzazione); a n=98 quello stesso effetto **scompare**. Non è
+un errore di calcolo (stessa pipeline, stesso codice, solo più
+osservazioni) — è la dimostrazione pratica del caveat già scritto sopra:
+con un campione ancora piccolo per la spatial econometrics, un
+coefficiente "appena significativo" può facilmente ribaltarsi aggiungendo
+osservazioni. **Registrato onestamente come risultato non stabile**,
+invece di riportare solo la versione più favorevole — questo genere di
+instabilità va discusso esplicitamente nel paper (vedi
+[Articolo scientifico](paper-scientifico.md)), non nascosto scegliendo
+quale run citare. NDVI resta l'unica covariata (oltre all'elevazione) a
+mostrarsi stabilmente significativa tra le due versioni, sempre con lo
+stesso segno controintuitivo da approfondire.
 
 Output: `output/spatial_regression.csv`,
 `output/spatial_regression_summary.txt` (OLS+VIF+Moran's I residui),

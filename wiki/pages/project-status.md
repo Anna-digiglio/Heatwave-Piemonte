@@ -13,7 +13,7 @@ ogni sessione di lavoro rilevante (vedi workflow di ingest in `CLAUDE.md`).
 | Struttura repo | ✅ | ✅ |
 | Schema DB (`01_init_database.sql`) | ✅ | ✅ completo: 6 tabelle, 2 viste, 1 funzione, 25+ indici. **Eseguito per la prima volta su un DB reale il 2026-07-04** (Postgres 16 + PostGIS locale) — trovati e risolti 4 bug mai emersi finché nessuno l'aveva davvero eseguito (vedi [ETL](etl-pipeline.md) e [Modello Dati](data-model.md)) |
 | Script download (`download_data.py`) | pianificato | ✅ scritto, bug di import **risolto il 2026-07-04** (vedi [Fonti Dati](data-sources.md)); aggiunto anche retry/backoff per rate limit Open-Meteo |
-| Download dati 2000-2026 | ⬜ | ✅ **eseguito il 2026-07-04, esteso il 2026-07-15 e il 2026-07-17** — 610.785+ righe reali, **63 comuni** (8 capoluoghi + 55 extra), dal 2000 **fino a oggi** (non più fermo al 31/12/2025) |
+| Download dati 2000-2026 | ⬜ | ✅ **eseguito il 2026-07-04, esteso il 2026-07-15 e due volte il 2026-07-17** — 950.110+ righe reali, **98 comuni** (8 capoluoghi + 90 extra), dal 2000 **fino a oggi** (non più fermo al 31/12/2025) |
 | Dati geografici (ISTAT comuni/province) | ⬜ | ✅ **caricati il 2026-07-04** — 1180 comuni reali in `municipalities` (DB Postgres/PostGIS locale), 8 province con codici ISTAT corretti |
 | Python environment / requirements | ⬜ | `.venv` presente, `requirements.txt` presente e dettagliato |
 
@@ -23,8 +23,8 @@ ogni sessione di lavoro rilevante (vedi workflow di ingest in `CLAUDE.md`).
 |---|---|---|
 | `DataCleaner` completo | pianificato | ✅ scritto, **ma non era mai stato eseguibile** fino al 2026-07-04 (`SyntaxError` da newline letterali corrotte + bug che scartava il 99,9% dei dati — vedi [ETL](etl-pipeline.md)). Eseguito su 75.976 righe (8 comuni) e poi su altre 341.892 (36 comuni extra, 2026-07-15), senza modifiche al codice |
 | Caricamento `temperature` nel DB | pianificato | ✅ **eseguito il 2026-07-04, esteso il 2026-07-15** — **417.868 righe reali, 44 comuni**, in `temperature`, batch insert (vedi [ETL](etl-pipeline.md)) |
-| `identify_heatwaves()` eseguita | pianificato | ✅ eseguita il 2026-07-12 su 8 comuni (51 ondate), **rieseguita il 2026-07-15** su 44 comuni (145 ondate) e **il 2026-07-17** su 63 comuni dopo `TRUNCATE` (non idempotente) — **190 ondate totali**, incluse 16 nel 2026 (vedi [Modello Dati](data-model.md)) |
-| KPI calcolati | pianificato | ✅ viste materializzate rinfrescate il 2026-07-12 (208 righe, 8 comuni), il 2026-07-15 (1144 righe, 44 comuni) e **il 2026-07-17** — `kpi_annual_by_municipality` ora 1701 righe (63 comuni × 27 anni, 2000-2026) |
+| `identify_heatwaves()` eseguita | pianificato | ✅ eseguita il 2026-07-12 su 8 comuni (51 ondate), **rieseguita il 2026-07-15** su 44 comuni (145 ondate) e **due volte il 2026-07-17** su 63 poi 98 comuni dopo `TRUNCATE` (non idempotente) — **331 ondate totali**, incluse quelle del 2026 (vedi [Modello Dati](data-model.md)) |
+| KPI calcolati | pianificato | ✅ viste materializzate rinfrescate il 2026-07-12 (208 righe, 8 comuni), il 2026-07-15 (1144 righe, 44 comuni) e **due volte il 2026-07-17** — `kpi_annual_by_municipality` ora **2.646 righe** (98 comuni × 27 anni, 2000-2026) |
 | Query SQL (10+) | pianificato | 3 query scritte in `02_common_queries.sql` |
 
 ## Settimana 3 — Visualizzazione & Deployment
@@ -208,20 +208,34 @@ via che il campione di comuni con temperatura cresce. Vedi
 completo e [Articolo scientifico](paper-scientifico.md) per l'impatto sul
 piano del paper.
 
-**4. 35 comuni extra, scaricati da una seconda macchina — in attesa di
-import**: una collaboratrice, senza accesso al database del titolare, ha
-ricostruito quali comuni fossero già coperti leggendo le preview PNG dei
-progetti QGIS (tracciate in Git a differenza dei dati), poi scaricato 35
-comuni aggiuntivi da Open-Meteo fino al blocco del rate limit giornaliero
-— vedi
+**4. 35 comuni extra, scaricati da una seconda macchina, poi importati lo
+stesso giorno**: una collaboratrice, senza accesso al database del
+titolare, ha ricostruito quali comuni fossero già coperti leggendo le
+preview PNG dei progetti QGIS (tracciate in Git a differenza dei dati),
+poi scaricato 35 comuni aggiuntivi da Open-Meteo fino al blocco del rate
+limit giornaliero — vedi
 [Fonti Dati](data-sources.md#download-collaborativo-da-una-seconda-macchina--35-comuni-extra-2026-07-17)
 per il metodo (verificabile) e un bug reale trovato e corretto durante
 l'esecuzione (confronto `int`/`str` su `istat_code` che causava download
-duplicati). **Il file non è ancora nel database**: servono ancora pulizia
-(`DataCleaner`) e risoluzione `istat_code` → `municipality_id` prima di
-`insert_temperature_for_municipalities()` — passi documentati in
-[Pipeline ETL](etl-pipeline.md#comuni-extra-in-attesa-di-import-2026-07-17).
-Se importati per intero: 63 → **98 comuni** in `temperature`.
+duplicati). Import eseguito lo stesso pomeriggio: pulizia (`DataCleaner`,
+0 righe scartate, 666 outlier IQR) + risoluzione `istat_code` →
+`municipality_id` via join contro `municipalities` (tutti e 35 trovati) —
+passi documentati in
+[Pipeline ETL](etl-pipeline.md#import-dei-35-comuni-extra-dalla-seconda-macchina-2026-07-17).
+**Risultato: 63 → 98 comuni, 950.110 righe in `temperature`.**
+
+**5. Ricalcolo completo a valle dei 98 comuni**: elevazione ri-scaricata
+per tutti i comuni con temperatura (98/98), `TRUNCATE` + `identify_heatwaves()`
+(331 ondate, da 190), refresh viste KPI (`kpi_annual_by_municipality`
+2.646 righe, `kpi_annual_by_province` 216), tutti e 5 i moduli di
+`src/analysis/` rieseguiti (inclusa `spatial_regression.py`) e mappe QGIS
+rigenerate — vedi [Analisi Statistica](statistical-analysis.md) per i
+risultati completi. **Cambio degno di nota**: a n=98 **% urbano non è più
+statisticamente significativo** nel modello a errore spaziale (lo era a
+n=63, p=0.011) — registrato onestamente in
+[Articolo scientifico](paper-scientifico.md) invece di tenere solo il
+risultato precedente. Testo della dashboard corretto di conseguenza (vedi
+[Dashboard](dashboard.md)).
 
 ## Prossimi passi
 
@@ -233,8 +247,8 @@ completo:
    un fix successivo per le etichette mancanti in `evolution_animation.qgz`
 2. ~~Popolare `elevation_m`~~ — **fatto parzialmente il 2026-07-15**, ma
    solo per i comuni con dati di temperatura reali (Open-Meteo Elevation
-   API, vedi [Modello Dati](data-model.md)); resta `NULL` per il resto
-   dei 1180 comuni
+   API, vedi [Modello Dati](data-model.md)); esteso a 98 comuni il
+   2026-07-17; resta `NULL` per il resto dei 1180 comuni
 3. Riavviare `postgresql-x64-16` come vero servizio Windows (oggi gira via
    `pg_ctl` manuale — il servizio in sé risulta "Stopped" e non
    ripartirebbe da solo dopo un riavvio del PC)
@@ -262,9 +276,10 @@ completo:
    `output/`/`data/processed/` (nessuna connessione DB dal vivo, ma
    niente aggiornamento automatico se in futuro si ricaricano dati
    nuovi). Vedi [Dashboard](dashboard.md).
-10. Importare i 35 comuni extra scaricati dalla seconda macchina (vedi
-    cronologia sopra) — pulizia + risoluzione `municipality_id`, poi
-    rilancio di `identify_heatwaves()`/viste KPI/`src/analysis/` a valle.
+10. ~~Importare i 35 comuni extra scaricati dalla seconda macchina~~ —
+    **fatto lo stesso giorno (2026-07-17)**: pulizia + risoluzione
+    `municipality_id`, poi rilancio di `identify_heatwaves()`/viste
+    KPI/`src/analysis/`/mappe QGIS a valle (vedi cronologia sopra).
 
 ## Discrepanze da tenere a mente quando si presenta il progetto
 
