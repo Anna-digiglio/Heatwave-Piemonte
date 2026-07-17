@@ -212,7 +212,7 @@ with tab_overview:
         st.plotly_chart(fig_cal, width='stretch')
 
 st.subheader("Statistiche per comune")
-st.caption("Quale comune ha avuto più ondate, più lunghe, o più intense (su tutto il periodo 2000-2025)?")
+st.caption("Quale comune ha avuto più ondate, più lunghe, o più intense (su tutto il periodo disponibile)?")
 by_muni = get_heatwave_stats_by_municipality()
 by_muni_f = by_muni[by_muni['municipality_name'].isin(names_in_provinces)] if not by_muni.empty else by_muni
 if by_muni_f.empty:
