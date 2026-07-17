@@ -90,9 +90,16 @@ può divergere leggermente, in caso di conflitto fidati dello script SQL).
   complementare alle classi discrete di `municipality_land_cover` (CORINE):
   vedi [Fonti dati](data-sources.md) per la motivazione completa e la
   fonte (Copernicus Global Land Service).
-- **Non ancora popolata** (2026-07-17): script `src/data_acquisition/process_ndvi.py`
-  e tabella pronti, manca il download manuale del GeoTIFF NDVI (Copernicus
-  Data Space Ecosystem) da parte dell'utente — vedi [Fonti dati](data-sources.md).
+- **Popolata il 2026-07-17** per tutti i 1180 comuni via
+  `src/data_acquisition/process_ndvi.py` (zonal stats `rasterstats` su un
+  composito CGLS NDVI 300m V3 del 2026-07-01/2026-07-10) — vedi
+  [Fonti dati](data-sources.md) per il dettaglio completo (inclusi il
+  vicolo cieco di HR-VPP e la verifica empirica di scala/offset/flag sui
+  metadati reali del file). Media regionale 0.663, range 0.327-0.867 per
+  comune. Valori verificati a campione: Vercelli 0.62 (risaie), Torino
+  0.40, Bardonecchia/Formazza 0.44-0.49 con `pct_valid_pixels` 98-99%
+  (mascheramento neve alpina attivo). Distribuzione `vegetation_class`:
+  643 dense, 461 very_dense, 76 moderate.
 
 ### `temperature` — tabella principale, serie storica giornaliera
 - PK `temperature_id BIGSERIAL`

@@ -285,7 +285,7 @@ ma da dichiarare esplicitamente come limite nel paper, non da nascondere.
 
 Vedi [Stato del Progetto](project-status.md).
 
-## NDVI (Copernicus Global Land Service) — verde da satellite, in corso (2026-07-17)
+## NDVI (Copernicus Global Land Service) — verde da satellite, fatto (2026-07-17)
 
 Motivazione: terza covariata esplicativa per il paper scientifico (vedi
 [Articolo scientifico](paper-scientifico.md)), complementare a
@@ -293,52 +293,102 @@ Motivazione: terza covariata esplicativa per il paper scientifico (vedi
 l'NDVI da' una misura continua di densita' della vegetazione (utile anche
 *dentro* una classe, es. un comune "urbano" con molti alberi vs uno senza).
 
-**Decisione presa con l'utente (2026-07-17)**, stessa logica costi/benefici
-gia' applicata a CORINE: scartate le opzioni Sentinel-2 vero (via Google
-Earth Engine o Copernicus Data Space Ecosystem Statistical API — 10m di
-risoluzione ma richiedono un account aggiuntivo, cloud-masking, e nel caso
-CDSE lo stesso tipo di friction gia' visto con le API Copernicus/ISTAT del
-progetto), a favore di **Copernicus Global Land Service NDVI 300m V3**: un
-prodotto NDVI gia' calcolato (composito 10-giornaliero, dal 2014 a oggi),
-scaricabile come GeoTIFF, nessuna elaborazione di bande grezze richiesta.
-Risoluzione piu' bassa di Sentinel-2 (300m vs 10m) ma i comuni piemontesi
-sono quasi tutti piu' grandi di un pixel, quindi la media per comune resta
-sensata (limite da dichiarare esplicitamente nel paper, come gia' fatto per
-la staticita' temporale di CLC2018).
+**Decisione presa con l'utente**, stessa logica costi/benefici gia'
+applicata a CORINE: scartato Sentinel-2 vero via Google Earth Engine o
+Copernicus Data Space Ecosystem (CDSE) Statistical API (10m di
+risoluzione ma account aggiuntivo, cloud-masking, rischio di friction
+gia' visto con altre API Copernicus/ISTAT del progetto), a favore di
+**Copernicus Global Land Service (CGLS) NDVI 300m V3**: prodotto gia'
+calcolato (composito 10-giornaliero, dal 2014 a oggi), GeoTIFF, nessuna
+elaborazione di bande grezze.
 
-**Nota su dove si scarica**: a differenza di CLC (portale
-`land.copernicus.eu`, tool "Download by area" dedicato), l'accesso ai dati
-NDVI globali e' migrato al **Copernicus Data Space Ecosystem**
-(`dataspace.copernicus.eu`, Copernicus Browser) — richiede un account
-gratuito separato da quello EU Login usato per CLC. Non ancora verificato
-se il Browser espone un ritaglio diretto sull'area del Piemonte o se
-richiede di scaricare tile globali/continentali e ritagliare in locale;
-va documentato qui il percorso reale una volta completato (stesso spirito
-dei "vicoli ciechi" documentati per popolazione/CLC sopra).
+**Falso allarme in corso di ricerca — HR-VPP a 10m**: durante la
+navigazione del Copernicus Browser e' emersa una casella "PROJECTION &
+RESOLUTION" con opzioni UTM 10m/20m/60m e LAEA 10m/20m/60m/100m,
+combinata con un filtro testuale "Dataset identifier=NDVI" — appariva
+come se puntasse a un secondo prodotto CLMS realmente a 10m
+(**HR-VPP**, High Resolution Vegetation Phenology and Productivity,
+derivato da Sentinel-2 vero, tile-based, dal 2016 a oggi), scartato
+inizialmente solo per complessita' d'accesso. Sembrava un'opzione
+migliore del piano originale (10m invece di 300m) trovata "gratis". Si
+e' rivelato un **vicolo cieco**: navigando l'albero delle sotto-categorie
+("Vegetation Indices" → 5 varianti Global 300m/1km; "Vegetation Phenology
+and Productivity Parameters" → solo LSP Global 300m, fenologia, non
+NDVI) non esisteva alcuna voce HR-VPP effettivamente cercabile — le
+opzioni UTM/LAEA nel pannello filtri sono opzioni generiche del
+sotto-sistema di ricerca, non backed da prodotti realmente indicizzati
+in questo catalogo. Una ricerca con quei filtri restituiva sempre "0
+prodotti trovati", con la lista "Available data" che elencava
+esclusivamente le varianti Global 300m/1km — conferma che HR-VPP non è
+raggiungibile da questo punto d'accesso (probabilmente serve un
+altro portale, es. WEkEO, non verificato). Tornati al piano originale
+(CGLS 300m V3), che era gia' nella lista "Available data" confermata.
 
-**Formato dati**: raster GeoTIFF a 8 bit, EPSG:4326 (grid geografica
-globale — a differenza di CLC/EPSG:3035, qui non serve riproiezione per il
-calcolo delle percentuali). DN (digital number) 0-250 sono NDVI reale via
-`NDVI = DN * 0.004 - 0.08` (range -0.08..0.92); DN 251-255 sono flag
-dedicati (251=missing/bad quality, 252=cloud/shadow, 253=snow/ice,
-254=sea/water, 255=background/nodata) — dettaglio verificato via
-documentazione tecnica Copernicus (Product User Manual NDVI 300m V3 e
-documentazione Sentinel Hub/CDSE), non ancora verificato empiricamente su
-un file scaricato per il Piemonte (rischio noto in questo progetto: i PDF
-Copernicus a volte non corrispondono esattamente al comportamento reale
-del file, vedi i due tentativi di CLC).
+**Difficolta' reali con l'interfaccia Copernicus Browser** (scheda
+"Search", non "Visualise" — quest'ultima non elenca affatto le
+collezioni CLMS, solo Sentinel-1/2/3/5P e DEM, verificato via
+documentazione ufficiale): il selettore "Time Range" (From/Until) non
+rispondeva al click diretto sul testo del placeholder ("YYYY-MM-DD") —
+sbloccato cliccando esattamente sul primo carattere "Y" per attivare il
+segmento e digitando le cifre da tastiera (`20260601` ecc.), non un
+calendario a popup come atteso. Senza un intervallo di date impostato,
+la ricerca restituiva sempre "0 prodotti" nonostante il prodotto fosse
+disponibile — probabile default implicito su "oggi", periodo non ancora
+elaborato per un composito 10-giornaliero.
+
+**Il file scaricato e' globale, non ritagliato sul Piemonte**: a
+differenza di CLC (che aveva un tool "Download by area" dedicato su
+`land.copernicus.eu`), questo prodotto su CDSE non offre un ritaglio
+lato server — il file scaricato (formato Cloud Optimized GeoTIFF, zip)
+e' un'**unica griglia mondiale da ~3.3 GB**, contenente in realta' 4
+raster distinti (NDVI, NOBS=numero osservazioni, QFLAG=flag qualita',
+UNC=incertezza) — estratto dallo zip solo il file NDVI (~1.29 GB), gli
+altri 3 non servono per questa analisi e non sono stati estratti.
+
+**Formato dati — verificato empiricamente, non solo da documentazione**:
+raster GeoTIFF a 8 bit, EPSG:4326, griglia 120960×47040 pixel (~333m di
+lato reale, nonostante il nome commerciale "300m" — coerente con
+l'identificatore interno `ndvi300_v3_333m` nei metadati del file).
+Scala/offset **letti direttamente dai metadati embedded nel file**
+(`rasterio.open(...).scales`/`.offsets`, non dedotti da un PDF): DN
+0-250 → NDVI reale via `NDVI = DN * 0.004 - 0.08` (range -0.08..0.92) —
+la formula trovata via ricerca web era corretta, ma i **valori di
+flag trovati online erano sbagliati**: i tag reali del file
+(`tags(1)['flag_meanings']`/`flag_values`) riportano `{252, 253, 254,
+255} = {Unknown, Snow, Water, Missing}`, non `{251=missing, 252=cloud,
+253=snow, 254=sea, 255=background}` come suggerito da fonti generiche —
+nessun DN 251 definito, nessuna categoria "cloud" esplicita (le nuvole
+finiscono probabilmente in "Unknown"). Il campo `valid_range=[0,250]`
+del file conferma comunque la soglia gia' usata nello script. Lezione
+coerente con altri bug di questo progetto (encoding ISTAT): **verificare
+sempre sui byte/metadati reali del file, non fidarsi della sola
+documentazione**.
 
 **Metodo**: `src/data_acquisition/process_ndvi.py` — zonal stats via
 `rasterstats` (non overlay vettoriale come CLC, qui la sorgente e' un
 raster) tra le geometrie comunali e il raster NDVI, con `all_touched=True`
 per includere anche i pixel solo parzialmente coperti dai comuni piu'
-piccoli (approssimazione nota a 300m di risoluzione). Popola
-`municipality_ndvi` (vedi [Modello Dati](data-model.md)):
-`ndvi_mean/min/max/stddev`, `pct_valid_pixels` (quota di area del comune
-non mascherata da nuvole/neve/acqua nel composito scelto), un
-`vegetation_class` categorico di lettura rapida.
+piccoli (approssimazione nota a 333m di risoluzione). Dato che il file e'
+globale (leggerlo tutto in memoria richiederebbe decine di GB di RAM),
+lo script legge solo una **finestra** (`rasterio.windows.from_bounds`)
+corrispondente al bounding box dei comuni piemontesi + margine, non
+l'intero raster — lettura in ~3 secondi indipendentemente dalla
+dimensione del file scaricato. Popola `municipality_ndvi` (vedi
+[Modello Dati](data-model.md)): `ndvi_mean/min/max/stddev`,
+`pct_valid_pixels` (quota di area del comune non mascherata da
+nuvole/neve/acqua nel composito scelto), un `vegetation_class`
+categorico di lettura rapida.
 
-**Stato**: script e tabella pronti, **non ancora eseguito** — manca il
-download manuale del GeoTIFF (da fare dall'utente) e la scelta del
-composito 10-giornaliero da usare (es. un periodo estivo senza troppa
-copertura nuvolosa, per coerenza con l'uso "statico" gia' fatto per CLC).
+**Esecuzione reale** (composito 10-giornaliero 2026-07-01/2026-07-10):
+**1180/1180 comuni popolati**, nessun errore. Valori verificati a
+campione: Vercelli 0.62 NDVI medio ("dense", coerente con le risaie —
+67-84% agricolo gia' trovato da CORINE, verdi/allagate a luglio); Torino
+0.40 ("moderate", citta' ma con parchi/collina/Po nel perimetro
+comunale); Bardonecchia/Formazza 0.44-0.49 con deviazione standard alta
+(0.26-0.28) e minimo vicino al limite teorico -0.08 — comuni alpini con
+enorme escursione altimetrica (boschi di fondovalle ad alto NDVI, roccia
+nuda/ghiacciai in quota a NDVI bassissimo), `pct_valid_pixels` 98-99%
+(non 100%, segno che il mascheramento neve/nuvole in quota funziona
+davvero). Distribuzione sui 1180 comuni: 643 dense, 461 very_dense, 76
+moderate, 0 sparse/no_vegetation — plausibile per luglio (piena stagione
+vegetativa in Piemonte).

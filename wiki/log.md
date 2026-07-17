@@ -1659,17 +1659,106 @@ Log cronologico append-only. Ogni riga: data, azione, pagine toccate.
   verificata esistente con lo schema atteso via
   `information_schema.columns`.
 
-  **Non fatto in questa sessione**: il download manuale del GeoTIFF
-  (compito dell'utente) e l'esecuzione dello script su un file reale, quindi
-  **`municipality_ndvi` esiste ma e' vuota** (0 righe) — a differenza delle
-  sessioni CLC/popolazione, qui il dato non e' ancora arrivato perche' il
-  download richiede un account e un'interazione con un portale esterno che
-  l'utente deve fare in prima persona.
+  **Non fatto in questa sessione** (a quel punto): il download manuale del
+  GeoTIFF, compito dell'utente da fare interagendo col Copernicus Browser.
 
-  Pagine aggiornate: `data-sources.md` (nuova sezione "NDVI (Copernicus
-  Global Land Service)"), `data-model.md` (nuova tabella
+  Pagine aggiornate (primo giro): `data-sources.md` (nuova sezione "NDVI
+  (Copernicus Global Land Service)"), `data-model.md` (nuova tabella
   `municipality_ndvi`), `paper-scientifico.md` (voce "NDVI" in "Idee da
   esplorare" segnata "in corso"), `project-status.md`.
+
+- **2026-07-17** (stessa giornata) — NDVI: DOWNLOAD REALE E COMPLETAMENTO,
+  DOPO UN VICOLO CIECO E DIVERSE DIFFICOLTA' DI PORTALE. Sessione di
+  supporto interattivo all'utente (screenshot del Copernicus Browser
+  condivisi passo passo) per completare quanto predisposto nella sessione
+  precedente.
+
+  **Vicolo cieco — HR-VPP**: durante la navigazione del Browser, un
+  filtro "PROJECTION & RESOLUTION" con opzioni UTM 10m/20m/60m e LAEA
+  10m/20m/60m/100m (insieme a un campo testuale "Dataset identifier=NDVI")
+  sembrava puntare a un secondo prodotto CLMS realmente a 10m (HR-VPP,
+  Sentinel-2 vero, tile-based) — un'apparente occasione di ottenere una
+  risoluzione migliore del piano originale "gratis". Confermato via
+  ricerca web che HR-VPP esiste davvero (10m, dal 2016), ma **non e'
+  raggiungibile da questo catalogo di ricerca**: navigando l'albero delle
+  sotto-categorie ("Vegetation Indices" → solo le 5 varianti Global
+  300m/1km gia' pianificate; "Vegetation Phenology and Productivity
+  Parameters" → solo prodotti di fenologia LSP, non NDVI), e verificato
+  con una ricerca reale che restituiva sempre "0 prodotti trovati" con
+  quei filtri (la lista "Available data" mostrata dall'errore elencava
+  solo le varianti Global 300m/1km) — le opzioni UTM/LAEA nel pannello
+  erano opzioni generiche del sotto-sistema di filtro, non backed da
+  prodotti realmente indicizzati qui. Tornati al piano originale (CGLS
+  300m V3), confermato disponibile nella stessa lista.
+
+  **Difficolta' reali del portale** (documentate perche' si ripeteranno
+  in eventuali download futuri di altri prodotti CLMS): (1) il selettore
+  "Time Range" non rispondeva al click sul testo placeholder
+  "YYYY-MM-DD" — sbloccato cliccando esattamente sul primo carattere per
+  attivare il segmento, poi digitando le cifre da tastiera (`20260601`),
+  non un calendario a popup come ci si aspetterebbe; (2) senza un
+  intervallo di date impostato la ricerca restituiva sempre "0 prodotti"
+  nonostante il prodotto fosse disponibile, presumibilmente per un
+  default implicito su "oggi" (periodo non ancora elaborato per un
+  composito 10-giornaliero) — serviva un intervallo esplicito nel
+  passato (giugno 2026).
+
+  **Il file scaricato e' globale**: a differenza di CLC (tool "Download
+  by area" dedicato su `land.copernicus.eu`, ritaglio lato server), CDSE
+  non offre un ritaglio per quest'area — il file (Cloud Optimized GeoTIFF,
+  zip) e' un'unica griglia mondiale da **~3.3 GB**, con 4 raster distinti
+  dentro (NDVI, NOBS, QFLAG, UNC). Estratto dallo zip solo il file NDVI
+  (~1.29 GB, via `zipfile` mirato su un solo membro, non l'intero
+  archivio) in `data/external/ndvi/`.
+
+  **Verifica empirica di scala/offset/flag** (invece di fidarsi solo
+  della documentazione, che per questo prodotto si e' rivelata
+  imprecisa): ispezionato il file reale con `rasterio` — CRS EPSG:4326
+  confermato, dtype `uint8`, nodata `255`, griglia 120960×47040 pixel
+  (~333m di lato reale, coerente con l'identificatore interno
+  `ndvi300_v3_333m` nonostante il nome commerciale "300m"). `scales`/
+  `offsets` embedded nel file confermano `0.004`/`-0.08` (la formula
+  trovata via ricerca web era giusta), ma i **valori di flag trovati
+  online erano sbagliati**: i tag reali (`flag_meanings`/`flag_values`)
+  riportano `{252, 253, 254, 255} = {Unknown, Snow, Water, Missing}`, non
+  `{251=missing, 252=cloud, 253=snow, 254=sea, 255=background}` come
+  suggerito da fonti generiche — nessun DN 251 definito, nessuna
+  categoria "cloud" esplicita. Il campo `valid_range=[0,250]` del file
+  conferma comunque la soglia gia' usata nello script (nessun impatto
+  sulla logica di mascheramento, solo sui commenti/docstring, corretti).
+
+  **Fix allo script prima dell'esecuzione**: `compute_ndvi()` in
+  `process_ndvi.py` leggeva l'intero raster in memoria
+  (`src.read(1)`) — per un file globale a 333m questo significa un
+  array da decine di GB, non eseguibile su una macchina normale. Riscritto
+  per leggere solo una **finestra** (`rasterio.windows.from_bounds`)
+  corrispondente al bounding box dei comuni piemontesi + margine di
+  sicurezza (`boundless=True, fill_value=255` per gestire in sicurezza
+  eventuale sconfinamento del margine oltre i bordi del raster globale) —
+  lettura in ~3 secondi indipendentemente dalla dimensione del file.
+  Anche un piccolo fix cosmetico: `nodata=None` passato a `rasterstats`
+  per contare tutti i pixel intersecati produceva un `NodataWarning`
+  interno (default silenzioso a `-999`) — sostituito con `nodata=-1`
+  esplicito (fuori dal range 0-255 del dato, stesso comportamento, nessun
+  warning).
+
+  **Esecuzione reale** (composito 2026-07-01/2026-07-10): **1180/1180
+  comuni popolati**, nessun errore. Valori verificati a campione:
+  Vercelli 0.62 NDVI medio ("dense", coerente con le risaie gia' trovate
+  al 67-84% agricolo da CORINE); Torino 0.40 ("moderate", citta' ma con
+  parchi/collina/Po nel perimetro comunale); Bardonecchia/Formazza
+  0.44-0.49 con deviazione standard alta (0.26-0.28) e minimo vicino al
+  limite teorico -0.08 — gradiente bosco di fondovalle/roccia nuda in
+  quota, `pct_valid_pixels` 98-99% (non 100%, segno che il mascheramento
+  neve/nuvole in quota funziona davvero). Distribuzione sui 1180 comuni:
+  643 dense, 461 very_dense, 76 moderate, 0 sparse/no_vegetation —
+  plausibile per luglio (piena stagione vegetativa).
+
+  Pagine aggiornate (secondo giro): `data-sources.md` (sezione NDVI
+  riscritta con il racconto completo — vicolo cieco HR-VPP, difficolta'
+  di portale, verifica empirica, risultati reali), `data-model.md`
+  (`municipality_ndvi` segnata popolata con valori reali),
+  `paper-scientifico.md` (voce NDVI segnata "fatto"), `project-status.md`.
 
 - **2026-07-17** — INGEST. Restyling identità visiva "calore" della
   dashboard Streamlit, su richiesta esplicita dell'utente ("frontend troppo
@@ -1771,3 +1860,137 @@ Log cronologico append-only. Ogni riga: data, azione, pagine toccate.
   scuro di `THEME_INK`) in `constants.py`, applicato a
   `[theme.dark.sidebar].backgroundColor` in `config.toml`. Restart completo
   del server (richiesto per i cambi a `config.toml`).
+
+- **2026-07-17** — PRIMA ITERAZIONE DEL MODELLO STATISTICO ESPLICATIVO
+  (nuovo script `src/analysis/spatial_regression.py`). Su richiesta
+  dell'utente, non appena popolazione/CORINE/NDVI sono state tutte
+  disponibili (vedi sessione NDVI sopra), avviata la fase 4 del piano del
+  paper scientifico — con una decisione di sequenziamento discussa prima
+  di scrivere codice: l'utente proponeva di raccogliere prima anche le
+  altre covariate candidate (pendenza/esposizione da DEM, distanza
+  dall'acqua, densità stradale OSM); consigliato invece di fare un primo
+  giro di modellazione con quanto già disponibile e usare l'indice di
+  Moran sui residui come segnale **data-driven** per decidere cosa
+  aggiungere davvero, invece di raccogliere dati alla cieca — l'utente ha
+  concordato, aggiungendo che il campione di comuni con temperatura
+  crescerà comunque gradualmente nel tempo.
+
+  **Fase 1 — OLS classico**: `load_regression_data()` unisce
+  `kpi_annual_by_municipality` (temp. media 2000-oggi) con elevazione e
+  densità di popolazione (`municipalities`), `pct_urban`
+  (`municipality_land_cover`), `ndvi_mean` (`municipality_ndvi`) per i 63
+  comuni con temperatura. VIF tutti <5 (nessuna multicollinearità grave).
+  Risultato: R²=0.979, **dominato quasi interamente dall'elevazione**
+  (-0.56°C/100m, p<0.001, fisicamente coerente col gradiente
+  altimetrico). Popolazione (p=0.698) e % urbano (p=0.897) **non
+  significativi** — in contrasto con l'ipotesi originale del paper
+  (città/industria come fattore esplicativo). NDVI significativo
+  (p=0.028) ma con **segno controintuitivo** (più verde → più caldo),
+  sospetto iniziale: confondimento con l'elevazione (pianura agricola =
+  molto verde a luglio + bassa quota calda).
+
+  **Check di adeguatezza concordato**: Moran's I sui residui OLS (riuso
+  di `build_inverse_distance_weights()`/`morans_i_permutation_test()` già
+  scritte in `spatial_analysis.py`, pesi inverso-distanza) — **ancora
+  significativo** (I=0.081, p=0.001): l'OLS classico non è adeguato per
+  l'inferenza su questi dati, serve un vero modello a errore/lag
+  spaziale, come previsto dal piano.
+
+  **Fase 2 — modello spaziale vero**: a differenza di Moran's I (scritto
+  a mano nel progetto per evitare dipendenze extra), qui la stima a
+  massima verosimiglianza è abbastanza delicata da preferire una libreria
+  testata — installate `libpysal==4.15.0`/`spreg==1.9.0` (verificata la
+  compatibilità con Python 3.14.5 del progetto, nessun problema).
+  Verificata l'API reale di `spreg` con un test sintetico prima di
+  scrivere il codice definitivo (attributi `lm_lag`/`lm_error`/
+  `rlm_lag`/`rlm_error`/`z_stat`/`betas`/`rho`/`lam`/`pr2` su
+  `spreg.OLS`/`ML_Lag`/`ML_Error` — non tutti scontati, es. `OLS` non ha
+  `z_stat` ma `t_stat`). Scritte `build_knn_weights()` (KNN k=5,
+  row-standardized — scelta diversa dall'inverso-distanza della Fase 1:
+  KNN evita nodi isolati/pesi degeneri, standard per `spreg`),
+  `run_lm_diagnostics()` (`spreg.OLS` con `spat_diag=True`),
+  `select_spatial_model()` (regola di decisione di Anselin: usa le
+  versioni robuste dei test LM quando entrambe le versioni semplici sono
+  significative), `fit_spatial_model()` (`spreg.ML_Lag`/`ML_Error`).
+
+  **Risultato Fase 2**: caso non ambiguo — LM-lag p=0.351 (non
+  significativo), LM-error p=0.0001 (fortemente significativo, **robusto**
+  anche a p=0.0002) → **modello a errore spaziale**. Lambda=0.738
+  (p<0.001, forte dipendenza spaziale nell'errore confermata). Con questo
+  modello: elevazione resta dominante (p<0.001); **% urbano diventa
+  significativo (p=0.011) con il segno atteso** (positivo: più urbano →
+  più caldo) — la correzione spaziale **cambia una conclusione
+  sostanziale**, non solo la validità statistica: l'OLS classico
+  mascherava un effetto urbano reale. Popolazione resta non significativa
+  (p=0.116). NDVI resta significativo (p=0.0037) con lo **stesso segno
+  controintuitivo** anche dopo la correzione spaziale — quindi non è
+  (solo) un artefatto di autocorrelazione, resta da approfondire nel
+  paper.
+
+  **Limite dichiarato esplicitamente**: la scelta del modello spaziale
+  dipende dalla definizione della matrice pesi (KNN k=5 per `spreg`,
+  inverso-distanza per il check Fase 1) — limite noto della spatial
+  econometrics con campioni piccoli (n=63), da rivalutare quando il
+  campione crescerà. Coerente con la decisione presa con l'utente di non
+  aggiungere subito le altre covariate candidate, ma rilanciare questa
+  stessa pipeline via via che arrivano nuovi comuni.
+
+  Output: `output/spatial_regression.csv`,
+  `output/spatial_regression_summary.txt` (OLS+VIF+Moran's I residui),
+  `output/spatial_regression_spatial_model.txt` (diagnostica LM + modello
+  spaziale finale).
+
+  Pagine aggiornate: `statistical-analysis.md` (nuova sezione
+  `spatial_regression.py`), `paper-scientifico.md` (punto 4 del piano
+  aggiornato con risultato reale, prossimi passi rivisti), `project-status.md`,
+  `index.md`.
+
+- **2026-07-17** — NDVI PORTATO IN DASHBOARD. Su richiesta esplicita
+  dell'utente ("aggiungiamo nel frontend i dati aggiunti?"), portata la
+  covariata NDVI (popolata la stessa giornata, vedi sessione dedicata
+  sopra) nella pagina Analisi Spaziale, stesso pattern già usato per uso
+  del suolo/popolazione il 2026-07-16.
+
+  **Nuova query** `get_ndvi_all()` in `components/queries.py` (join
+  `municipality_ndvi`/`municipalities`/`provinces`, tutti i 1180 comuni —
+  stesso pattern di `get_land_cover_all()`). **Nuovi token** in
+  `constants.py`: `NDVI_COLORS` (gradiente marrone→verde, convenzione
+  standard NDVI, deliberatamente diverso dalla scala blu→rosso di
+  temperatura/trend per non confondere le due mappe a colpo d'occhio),
+  `VEGETATION_CLASS_LABELS` (etichette italiane per i bucket categorici
+  già scritti da `process_ndvi.py`).
+
+  **Nuova mappa "NDVI — verde da satellite"** in `03_analisi_spaziale.py`,
+  inserita dopo la mappa di densità di popolazione: colormap continua via
+  `branca.colormap.LinearColormap`, tooltip con valore NDVI e classe di
+  vegetazione, legenda a 5 fasce. Piccola estensione a
+  `components/maps.py::render_gradient_legend()`: nuovo parametro
+  `decimals` (default 1, invariato per le mappe esistenti) — l'intervallo
+  NDVI reale dei comuni (0.33-0.87) è troppo stretto per il formato a 1
+  decimale già usato da temperatura/popolazione, che avrebbe reso alcune
+  fasce indistinguibili in legenda.
+
+  **NDVI aggiunto come 4ª opzione** nel selettore `st.radio` dello scatter
+  temperatura/uso del suolo/popolazione (prima 3 opzioni: % urbano, %
+  industriale, densità di popolazione).
+
+  **Testi corretti perché non più veri**: la pagina dichiarava in due punti
+  (caption sotto la correlazione di Pearson, sezione Metodologia) che "un
+  modello che isola l'effetto della quota" fosse pianificato ma non ancora
+  costruito — falso da quando `spatial_regression.py` è stato scritto ed
+  eseguito nella stessa giornata (vedi sessione precedente). Riscritti
+  entrambi i punti con il risultato reale (l'effetto urbano diventa
+  significativo col segno atteso solo nel modello a errore spaziale),
+  dichiarato esplicitamente provvisorio (n=63). Aggiunta anche una voce in
+  Metodologia sul limite temporale dell'NDVI (composito singolo di 10
+  giorni, non una media pluriennale come le altre variabili) — stesso
+  tipo di trasparenza già applicato a CORINE ("uno scatto del 2018").
+
+  Verificato con `AppTest`: nessuna eccezione dopo le modifiche. Server
+  live già in esecuzione (avviato in una sessione parallela per il
+  restyling) non riavviato — le modifiche a file `.py` vengono ricaricate
+  automaticamente da Streamlit, a differenza dei cambi a `config.toml`;
+  verificato comunque `/_stcore/health` → 200.
+
+  Pagine aggiornate: `dashboard.md` (nuova sezione "NDVI in dashboard +
+  testi metodologici aggiornati").

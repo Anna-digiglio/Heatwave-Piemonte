@@ -1,7 +1,8 @@
 # Analisi statistica e spaziale (`src/analysis/`)
 
 **Sorgenti**: `src/analysis/trend_analysis.py`, `src/analysis/heatwave_stats.py`,
-`src/analysis/seasonal_analysis.py`, `src/analysis/spatial_analysis.py`.
+`src/analysis/seasonal_analysis.py`, `src/analysis/spatial_analysis.py`,
+`src/analysis/spatial_regression.py`.
 
 Implementata ed eseguita per la prima volta su dati reali il 2026-07-15,
 dopo che la pipeline ETL (vedi [ETL](etl-pipeline.md)) aveva reso disponibili
@@ -208,12 +209,94 @@ più esaustiva richiederebbe temperature per un sottoinsieme più ampio
 piccolo per dire qualcosa" a "risultato statisticamente significativo" è
 già stato fatto.
 
+## `spatial_regression.py` — modello esplicativo (temperatura ~ covariate)
+
+CLI: `python -m src.analysis.spatial_regression`
+
+Prima fase quantitativa verso il modello del paper scientifico (fase 4 del
+piano, vedi [Articolo scientifico](paper-scientifico.md)), eseguita il
+2026-07-17 non appena le 3 covariate esplicative (popolazione, uso del
+suolo CORINE, NDVI — vedi [Fonti Dati](data-sources.md)) sono state tutte
+disponibili in DB per i 63 comuni con temperatura.
+
+**Fase 1 — OLS classico + check di adeguatezza**:
+- `load_regression_data()` — join tra `kpi_annual_by_municipality`
+  (`temp_mean_avg` 2000-oggi), `municipalities` (elevazione, densità di
+  popolazione = popolazione/area), `municipality_land_cover` (`pct_urban`),
+  `municipality_ndvi` (`ndvi_mean`)
+- `compute_vif()` — Variance Inflation Factor per covariata (tutte <5,
+  nessuna multicollinearità grave tra le 4 variabili)
+- `fit_ols()` — OLS via `statsmodels`
+- Check di adeguatezza: Moran's I sui **residui** OLS (riusa
+  `build_inverse_distance_weights()`/`morans_i_permutation_test()` di
+  `spatial_analysis.py`, pesi inverso-distanza) — se ancora significativo,
+  un OLS classico non è adeguato per l'inferenza
+
+**Risultato Fase 1 (63 comuni)**: R²=0.979, dominato quasi interamente
+dall'elevazione (-0.56°C/100m, p<0.001, fisicamente coerente col gradiente
+altimetrico). Popolazione (p=0.698) e % urbano (p=0.897) **non
+significativi**; NDVI significativo (p=0.028) ma con **segno
+controintuitivo** (più verde → temperatura più alta, non più bassa — sospetto
+confondimento con l'elevazione: la pianura agricola è insieme molto verde
+a luglio e a bassa quota/calda). **Moran's I sui residui = 0.081, p=0.001
+— ancora significativo**: l'OLS non è adeguato, serve un modello spaziale
+vero.
+
+**Fase 2 — modello spaziale (spreg/libpysal)**, non implementato a mano
+(a differenza di Moran's I in `spatial_analysis.py`: qui la stima a
+massima verosimiglianza è più delicata, si usa una libreria testata):
+- `build_knn_weights()` — pesi spaziali KNN (k=5, row-standardized) via
+  `libpysal.weights.KNN` — scelta diversa dall'inverso-distanza usato in
+  Fase 1 (KNN evita nodi isolati/pesi degeneri con punti irregolari,
+  standard per `spreg`)
+- `run_lm_diagnostics()` — `spreg.OLS` con test del Moltiplicatore di
+  Lagrange (LM-lag/LM-error) e versioni robuste, per decidere tra modello
+  a lag o a errore spaziale
+- `select_spatial_model()` — regola di decisione di Anselin (Anselin & Rey
+  1991): usa le versioni robuste dei test LM quando entrambi i test
+  semplici sono significativi, per distinguere lag "vero" da errore "vero"
+- `fit_spatial_model()` — stima `spreg.ML_Lag` o `spreg.ML_Error` a seconda
+  dell'esito
+
+**Risultato Fase 2 (63 comuni, KNN k=5)**: caso non ambiguo — LM-lag
+p=0.351 (non significativo), LM-error p=0.0001 (fortemente significativo,
+**robusto** anche a p=0.0002) → **modello a errore spaziale**. Lambda=0.738
+(p<0.001, forte dipendenza spaziale nell'errore, confermata). Con questo
+modello:
+- Elevazione resta dominante e significativa (-0.0055°C/m, p<0.001).
+- **% urbano diventa significativo (p=0.011) con il segno atteso**
+  (positivo: più urbano → più caldo) — l'ipotesi originale del paper
+  (città/industria come fattore esplicativo) **trova conferma solo dopo
+  la correzione spaziale**: l'OLS classico la mascherava, sotto/sovra-stimando
+  l'effetto per aver ignorato la dipendenza spaziale nell'errore.
+- Popolazione resta non significativa (p=0.116).
+- NDVI resta significativo (p=0.0037) **con lo stesso segno
+  controintuitivo** della Fase 1 — persiste anche dopo la correzione
+  spaziale, quindi non è (solo) un artefatto legato all'autocorrelazione:
+  da approfondire nel paper (ipotesi principale: NDVI a luglio cattura
+  anche l'agricoltura irrigua di pianura, che è calda per via della bassa
+  quota indipendentemente dal verde).
+
+**Caveat esplicito**: la scelta del modello spaziale dipende dalla
+definizione della matrice pesi (qui KNN k=5 per `spreg`, inverso-distanza
+per il check Fase 1) — un limite noto della spatial econometrics con
+campioni piccoli, da rivalutare quando il campione di comuni con
+temperatura crescerà (l'utente sta estendendo la copertura gradualmente,
+vedi [Fonti Dati](data-sources.md)). Output:
+`output/spatial_regression.csv`, `output/spatial_regression_summary.txt`
+(OLS+VIF+Moran's I residui), `output/spatial_regression_spatial_model.txt`
+(diagnostica LM + modello spaziale finale).
+
 ## Dipendenze aggiunte
 
 `pymannkendall==1.4.3`, `scikit-learn==1.9.0`, `statsmodels==0.14.6`
-(aggiunte a `requirements.txt` il 2026-07-15). Moran's I è implementato a
-mano per evitare di aggiungere `libpysal`/`esda` per un solo calcolo, dato
-il campione ridotto.
+(aggiunte a `requirements.txt` il 2026-07-15). Moran's I in
+`spatial_analysis.py` è implementato a mano per evitare di aggiungere
+dipendenze per un solo calcolo, dato il campione ridotto. `libpysal==4.15.0`/
+`spreg==1.9.0` aggiunte invece il 2026-07-17 per il modello a errore/lag
+spaziale vero e proprio in `spatial_regression.py` (qui la stima è
+abbastanza delicata da preferire una libreria testata a un'implementazione
+a mano).
 
 ## Bug incontrati durante l'implementazione
 

@@ -93,13 +93,21 @@ presente in dashboard (`03_analisi_spaziale.py`) è dichiarato esplicitamente
    - Entrambe indipendenti dall'estensione a 300 comuni: operano su tutti i
      1180 comuni già in `municipalities`, non solo su quelli con
      temperatura.
-4. **Modellazione statistica**: dato che Moran's I è già risultato
-   significativo (I=0.101, p=0.002, n=44 — vedi
-   [Analisi statistica](statistical-analysis.md)), un OLS classico
-   violerebbe l'indipendenza dei residui. Serve un modello a errore/lag
-   spaziale (o quantomeno Moran's I sui residui come check di adeguatezza),
-   più controllo VIF per multicollinearità (elevazione e % uso urbano del
-   suolo saranno probabilmente correlate).
+4. **Modellazione statistica** — **prima iterazione fatta il 2026-07-17**
+   (`src/analysis/spatial_regression.py`), non appena popolazione/CORINE/NDVI
+   sono state tutte disponibili per i 63 comuni con temperatura. OLS
+   classico (elevazione+popolazione+%urbano+NDVI, VIF tutti <5) →
+   Moran's I sui residui ancora significativo (I=0.081, p=0.001) → modello
+   a **errore spaziale** (via `spreg`/`libpysal`, regola di Anselin non
+   ambigua: LM-error fortemente significativo anche robusto, LM-lag no).
+   Risultato piu' rilevante: **% urbano diventa significativo con il segno
+   atteso solo nel modello spaziale** (l'OLS classico lo mascherava) —
+   prima conferma quantitativa, seppur provvisoria (n=63, da rifare al
+   crescere del campione), dell'ipotesi originale del paper. NDVI resta
+   significativo ma con segno controintuitivo (piu' verde → piu' caldo),
+   da indagare. Dettaglio completo, incluso il caveat sulla sensibilita'
+   alla matrice pesi spaziale, in
+   [Analisi statistica](statistical-analysis.md).
 5. **Percorso di pubblicazione realistico senza affiliazione accademica**:
    preprint (arXiv/EarthArXiv, gratuito e citabile subito) → conferenza SISC
    (Società Italiana per le Scienze del Clima, barriera d'ingresso bassa per
@@ -155,14 +163,16 @@ confronto "isola di calore urbana" (Torino vs media provincia, dichiarato
 
 **2. Altre covariate esplicative candidate**, in ordine di sforzo
 crescente:
-- NDVI/verde da satellite — **in corso (2026-07-17)**. Scartato Sentinel-2
+- NDVI/verde da satellite — **fatto (2026-07-17)**. Scartato Sentinel-2
   vero (10m, via Google Earth Engine o Copernicus Data Space Ecosystem
   Statistical API) a favore di Copernicus Global Land Service NDVI 300m V3
   (prodotto gia' calcolato, stesso pattern low-effort di CLC), decisione
-  presa con l'utente. Tabella `municipality_ndvi` e script
-  `src/data_acquisition/process_ndvi.py` pronti; manca il download manuale
-  del GeoTIFF. Dettaglio completo in [Fonti dati](data-sources.md) e
-  [Modello dati](data-model.md).
+  presa con l'utente — un'apparente scorciatoia verso un prodotto NDVI
+  10m reale (HR-VPP) si e' rivelata un vicolo cieco (non raggiungibile dal
+  Copernicus Browser). `municipality_ndvi` popolata per tutti i 1180
+  comuni. Dettaglio completo (incluse le difficolta' reali del portale di
+  download e la verifica empirica scala/offset/flag sul file) in
+  [Fonti dati](data-sources.md) e [Modello dati](data-model.md).
 - Pendenza ed esposizione del versante da un DEM (es. Copernicus GLO-30) —
   più dettagliato della sola elevazione del centroide già disponibile; un
   versante esposto a sud scalda diversamente da uno a nord, specie in
@@ -189,13 +199,20 @@ sottomissione).
 ## Prossimi passi
 
 Vedi [Stato del progetto](project-status.md) per lo stato operativo
-aggiornato di ETL/analisi. Con popolazione e uso del suolo ora entrambi
-fatti (2026-07-16), restano aperti:
-(a) la corsa a 300 comuni (in corso lato utente, non ancora caricata nel
-DB — fermo a 44 al 2026-07-16 sera);
-(b) la validazione ARPA (mai risolta, vedi fase 1 sopra);
-(c) il modello statistico vero e proprio di §3.5/§2.4 nel manoscritto —
-ora possibile con i dati disponibili (temperatura, elevazione,
-popolazione, uso del suolo tutti presenti per i comuni con temperatura),
-ma non ancora costruito.
+aggiornato di ETL/analisi. Con popolazione, uso del suolo e ora anche NDVI
+fatti (2026-07-16/17), e con una prima iterazione del modello statistico
+fatta il 2026-07-17 (vedi punto 4 sopra), restano aperti:
+(a) l'estensione del campione di comuni con temperatura (in corso lato
+utente, gradualmente — 44→63 al 2026-07-17, vedi
+[Fonti dati](data-sources.md)) — priorita' alta anche per la
+modellazione: n=63 e' piccolo per la spatial econometrics, e il campione
+crescente andra' rilanciato attraverso `spatial_regression.py` via via
+che arrivano nuovi comuni;
+(b) la validazione ARPA (mai risolta, vedi fase 1 sopra) — resta la
+priorita' piu' alta in assoluto, dato che le temperature Open-Meteo sono
+dati di rianalisi/modello (spazialmente "lisci" per costruzione), il che
+potrebbe spiegare parte dell'autocorrelazione residua ancora vista nel
+modello spaziale;
+(c) approfondire il segno controintuitivo di NDVI nel modello (vedi punto
+4) prima di scriverlo nel manoscritto come risultato consolidato.
 Il file `paper/manoscritto.md` va aggiornato in parallelo.

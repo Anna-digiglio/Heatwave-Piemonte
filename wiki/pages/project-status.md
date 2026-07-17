@@ -201,21 +201,58 @@ pianificato del progetto è completo):
    aggiornamento automatico se in futuro si ricaricano dati nuovi). Vedi
    [Dashboard](dashboard.md).
 
-**Aggiornamento 2026-07-17 (NDVI — predisposizione, non ancora eseguito)**:
-terza covariata esplicativa per il paper (dopo popolazione e CORINE, fatte
-il 2026-07-16) — vedi [Articolo scientifico](paper-scientifico.md).
-Decisione presa con l'utente: Copernicus Global Land Service NDVI 300m V3
-(prodotto gia' calcolato, download manuale) invece di Sentinel-2 vero
-(10m, via GEE o CDSE Statistical API — piu' fedele al nome citato
-originariamente ma piu' complesso, stesso tipo di rischio gia' visto con
-le API Copernicus/ISTAT del progetto). Predisposti `sql/04_ndvi.sql`
-(tabella `municipality_ndvi`) e `src/data_acquisition/process_ndvi.py`
-(zonal stats via `rasterstats`, formula DN→NDVI verificata via
-documentazione Copernicus/Sentinel Hub ma non ancora su un file reale).
-**Manca il download manuale del GeoTIFF** (Copernicus Data Space
-Ecosystem, account diverso da quello EU Login usato per CLC) — compito
-dell'utente, poi l'esecuzione dello script. Vedi [Fonti dati](data-sources.md)
-per il dettaglio completo.
+**Aggiornamento 2026-07-17 (NDVI — fatto)**: terza covariata esplicativa
+per il paper (dopo popolazione e CORINE, fatte il 2026-07-16) — vedi
+[Articolo scientifico](paper-scientifico.md). Decisione presa con
+l'utente: Copernicus Global Land Service NDVI 300m V3 (prodotto gia'
+calcolato, download manuale) invece di Sentinel-2 vero (10m, via GEE o
+CDSE Statistical API). Un'apparente scorciatoia verso un prodotto NDVI
+10m reale trovata durante la navigazione del portale (HR-VPP) si e'
+rivelata un vicolo cieco (non cercabile in questo catalogo) — tornati al
+piano originale, gia' confermato disponibile. Il download reale via
+Copernicus Browser ha richiesto diversi tentativi (selettore data che non
+rispondeva al click, filtri fuorvianti) e ha prodotto un file **globale**
+da 3.3 GB (nessun ritaglio lato server per questo prodotto, a differenza
+di CLC) — gestito senza saturare la RAM leggendo solo la finestra
+Piemonte via `rasterio.windows`. Scala/offset/flag della formula
+DN→NDVI **verificati sui metadati embedded del file reale** (non solo
+dalla documentazione, che si e' rivelata imprecisa sui codici di flag).
+
+**Risultato**: `municipality_ndvi` popolata per **1180/1180 comuni**
+(composito 2026-07-01/2026-07-10). Media regionale NDVI 0.663, range
+0.327-0.867. Valori verificati a campione coerenti coi risultati CORINE
+gia' noti (Vercelli 0.62 — risaie; Torino 0.40 — urbano con verde
+comunale; Bardonecchia/Formazza 0.44-0.49 con deviazione standard alta,
+0.26-0.28 — gradiente bosco di fondovalle/roccia nuda in quota). Vedi
+[Fonti dati](data-sources.md) per il racconto completo (incluso il
+vicolo cieco HR-VPP e le difficolta' del portale) e
+[Modello dati](data-model.md) per lo schema.
+
+**Aggiornamento 2026-07-17 (prima iterazione del modello statistico)**:
+non appena popolazione/CORINE/NDVI sono state tutte disponibili, prima
+esecuzione di `src/analysis/spatial_regression.py` (nuovo script) — OLS
+classico (temp ~ elevazione+popolazione+%urbano+NDVI, VIF tutti <5, R²=0.979
+dominato dall'elevazione) seguito dal check concordato con l'utente
+(Moran's I sui residui): ancora significativo (I=0.081, p=0.001), quindi
+costruito anche un vero modello a errore spaziale via `spreg`/`libpysal`
+(nuove dipendenze). La regola di Anselin ha dato un esito non ambiguo
+(errore spaziale, non lag): lambda=0.738 (p<0.001). **Risultato più
+rilevante**: **% urbano diventa statisticamente significativo col segno
+atteso solo nel modello spaziale** (l'OLS classico lo mascherava) — prima
+conferma quantitativa, seppur provvisoria vista la numerosità campionaria
+ridotta (n=63), dell'ipotesi originale del paper su citta'/urbanizzazione
+come fattore esplicativo. NDVI resta significativo ma con segno
+controintuitivo (piu' verde → temperatura piu' alta), da approfondire.
+Decisione concordata con l'utente su come procedere: **non** aggiungere
+subito le altre covariate candidate (pendenza/esposizione da DEM,
+distanza dall'acqua, densita' stradale OSM) — si rilancia questa stessa
+pipeline via via che il campione di comuni con temperatura cresce
+(l'utente lo sta estendendo gradualmente), osservando se il problema di
+confondimento/autocorrelazione residua si attenua da solo prima di
+aggiungere altra complessita'. Vedi
+[Analisi statistica](statistical-analysis.md) per il dettaglio tecnico
+completo e [Articolo scientifico](paper-scientifico.md) per l'impatto sul
+piano del paper.
 
 ## Discrepanze da tenere a mente quando si presenta il progetto
 

@@ -265,13 +265,40 @@ del suolo alla dashboard"):
   logaritmica (altrimenti Torino schiaccia la scala).
 - **Scatter temperatura vs uso del suolo/popolazione**: solo i comuni con
   temperatura, con un selettore (`st.radio`) tra % urbano, % industriale/
-  commerciale, densità di popolazione; colore = fascia altitudinale (per
-  poter valutare a occhio se l'effetto regge a parità di quota); metrica
-  di correlazione di Pearson mostrata con caveat esplicito ("non
-  controllata per quota", il vero modello resta pianificato in
-  `paper/manoscritto.md` §3.5, non ancora costruito). Verificato con
-  `AppTest` un valore reale di correlazione +0.30 (% urbano vs
+  commerciale, densità di popolazione, NDVI (aggiunto 2026-07-17, vedi
+  sotto); colore = fascia altitudinale (per poter valutare a occhio se
+  l'effetto regge a parità di quota); metrica di correlazione di Pearson
+  mostrata con caveat esplicito ("non controllata per quota"). Verificato
+  con `AppTest` un valore reale di correlazione +0.30 (% urbano vs
   temperatura, tutti i comuni) — plausibile, non sospetto.
+
+**NDVI in dashboard + testi metodologici aggiornati (2026-07-17)**: su
+richiesta esplicita dell'utente, non appena `municipality_ndvi` è stata
+popolata (vedi [Fonti dati](data-sources.md)), portata anche in dashboard
+con lo stesso pattern di uso del suolo/popolazione:
+- **Nuova mappa NDVI**: tutti i 1180 comuni, colormap continua
+  marrone→verde (`NDVI_COLORS` in `components/constants.py`, convenzione
+  standard di visualizzazione NDVI, deliberatamente diversa dalla scala
+  blu→rosso di temperatura/trend per non confonderla con un'altra mappa
+  di calore), legenda a 5 fasce con **2 decimali** (non 1 come le altre
+  mappe — l'intervallo NDVI è troppo stretto per 1 decimale: aggiunto un
+  parametro `decimals` a `render_gradient_legend()`, default 1 per non
+  toccare le mappe esistenti).
+- **NDVI aggiunto come 4ª opzione nello scatter** (vedi sopra).
+- **Testi "non ancora costruito" corretti**: la pagina citava in due punti
+  (caption sotto la metrica di correlazione, sezione Metodologia) un
+  "modello che isola l'effetto della quota" come pianificato ma non
+  costruito — non più vero da quando `src/analysis/spatial_regression.py`
+  è stato scritto ed eseguito lo stesso giorno (vedi
+  [Analisi statistica](statistical-analysis.md)). Entrambi i punti ora
+  riportano il risultato reale (% urbano diventa significativo col segno
+  atteso solo nel modello a errore spaziale, non nell'OLS classico),
+  dichiarato esplicitamente provvisorio (n=63 comuni). Aggiunta anche una
+  voce in Metodologia sul limite temporale dell'NDVI (composito singolo di
+  10 giorni, non una media pluriennale come le temperature).
+
+Verificato con `AppTest` dopo le modifiche: nessuna eccezione, mappa NDVI
+e opzione scatter presenti.
 
 **Bug corretto durante lo sviluppo**: le query di geometrie/uso del suolo
 condividono la colonna `province_name` — un primo merge tra le due
