@@ -392,3 +392,73 @@ nuda/ghiacciai in quota a NDVI bassissimo), `pct_valid_pixels` 98-99%
 davvero). Distribuzione sui 1180 comuni: 643 dense, 461 very_dense, 76
 moderate, 0 sparse/no_vegetation — plausibile per luglio (piena stagione
 vegetativa in Piemonte).
+
+## Download collaborativo da una seconda macchina — 35 comuni extra (2026-07-17)
+
+**Contesto**: sessione svolta da una collaboratrice (non il titolare del
+progetto) su una macchina **diversa** da quella dove vive il database reale
+— nessun accesso a Postgres, nessun `.venv`/`.env` locali, nessun file in
+`data/raw`/`data/processed` (tutti esclusi da Git per design, vedi
+`.gitignore`). Il titolare aveva chiesto aiuto per scaricare altri comuni
+oltre ai 63 già coperti, ma non era raggiungibile per condividere la lista
+di quali comuni mancassero.
+
+**Ricostruzione della copertura esistente senza accesso al DB**: i 3
+progetti QGIS (`qgis_projects/*.qgz`, con relative preview PNG in
+`qgis_projects/previews/`) **sono** tracciati in Git, a differenza dei dati
+grezzi. `temperature_heatmap.png` mostra i comuni con dati reali colorati
+contro uno sfondo grigio (query live `municipality_id IN (SELECT DISTINCT
+municipality_id FROM temperature)`, vedi `qgis_projects/build_maps.py:164`)
+— ma il testo delle etichette è illeggibile (bug noto, font mancante in
+ambiente headless, vedi [Mappe GIS](gis-maps.md)), quindi il PNG da solo
+non basta a identificare i comuni per nome.
+
+**Metodo** (verificabile, non un'ipotesi): rasterizzati tutti i 1180
+poligoni comunali (da `data/external/istat_confini/`, tracciato in Git)
+sulla stessa griglia 1000×800 usata da QGIS (`combined_extent` +
+`scale(1.05)`, extent adattato all'aspect ratio dell'output — replicato
+leggendo `qgis_projects/build_maps.py`), poi classificato ogni comune come
+"con dati" se una quota rilevante (>15%) dei suoi pixel nel PNG è
+significativamente diversa dal grigio di sfondo. Risultato: **esattamente
+63 comuni** classificati (combacia col numero documentato), separazione
+netta tra "coperti" e "non coperti" (nessun caso ambiguo vicino alla
+soglia), tutti gli 8 capoluoghi (sicuramente coperti) classificati
+correttamente. Alta confidenza, non certezza assoluta — è un'inferenza
+dall'immagine, non una query diretta al DB.
+
+Sui comuni risultanti "non coperti", rieseguito **lo stesso algoritmo** di
+`select_extra_municipalities()`/`compute_target_per_province()`/
+`farthest_point_sample()` di `download_extra_municipalities.py` per
+selezionare 20 nuovi comuni (poi estesi oltre i 20, vedi sotto).
+
+**Download**: lanciato `WeatherDataDownloader.download_for_coordinates()`
+a lotti di 20, stesso pattern (8s tra richieste, salvataggio incrementale)
+già collaudato dal titolare. Il primo lotto di 20 è riuscito al 100%. Per i
+lotti successivi (richiesta esplicita: "scaricali fino a quando non ti
+blocca") **trovato un bug reale**: il codice che aggiornava l'insieme
+"comuni già coperti" tra un lotto e l'altro confrontava `PRO_COM_T` (letto
+da CSV, **inferito `int64` da pandas** — zeri iniziali persi, es. `6005`
+invece di `006005`) con `istat_code` convertito a stringa zero-paddata —
+tipi diversi, il confronto falliva quasi sempre. Effetto: l'algoritmo del
+secondo lotto ha ri-selezionato quasi gli stessi 20 comuni del primo prima
+di arrivare a comuni davvero nuovi, **scaricandoli due volte**. Scoperto
+confrontando righe attese (9.695/comune × N) vs righe osservate nel CSV
+finale; corretto con un `drop_duplicates(subset=['province','date'])` — le
+righe duplicate erano identiche (stesse coordinate/date), nessun dato perso.
+**Lezione per letture future**: qualunque colonna di soli cifre letta da
+CSV con `pandas.read_csv` senza `dtype=str` esplicito perde gli zeri
+iniziali — stesso tipo di bug (non la stessa causa) dell'encoding ISTAT
+già documentato sopra.
+
+Il rate limit giornaliero (vedi sezione dedicata sopra) è scattato dopo
+**55 richieste "pesanti" totali in giornata** (20 corrette + 20 duplicate
++ 15 nuove, prima di bloccarsi su "Santena" dopo 5 tentativi con backoff
+fino a 80s) — coerente con la soglia di ~19-20 *nuove* richieste pesanti
+già osservata dal titolare, il bug ha semplicemente sprecato parte della
+quota su richieste ridondanti, facendo scattare il blocco prima del
+dovuto.
+
+**Risultato netto**: **35 comuni nuovi**, non ancora nel DB del titolare
+(63 → 98 se importati). File consegnato: vedi
+[Pipeline ETL](etl-pipeline.md#comuni-extra-in-attesa-di-import-2026-07-17)
+per il formato esatto e i passi di import mancanti.

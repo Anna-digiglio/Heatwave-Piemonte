@@ -202,6 +202,54 @@ mai più rivisitato), trovato anche in `dashboard/components/filters.py`
 (`YEAR_MIN, YEAR_MAX = 2000, 2025` fisso) — reso dinamico dalla data reale
 in `temperature`.
 
+## Comuni extra in attesa di import (2026-07-17)
+
+Vedi [Fonti Dati](data-sources.md#download-collaborativo-da-una-seconda-macchina--35-comuni-extra-2026-07-17)
+per il racconto completo di come sono stati ottenuti (sessione da una
+seconda macchina, senza accesso diretto al DB del titolare, comuni
+mancanti dedotti dalle preview PNG dei progetti QGIS).
+
+**File consegnati** (fuori da Git, `data/raw/` — da recuperare dal canale
+usato per la consegna, non da `git pull`):
+
+- `data/raw/temperature_data_extra_helper_35comuni.csv` — 339.325 righe,
+  35 comuni, 2000-01-01 → 2026-07-17. Colonne:
+  `date, temp_max, temp_min, temp_mean, precipitation, province, data_source,
+  istat_code, province_name`. **`istat_code` è già zero-paddato a 6 cifre
+  come stringa nel file** — va comunque riletto con
+  `dtype={'istat_code': str}` per non perdere gli zeri iniziali (vedi bug
+  in [Fonti Dati](data-sources.md), stessa classe di problema
+  dell'encoding ISTAT).
+- `data/raw/riepilogo_35_comuni_extra.csv` — tabella di sintesi rapida
+  (comune, provincia, `istat_code`, n. righe, data min/max), utile per
+  controllare a colpo d'occhio cosa contiene il file grande senza aprirlo.
+
+**Non è ancora il formato che si aspetta `insert_temperature_for_municipalities()`** —
+mancano due passaggi prima del caricamento nel DB:
+
+1. **Pulizia** — passare il CSV in `DataCleaner.clean_data()` (stesso
+   trattamento già usato per `temperature_data_extra.csv`, vedi sezione
+   "Transform" sopra: il raggruppamento per `province` funziona anche qui
+   perché ogni nome comune è univoco tra i 35). Aggiunge `quality_flag`,
+   oggi assente.
+2. **Risoluzione `municipality_id`** — il file ha `istat_code`, non
+   `municipality_id` (chi ha scaricato da un'altra macchina non aveva
+   accesso alla tabella `municipalities` del titolare per leggere gli ID
+   interni). Basta un join sul campo `istat_code`, già `UNIQUE` in
+   `municipalities`:
+   ```sql
+   SELECT municipality_id, istat_code FROM municipalities
+   WHERE istat_code IN (SELECT DISTINCT istat_code FROM <tabella_temporanea_import>);
+   ```
+   poi rinominare/mappare `istat_code` → `municipality_id` nel dataframe
+   prima di chiamare `insert_temperature_for_municipalities()` (che si
+   aspetta quella colonna già presente, vedi sezione "Load" sopra).
+
+Dopo l'import: **63 → 98 comuni** in `temperature` (se tutti i 35 vengono
+accettati), poi rieseguire a valle `identify_heatwaves()`, refresh delle
+viste materializzate KPI, e i moduli di `src/analysis/` — stesso giro già
+fatto per le estensioni precedenti (vedi [Stato del Progetto](project-status.md)).
+
 ## Passaggi pianificati ma non ancora scritti
 
 - Calcolo KPI giornalieri/annuali lato Python (oggi solo le viste

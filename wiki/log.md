@@ -1994,3 +1994,32 @@ Log cronologico append-only. Ogni riga: data, azione, pagine toccate.
 
   Pagine aggiornate: `dashboard.md` (nuova sezione "NDVI in dashboard +
   testi metodologici aggiornati").
+
+- **2026-07-17** — INGEST. Sessione da una **seconda macchina** (una
+  collaboratrice, non il titolare): repo clonata senza `.venv`/`.env`/DB —
+  installate le dipendenze, poi scoperto che il DB reale del progetto non
+  vive su questa macchina (porta 5432 occupata da un container Postgres di
+  un progetto non correlato). Niente Docker/DB locale creato per questo
+  progetto (deciso con l'utente dopo un primo tentativo scartato).
+
+  Compito: aiutare il titolare a scaricare comuni extra oltre ai 63 già
+  coperti, senza poterlo contattare per sapere quali. Ricostruiti i comuni
+  già coperti **rasterizzando le preview PNG dei progetti QGIS** (tracciate
+  in Git) contro i 1180 poligoni comunali ISTAT (anch'essi in Git) — metodo
+  verificato (63/63 comuni ritrovati, separazione netta, tutti gli 8
+  capoluoghi corretti). Scaricati poi 35 comuni nuovi da Open-Meteo fino al
+  blocco del rate limit giornaliero, trovato e corretto un bug reale
+  (confronto `int`/`str` su `istat_code` → 20 comuni scaricati due volte,
+  deduplicati senza perdita di dati).
+
+  File prodotti (fuori Git, `data/raw/`, da consegnare al titolare fuori
+  canale — email/drive, non `git push`, per dimensione e per convenzione
+  del progetto):
+  `temperature_data_extra_helper_35comuni.csv`,
+  `riepilogo_35_comuni_extra.csv`.
+
+  Pagine aggiornate: `data-sources.md` (nuova sezione "Download
+  collaborativo da una seconda macchina"), `etl-pipeline.md` (nuova sezione
+  "Comuni extra in attesa di import", con i passi di pulizia/risoluzione
+  `municipality_id` mancanti prima del caricamento nel DB),
+  `project-status.md` (nuovo aggiornamento in cima alla cronologia).

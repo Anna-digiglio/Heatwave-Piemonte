@@ -254,6 +254,21 @@ aggiungere altra complessita'. Vedi
 completo e [Articolo scientifico](paper-scientifico.md) per l'impatto sul
 piano del paper.
 
+**Aggiornamento 2026-07-17 (35 comuni extra, scaricati da una seconda
+macchina — in attesa di import)**: una collaboratrice, senza accesso al
+database del titolare, ha ricostruito quali comuni fossero già coperti
+leggendo le preview PNG dei progetti QGIS (tracciate in Git a differenza
+dei dati), poi scaricato 35 comuni aggiuntivi da Open-Meteo fino al blocco
+del rate limit giornaliero — vedi
+[Fonti Dati](data-sources.md#download-collaborativo-da-una-seconda-macchina--35-comuni-extra-2026-07-17)
+per il metodo (verificabile) e un bug reale trovato e corretto durante
+l'esecuzione (confronto `int`/`str` su `istat_code` che causava download
+duplicati). **Il file non è ancora nel database**: servono ancora pulizia
+(`DataCleaner`) e risoluzione `istat_code` → `municipality_id` prima di
+`insert_temperature_for_municipalities()` — passi documentati in
+[Pipeline ETL](etl-pipeline.md#comuni-extra-in-attesa-di-import-2026-07-17).
+Se importati per intero: 63 → **98 comuni** in `temperature`.
+
 ## Discrepanze da tenere a mente quando si presenta il progetto
 
 `README.md` e `PROJECT_SUMMARY.md` descrivono metriche come "1.7M record",
