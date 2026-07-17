@@ -351,6 +351,33 @@ def get_all_municipality_geometries_wkt() -> pd.DataFrame:
 
 
 @st.cache_data(ttl=600)
+def get_ndvi_all() -> pd.DataFrame:
+    """
+    NDVI medio (`municipality_ndvi`) per tutti i 1180 comuni piemontesi -
+    stesso pattern di `get_land_cover_all()`: copertura completa,
+    indipendente dalla disponibilità di temperatura. Misura continua di
+    densità della vegetazione, complementare alla classe di uso del suolo
+    dominante di CORINE. Vedi wiki/pages/data-sources.md per la fonte
+    (Copernicus Global Land Service NDVI 300m V3) e il periodo del
+    composito usato.
+    """
+    query = """
+        SELECT m.name AS municipality_name, p.name AS province_name,
+               n.ndvi_mean, n.vegetation_class, n.pct_valid_pixels
+        FROM municipality_ndvi n
+        JOIN municipalities m ON m.municipality_id = n.municipality_id
+        JOIN provinces p ON m.province_id = p.province_id
+        ORDER BY m.name
+    """
+    rows = db_manager.execute_query(query)
+    columns = ['municipality_name', 'province_name', 'ndvi_mean', 'vegetation_class', 'pct_valid_pixels']
+    df = pd.DataFrame(rows, columns=columns)
+    df['ndvi_mean'] = df['ndvi_mean'].astype(float)
+    df['pct_valid_pixels'] = df['pct_valid_pixels'].astype(float)
+    return df
+
+
+@st.cache_data(ttl=600)
 def get_kpi_annual_by_province() -> pd.DataFrame:
     """Serie annuale di KPI per provincia (vista kpi_annual_by_province)."""
     query = """
