@@ -55,9 +55,10 @@ render_hero(
 )
 
 st.subheader("Esplora la dashboard")
+CARD_HEIGHT = 280  # altezza fissa: senza, ogni card si dimensiona sul proprio testo (vedi wiki/log.md 2026-07-16)
 card1, card2, card3 = st.columns(3)
 with card1:
-    with st.container(key="navcard-temporale"):
+    with st.container(key="navcard-temporale", height=CARD_HEIGHT):
         render_nav_card_header(
             icon="📈", title="Analisi Temporale",
             description=(
@@ -67,7 +68,7 @@ with card1:
         )
         st.page_link("pages/02_analisi_temporale.py", label="Vai alla pagina →")
 with card2:
-    with st.container(key="navcard-spaziale"):
+    with st.container(key="navcard-spaziale", height=CARD_HEIGHT):
         render_nav_card_header(
             icon="🗺️", title="Analisi Spaziale",
             description=(
@@ -78,7 +79,7 @@ with card2:
         )
         st.page_link("pages/03_analisi_spaziale.py", label="Vai alla pagina →")
 with card3:
-    with st.container(key="navcard-ondate"):
+    with st.container(key="navcard-ondate", height=CARD_HEIGHT):
         render_nav_card_header(
             icon="🔥", title="Ondate di Calore",
             description=(
@@ -128,60 +129,58 @@ st.divider()
 geo_df = get_municipality_geometries_wkt()
 trend_df = get_trend_analysis()
 
-col_map, col_trend = st.columns([3, 2])
+st.subheader("Velocità di riscaldamento per comune")
+st.caption(
+    f"Ogni comune è colorato in base a quanto si è scaldato tra il "
+    f"{stats['date_start'].year} e il {stats['date_end'].year}: più il "
+    "colore vira verso il rosso, più il riscaldamento è stato rapido; il "
+    "blu segnala le zone rimaste più stabili (o leggermente più fresche). "
+    "Passa il mouse su un comune per il valore esatto, oppure scorri la "
+    "tabella qui sotto per vedere tutti i numeri insieme."
+)
+m = folium.Map(location=[45.0, 8.0], zoom_start=8, tiles=MAP_TILES)
 
-with col_map:
-    st.subheader("Velocità di riscaldamento per comune")
-    st.caption(
-        f"Colore = pendenza del trend {stats['date_start'].year}-{stats['date_end'].year} "
-        "(°C/decade): rosso = si scalda più in fretta, blu = più lentamente "
-        "(o si raffredda). Passa il mouse per il valore esatto — dettaglio "
-        "nella tabella qui a fianco."
+if trend_df.empty:
+    for _, row in geo_df.iterrows():
+        folium.GeoJson(
+            wkt_to_geojson(row['geometry_wkt']),
+            tooltip=f"{row['municipality_name']} ({row['province_name']})",
+            style_function=lambda _: {'fillColor': '#e74c3c', 'color': '#c0392b', 'fillOpacity': 0.5},
+        ).add_to(m)
+    st_folium(m, width=None, height=420, returned_objects=[])
+    st.info("Esegui `python -m src.analysis.trend_analysis` per colorare la mappa per trend.")
+else:
+    merged = geo_df.merge(trend_df[['municipality_name', 'lr_slope_per_decade']], on='municipality_name')
+    max_abs_slope = merged['lr_slope_per_decade'].abs().max() or 1
+    cmap_trend = LinearColormap(['#3498db', '#f7f7f7', '#e74c3c'], vmin=-max_abs_slope, vmax=max_abs_slope)
+
+    for _, row in merged.iterrows():
+        color = cmap_trend(row['lr_slope_per_decade'])
+        folium.GeoJson(
+            wkt_to_geojson(row['geometry_wkt']),
+            tooltip=f"{row['municipality_name']}: {row['lr_slope_per_decade']:+.2f} °C/decade",
+            style_function=lambda _, c=color: {'fillColor': c, 'color': '#555', 'weight': 1, 'fillOpacity': 0.75},
+        ).add_to(m)
+    st_folium(m, width=None, height=420, returned_objects=[])
+    render_gradient_legend(
+        cmap_trend, -max_abs_slope, max_abs_slope,
+        labels=["Raffreddamento", "Riscaldamento lento", "Riscaldamento moderato",
+                "Riscaldamento sostenuto", "Riscaldamento rapido"],
+        unit="°C/decade", title="Legenda — velocità di riscaldamento", signed=True,
     )
-    m = folium.Map(location=[45.0, 8.0], zoom_start=8, tiles=MAP_TILES)
 
-    if trend_df.empty:
-        for _, row in geo_df.iterrows():
-            folium.GeoJson(
-                wkt_to_geojson(row['geometry_wkt']),
-                tooltip=f"{row['municipality_name']} ({row['province_name']})",
-                style_function=lambda _: {'fillColor': '#e74c3c', 'color': '#c0392b', 'fillOpacity': 0.5},
-            ).add_to(m)
-        st_folium(m, width=None, height=420, returned_objects=[])
-        st.info("Esegui `python -m src.analysis.trend_analysis` per colorare la mappa per trend.")
-    else:
-        merged = geo_df.merge(trend_df[['municipality_name', 'lr_slope_per_decade']], on='municipality_name')
-        max_abs_slope = merged['lr_slope_per_decade'].abs().max() or 1
-        cmap_trend = LinearColormap(['#3498db', '#f7f7f7', '#e74c3c'], vmin=-max_abs_slope, vmax=max_abs_slope)
-
-        for _, row in merged.iterrows():
-            color = cmap_trend(row['lr_slope_per_decade'])
-            folium.GeoJson(
-                wkt_to_geojson(row['geometry_wkt']),
-                tooltip=f"{row['municipality_name']}: {row['lr_slope_per_decade']:+.2f} °C/decade",
-                style_function=lambda _, c=color: {'fillColor': c, 'color': '#555', 'weight': 1, 'fillOpacity': 0.75},
-            ).add_to(m)
-        st_folium(m, width=None, height=420, returned_objects=[])
-        render_gradient_legend(
-            cmap_trend, -max_abs_slope, max_abs_slope,
-            labels=["Raffreddamento", "Riscaldamento lento", "Riscaldamento moderato",
-                    "Riscaldamento sostenuto", "Riscaldamento rapido"],
-            unit="°C/decade", title="Legenda — velocità di riscaldamento", signed=True,
-        )
-
-with col_trend:
-    st.subheader(f"Trend di riscaldamento ({stats['date_start'].year}-{stats['date_end'].year})")
-    st.caption("La temperatura media di ogni comune sta salendo, scendendo, o restando stabile?")
-    if trend_df.empty:
-        st.info("Esegui `python -m src.analysis.trend_analysis` per generare questi risultati.")
-    else:
-        display_df = trend_df[['municipality_name', 'mk_trend', 'lr_slope_per_decade', 'lr_p_value']].copy()
-        display_df['mk_trend'] = display_df['mk_trend'].apply(format_mk_trend)
-        display_df.columns = ['Comune', 'Trend (Mann-Kendall)', '°C/decade', 'p-value']
-        display_df['°C/decade'] = display_df['°C/decade'].round(2)
-        display_df['p-value'] = display_df['p-value'].round(4)
-        st.dataframe(display_df, hide_index=True, width='stretch')
-        st.caption("Trend significativo se p-value < 0.05. Vedi pagina 'Analisi Temporale' per il dettaglio.")
+st.subheader(f"Trend di riscaldamento ({stats['date_start'].year}-{stats['date_end'].year})")
+st.caption("La temperatura media di ogni comune sta salendo, scendendo, o restando stabile?")
+if trend_df.empty:
+    st.info("Esegui `python -m src.analysis.trend_analysis` per generare questi risultati.")
+else:
+    display_df = trend_df[['municipality_name', 'mk_trend', 'lr_slope_per_decade', 'lr_p_value']].copy()
+    display_df['mk_trend'] = display_df['mk_trend'].apply(format_mk_trend)
+    display_df.columns = ['Comune', 'Trend (Mann-Kendall)', '°C/decade', 'p-value']
+    display_df['°C/decade'] = display_df['°C/decade'].round(2)
+    display_df['p-value'] = display_df['p-value'].round(4)
+    st.dataframe(display_df, hide_index=True, width='stretch')
+    st.caption("Trend significativo se p-value < 0.05. Vedi pagina 'Analisi Temporale' per il dettaglio.")
 
 st.divider()
 st.caption(
