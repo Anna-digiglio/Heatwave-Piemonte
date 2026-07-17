@@ -122,7 +122,7 @@ def get_municipality_geometries_wkt() -> pd.DataFrame:
     """
     Geometrie (come WKT) dei comuni che hanno dati di temperatura reali,
     per la mappa. Vedi wiki/pages/etl-pipeline.md per la nota di
-    granularità (elenco comuni cresciuto nel tempo: 8 → 44 → 63).
+    granularità (elenco comuni cresciuto nel tempo: 8 → 44 → 63 → 98).
     """
     query = """
         SELECT m.name AS municipality_name, p.name AS province_name,
