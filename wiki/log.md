@@ -1648,10 +1648,21 @@ Log cronologico append-only. Ogni riga: data, azione, pagine toccate.
   piccoli rispetto ai 300m di pixel), `rasterio`/`rasterstats` aggiunti a
   `requirements.txt` (non ancora installati/verificati nel venv).
 
+  **Eseguito realmente in questa sessione** (non solo scritto): `rasterio`/
+  `rasterstats` installati nel `.venv` (verificato `pip install`, nessun
+  conflitto), `python -m src.data_acquisition.process_ndvi --help` eseguito
+  con successo (import puliti, argparse funzionante), e
+  `sql/04_ndvi.sql` **applicato per davvero** al database locale (via
+  cursore DBAPI grezzo, stesso pattern gia' documentato per
+  `initialize_schema()` — `exec_driver_sql` con dict di parametri vuoto
+  fallisce su script multi-statement) — tabella `municipality_ndvi`
+  verificata esistente con lo schema atteso via
+  `information_schema.columns`.
+
   **Non fatto in questa sessione**: il download manuale del GeoTIFF
-  (compito dell'utente), l'esecuzione dello script, e quindi nessun dato
-  reale ancora in `municipality_ndvi` — a differenza delle sessioni CLC/
-  popolazione, qui il lavoro si e' fermato alla predisposizione perche' il
+  (compito dell'utente) e l'esecuzione dello script su un file reale, quindi
+  **`municipality_ndvi` esiste ma e' vuota** (0 righe) — a differenza delle
+  sessioni CLC/popolazione, qui il dato non e' ancora arrivato perche' il
   download richiede un account e un'interazione con un portale esterno che
   l'utente deve fare in prima persona.
 
