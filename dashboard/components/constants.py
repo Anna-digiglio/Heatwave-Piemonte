@@ -148,6 +148,21 @@ LAND_COVER_LABELS = {
     "other": "Altro/non classificato",
 }
 
+# NDVI (verde da satellite, Copernicus Global Land Service - vedi
+# municipality_ndvi e wiki/pages/data-sources.md): gradiente marrone/sabbia
+# -> verde, convenzione standard per la visualizzazione NDVI (basso =
+# suolo nudo/vegetazione rada, alto = vegetazione densa) - diversa
+# deliberatamente dalla scala blu->rosso di temperatura/trend, per non
+# far sembrare l'NDVI un'altra mappa di temperatura a prima vista.
+NDVI_COLORS = ["#a6611a", "#f5deb3", "#1a9850"]
+VEGETATION_CLASS_LABELS = {
+    "no_vegetation": "Nessuna vegetazione",
+    "sparse": "Vegetazione rada",
+    "moderate": "Vegetazione moderata",
+    "dense": "Vegetazione densa",
+    "very_dense": "Vegetazione molto densa",
+}
+
 # Valori di riferimento pubblicati in letteratura scientifica, usati solo
 # come contesto di confronto ("il nostro trend locale è più o meno ripido
 # della media?"). NON sono calcolati da questo progetto e non vengono
