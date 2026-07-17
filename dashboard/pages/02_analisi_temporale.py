@@ -14,6 +14,7 @@ import streamlit as st
 from plotly.subplots import make_subplots
 from scipy import stats
 
+from components.charts import apply_chart_theme
 from components.constants import (
     NATIONAL_GLOBAL_REFERENCE, SEASON_BY_MONTH, SEASON_COLORS, SEASON_ORDER, format_mk_trend,
 )
@@ -176,7 +177,7 @@ with tab_overview:
                 line=dict(color='#2c3e50', dash='dash', width=2),
             ))
         fig.update_layout(height=380, margin=dict(t=10, b=10), yaxis_title='°C', legend=dict(orientation='h'))
-        st.plotly_chart(fig, width='stretch')
+        st.plotly_chart(apply_chart_theme(fig), width='stretch')
 
     st.subheader("Anomalie termiche rispetto a una baseline")
     baseline_end = min(baseline_years_available + 9, last_year)
@@ -217,7 +218,7 @@ with tab_overview:
             labels={'year': 'Anno', 'anomaly': 'Anomalia (°C)', 'sign': ''},
         )
         fig_anom.update_layout(height=300, margin=dict(t=10, b=10))
-        st.plotly_chart(fig_anom, width='stretch')
+        st.plotly_chart(apply_chart_theme(fig_anom), width='stretch')
         st.caption(f"Baseline: media {baseline_years_available}-{baseline_end} = {baseline_mean:.1f} °C.")
 
     st.subheader("Quale stagione si sta scaldando di più?")
@@ -241,7 +242,7 @@ with tab_overview:
             labels={'year': 'Anno', 'temp_mean': 'Temp. media (°C)', 'season': 'Stagione'},
         )
         fig_season.update_layout(height=320, margin=dict(t=10, b=10), legend=dict(orientation='h'))
-        st.plotly_chart(fig_season, width='stretch')
+        st.plotly_chart(apply_chart_theme(fig_season), width='stretch')
 
         badge_cols = st.columns(4)
         for i, season in enumerate(SEASON_ORDER):
@@ -271,7 +272,7 @@ with tab_overview:
             labels={'quinquennio': 'Periodo', 'temp_mean': 'Temp. media giornaliera (°C)'},
         )
         fig_box.update_layout(height=350, margin=dict(t=10, b=10))
-        st.plotly_chart(fig_box, width='stretch')
+        st.plotly_chart(apply_chart_theme(fig_box), width='stretch')
 
     st.subheader("Confronto con il contesto nazionale/globale")
     st.caption(
@@ -375,7 +376,7 @@ with tab_detail:
         stl_fig.add_trace(go.Scatter(x=stl['date'], y=stl['seasonal'], line=dict(color='#16a085', width=0.8)), row=2, col=1)
         stl_fig.add_trace(go.Scatter(x=stl['date'], y=stl['resid'], mode='markers', marker=dict(size=2, color='#95a5a6')), row=3, col=1)
         stl_fig.update_layout(height=550, showlegend=False, margin=dict(t=30, b=10))
-        st.plotly_chart(stl_fig, width='stretch')
+        st.plotly_chart(apply_chart_theme(stl_fig), width='stretch')
 
         st.markdown(
             "- **Trend** (grafico in alto): è il segnale di lungo periodo, "
