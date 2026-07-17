@@ -121,8 +121,8 @@ def get_heatwave_events() -> pd.DataFrame:
 def get_municipality_geometries_wkt() -> pd.DataFrame:
     """
     Geometrie (come WKT) dei comuni che hanno dati di temperatura reali,
-    per la mappa. 44 comuni (8 capoluoghi + 36 extra), vedi
-    wiki/pages/etl-pipeline.md per la nota di granularità.
+    per la mappa. Vedi wiki/pages/etl-pipeline.md per la nota di
+    granularità (elenco comuni cresciuto nel tempo: 8 → 44 → 63).
     """
     query = """
         SELECT m.name AS municipality_name, p.name AS province_name,
@@ -232,8 +232,8 @@ def get_municipality_names_with_data() -> list:
 @st.cache_data(ttl=600)
 def get_municipality_metadata() -> pd.DataFrame:
     """
-    Metadati (provincia, elevazione, centroide) dei 44 comuni con dati
-    reali - usato per filtri sidebar, fasce altitudinali, mappe.
+    Metadati (provincia, elevazione, centroide) dei comuni con dati
+    reali - usato per filtri, fasce altitudinali, mappe.
     """
     query = """
         SELECT DISTINCT m.name AS municipality_name, p.name AS province_name,
