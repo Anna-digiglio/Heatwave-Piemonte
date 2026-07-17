@@ -2023,3 +2023,33 @@ Log cronologico append-only. Ogni riga: data, azione, pagine toccate.
   "Comuni extra in attesa di import", con i passi di pulizia/risoluzione
   `municipality_id` mancanti prima del caricamento nel DB),
   `project-status.md` (nuovo aggiornamento in cima alla cronologia).
+
+- **2026-07-17** — LINT (leggibilità, nessun contenuto nuovo). Su
+  richiesta esplicita dell'utente ("è scritta in maniera sporca"):
+  le pagine create nell'ingest iniziale del 2026-07-04
+  (`project-overview.md`, `architecture.md`, `concepts.md`,
+  `config-reference.md`, `kpi-catalog.md`, `sql-queries.md`,
+  `testing.md`) restano di riferimento — tabelle, paragrafi brevi,
+  nessuna modifica necessaria. Le 5 pagine cresciute per accumulo di
+  aggiornamenti cronologici in prosa densa sono state **riscritte
+  mantenendo tutto il contenuto fattuale** (nessuna data/numero/bug
+  rimosso), riorganizzandolo in sotto-sezioni datate, elenchi puntati con
+  etichette in grassetto, tabelle per dati enumerabili (cluster, file
+  scaricati) e blockquote per i riquadri "bug trovato":
+  - `dashboard.md` (654 → 680 righe, la più densa: 5 pagine Streamlit +
+    3 giri di restyling documentati in un'unica sequenza di paragrafi)
+  - `data-sources.md` (464 → 447 righe)
+  - `project-status.md` (278 → 275 righe: la sezione "Prossimo passo a
+    maggiore impatto", una lunga sequenza di paragrafi "Aggiornamento
+    YYYY-MM-DD", è diventata "Cronologia degli aggiornamenti principali"
+    con un `###` per data)
+  - `etl-pipeline.md` (261 → 265 righe, tocco più leggero: già
+    ragionevolmente strutturata, solo i blocchi bug convertiti in
+    blockquote)
+  - `statistical-analysis.md` (350 → 372 righe, incluse due nuove tabelle
+    per i cluster K-means che erano elenchi puntati densi)
+
+  `data-model.md` e `gis-maps.md` verificate e giudicate già leggibili
+  (struttura a sezioni/tabelle adeguata), non toccate. Nessuna pagina
+  orfana rilevata, nessun claim contraddittorio trovato durante la
+  rilettura completa.

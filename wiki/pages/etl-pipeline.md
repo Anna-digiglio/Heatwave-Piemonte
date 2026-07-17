@@ -67,47 +67,51 @@ Pipeline dentro `DataCleaner.clean_data()`, in ordine:
 
 Output: `data/processed/temperature_clean.csv`.
 
-**Nota di ordine + bug risolto (trovato da un unit test il 2026-07-15)**:
-`validate_temperature` gira *prima* di `detect_outliers` — un valore fuori
-range viene quindi usato per calcolare i quantili IQR prima di essere
-eventualmente ri-flaggato. Peggio: `detect_outliers` sovrascriveva
-**incondizionatamente** il flag a `1` (suspect) per qualunque outlier IQR,
-**declassando** una riga già `quality_flag=2` (bad, fuori range fisico) a
-`1` — che poi sopravviveva ad `apply_quality_flags` (scarta solo `>= 2`).
-Scoperto da un test di regressione sintetico (vedi
-[Test Unitari](testing.md)), non manifestato nei dati reali finora usati
-(0 righe mai fuori range fisico né su `temperature_data.csv` né su
-`temperature_data_extra.csv`) ma un bug di correttezza reale, ora corretto:
-`detect_outliers` declassa a `1` solo se il flag attuale è `< 2`.
+> **Nota di ordine + bug risolto** (trovato da un unit test il
+> 2026-07-15): `validate_temperature` gira *prima* di `detect_outliers` —
+> un valore fuori range viene quindi usato per calcolare i quantili IQR
+> prima di essere eventualmente ri-flaggato. Peggio: `detect_outliers`
+> sovrascriveva **incondizionatamente** il flag a `1` (suspect) per
+> qualunque outlier IQR, **declassando** una riga già `quality_flag=2`
+> (bad, fuori range fisico) a `1` — che poi sopravviveva ad
+> `apply_quality_flags` (scarta solo `>= 2`). Scoperto da un test di
+> regressione sintetico (vedi [Test Unitari](testing.md)), non
+> manifestato nei dati reali finora usati (0 righe mai fuori range fisico
+> né su `temperature_data.csv` né su `temperature_data_extra.csv`) ma un
+> bug di correttezza reale, ora corretto: `detect_outliers` declassa a
+> `1` solo se il flag attuale è `< 2`.
 
-**Bug critici risolti il 2026-07-04, scoperti alla prima esecuzione reale
-(il file non era mai stato eseguito prima d'ora):**
+**Bug critici risolti il 2026-07-04**, scoperti alla prima esecuzione
+reale (il file non era mai stato eseguito prima d'ora):
+
 - **Il file non si importava affatto**: da `validate_temperature` in poi,
-  gran parte del codice aveva newline letterali (`\n` come testo, non veri
-  a capo) invece di righe vere — un `SyntaxError` bloccava l'import del
-  modulo. Il file è stato riscritto da capo preservando la logica originale
-  (visibile comunque leggendo il file, dato che il contenuto era corretto,
-  solo "srotolato" su un'unica riga fisica).
-- **Perdita quasi totale dei dati**: `validate_temperature`/`detect_outliers`
-  valorizzano `quality_flag` solo per le righe sospette *prima* che la
-  colonna esista — pandas la crea con `NaN` per tutte le altre righe.
-  `apply_quality_flags` filtra con `quality_flag < 2`, e `NaN < 2` è `False`
-  in pandas: **tutte le righe mai flaggate (la stragrande maggioranza)
-  venivano scartate**. Su 75.976 righe di input sopravvivevano solo le 10
-  esplicitamente flaggate come sospette. Fix: `df['quality_flag'] = 0`
-  aggiunto esplicitamente in `clean_data()` prima di `validate_temperature`.
+  gran parte del codice aveva newline letterali (`\n` come testo, non
+  veri a capo) invece di righe vere — un `SyntaxError` bloccava l'import
+  del modulo. Il file è stato riscritto da capo preservando la logica
+  originale (visibile comunque leggendo il file, dato che il contenuto
+  era corretto, solo "srotolato" su un'unica riga fisica).
+- **Perdita quasi totale dei dati**: `validate_temperature`/
+  `detect_outliers` valorizzano `quality_flag` solo per le righe sospette
+  *prima* che la colonna esista — pandas la crea con `NaN` per tutte le
+  altre righe. `apply_quality_flags` filtra con `quality_flag < 2`, e
+  `NaN < 2` è `False` in pandas: **tutte le righe mai flaggate (la
+  stragrande maggioranza) venivano scartate**. Su 75.976 righe di input
+  sopravvivevano solo le 10 esplicitamente flaggate come sospette. Fix:
+  `df['quality_flag'] = 0` aggiunto esplicitamente in `clean_data()`
+  prima di `validate_temperature`.
 - Risultato dopo il fix: 75.976/75.976 righe mantenute, 10 flaggate
   `quality_flag=1` (giorni statisticamente estremi dell'ondata di freddo
   del febbraio 2012, non errori — `temp_min <= temp_mean <= temp_max`
   sempre rispettato).
 
-**Riusato invariato il 2026-07-15** per `data/raw/temperature_data_extra.csv`
-(i 36 comuni extra): `DataCleaner` raggruppa per la colonna `province`, che
-in questo file contiene il nome del comune (non della provincia) — poiché
-ogni nome è univoco tra i 36 selezionati, il raggruppamento funziona
-correttamente come "per comune" senza modifiche al codice. 341.892/341.892
-righe mantenute, 670 outlier statistici flaggati (prevalentemente nei comuni
-alpini come Formazza/Macugnaga).
+**Riusato invariato il 2026-07-15** per
+`data/raw/temperature_data_extra.csv` (i 36 comuni extra): `DataCleaner`
+raggruppa per la colonna `province`, che in questo file contiene il nome
+del comune (non della provincia) — poiché ogni nome è univoco tra i 36
+selezionati, il raggruppamento funziona correttamente come "per comune"
+senza modifiche al codice. 341.892/341.892 righe mantenute, 670 outlier
+statistici flaggati (prevalentemente nei comuni alpini come
+Formazza/Macugnaga).
 
 ## Load — `load_to_db.py`
 
@@ -141,7 +145,7 @@ CLI: `python -m src.database.load_to_db` → `DatabaseLoader`
   `data/processed/temperature_clean_extra.csv`. **Copertura totale ora: 44
   comuni, 417.868 righe** in `temperature`.
 
-**Bug risolti il 2026-07-04, scoperti eseguendo il caricamento reale:**
+**Bug risolti il 2026-07-04**, scoperti eseguendo il caricamento reale:
 - `exec_driver_sql` passa sempre un dict di parametri (anche vuoto) a
   psycopg2, che quindi interpreta ogni `%` letterale nello script SQL come
   segnaposto di parametro (paramstyle pyformat) — falliva su
