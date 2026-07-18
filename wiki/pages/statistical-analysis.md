@@ -276,6 +276,14 @@ API rifiuta oltre 100 coordinate in un'unica richiesta).
   ciascuno, tutti e tre tra i comuni aggiunti oggi), davanti ad
   Alessandria (15, che deteneva il primato dalle versioni precedenti).
   97/177 comuni non hanno mai raggiunto 3 giorni consecutivi sopra i 35°C.
+- **STL (scomposizione stagionale)**: ampiezza stagionale 27.4-35.3°C.
+  Trend in aumento in 172/177 comuni (da 95/98) — oltre a Briga Alta,
+  Grondona e Pietraporzio, emersi altri due casi non in aumento tra i
+  comuni nuovi (Limone Piemonte -0.45°C, Castelmagno -0.23°C), tutti "no
+  trend" non significativi per Mann-Kendall. **Briga Alta resta l'unico
+  raffreddamento sia significativo sia sostanziale, confermato per la
+  terza estensione consecutiva.** Vedi dettaglio nella sezione dedicata
+  sotto.
 - **Moran's I = 0.1695** (atteso sotto casualità: -0.006), **p=0.001 su
   999 permutazioni** — ulteriore leggero miglioramento rispetto a 98
   comuni (0.1523, p=0.001): il segnale resta stabile e significativo.
@@ -405,6 +413,25 @@ stessa realtà con strumenti diversi. **Briga Alta resta l'unico caso di
 raffreddamento sia significativo (Mann-Kendall) sia sostanziale (STL)** —
 l'aggiunta di più comuni non ha smentito questo risultato, lo ha solo
 affiancato a due casi più deboli (piatti, non significativi).
+
+**Rieseguita una terza volta il 2026-07-18 su 177 comuni** (~112 minuti in
+background, 11:24→13:16 — il job ha continuato a scrivere risultati per
+diversi minuti dopo una notifica di completamento prematura del tool,
+verificato ignorandola e controllando direttamente il timestamp di
+`output/seasonal_trend_summary.csv` prima di considerarlo davvero
+concluso, stesso problema già visto il 2026-07-17). Ampiezza stagionale
+27.4-35.3°C, range sostanzialmente invariato (Gravere 35.3°C resta
+l'estremo alto, Alto 27.4°C il nuovo estremo basso). **Trend in aumento
+in 172 comuni su 177** (da 95/98) — tra i 79 comuni aggiunti nella
+giornata sono emersi altri **2 casi non in aumento** oltre ai 3 già noti
+(Briga Alta, Grondona, Pietraporzio): **Limone Piemonte** (-0.45°C) e
+**Castelmagno** (-0.23°C). Tutti e 4 i casi minori (Limone Piemonte,
+Castelmagno, Grondona, Pietraporzio) restano "no trend" non significativi
+per Mann-Kendall (p tra 0.14 e 0.47) — **Briga Alta resta l'unico e solo
+caso di raffreddamento sia significativo sia sostanziale**, confermato
+per la terza volta su tre estensioni successive del campione: un segnale
+sempre più difficile da liquidare come rumore casuale, dato quante volte
+è sopravvissuto a un campione che cambia composizione.
 
 ## `spatial_analysis.py` — Moran's I e clustering climatico
 
