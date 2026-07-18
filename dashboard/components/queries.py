@@ -414,6 +414,187 @@ def get_ndvi_all() -> pd.DataFrame:
 
 
 @st.cache_data(ttl=600)
+def get_arpa_municipality_names_with_data() -> list:
+    """
+    Nomi dei comuni con dati ARPA reali, ordinati alfabeticamente - 218
+    comuni dopo l'estensione del 2026-07-18 (51 con anche Open-Meteo, 167
+    solo ARPA), vedi wiki/pages/data-sources.md.
+    """
+    query = """
+        SELECT DISTINCT m.name
+        FROM arpa_temperature a
+        JOIN municipalities m ON a.municipality_id = m.municipality_id
+        ORDER BY m.name
+    """
+    return [row[0] for row in db_manager.execute_query(query)]
+
+
+@st.cache_data(ttl=600)
+def get_arpa_municipality_metadata() -> pd.DataFrame:
+    """Provincia per ciascun comune con dati ARPA - usata dai filtri provincia lato ARPA."""
+    query = """
+        SELECT DISTINCT m.name AS municipality_name, p.name AS province_name
+        FROM arpa_temperature a
+        JOIN municipalities m ON a.municipality_id = m.municipality_id
+        JOIN provinces p ON m.province_id = p.province_id
+        ORDER BY m.name
+    """
+    rows = db_manager.execute_query(query)
+    return pd.DataFrame(rows, columns=['municipality_name', 'province_name'])
+
+
+@st.cache_data(ttl=600)
+def get_arpa_daily_temperature(municipality_name: str) -> pd.DataFrame:
+    """Serie giornaliera ARPA (osservazione di stazione reale) per un comune."""
+    query = text("""
+        SELECT a.date, a.temp_mean, a.temp_max, a.temp_min
+        FROM arpa_temperature a
+        JOIN municipalities m ON a.municipality_id = m.municipality_id
+        WHERE m.name = :name
+        ORDER BY a.date
+    """)
+    with db_manager.engine.connect() as conn:
+        df = pd.read_sql(query, conn, params={'name': municipality_name})
+    df['date'] = pd.to_datetime(df['date'])
+    return df
+
+
+@st.cache_data(ttl=600)
+def get_arpa_daily_temperature_multi(municipality_names: tuple) -> pd.DataFrame:
+    """
+    Serie giornaliera ARPA per più comuni insieme (una riga per
+    comune/giorno, non aggregata) - usata per calcolare le ondate di
+    calore al volo su un insieme di comuni filtrati, dato che
+    `heatwave_events` è popolata solo dalla fonte Open-Meteo.
+    """
+    if not municipality_names:
+        return pd.DataFrame(columns=['municipality_name', 'date', 'temp_mean', 'temp_max', 'temp_min'])
+    query = text("""
+        SELECT m.name AS municipality_name, a.date, a.temp_mean, a.temp_max, a.temp_min
+        FROM arpa_temperature a
+        JOIN municipalities m ON a.municipality_id = m.municipality_id
+        WHERE m.name IN :names
+        ORDER BY m.name, a.date
+    """).bindparams(bindparam('names', expanding=True))
+    with db_manager.engine.connect() as conn:
+        df = pd.read_sql(query, conn, params={'names': list(municipality_names)})
+    df['date'] = pd.to_datetime(df['date'])
+    return df
+
+
+@st.cache_data(ttl=600)
+def get_arpa_municipality_geometries_wkt() -> pd.DataFrame:
+    """Geometrie (WKT) dei comuni con dati ARPA - equivalente ARPA di `get_municipality_geometries_wkt`."""
+    query = """
+        SELECT m.name AS municipality_name, p.name AS province_name,
+               ST_AsText(m.geometry) AS geometry_wkt
+        FROM municipalities m
+        JOIN provinces p ON m.province_id = p.province_id
+        WHERE m.municipality_id IN (SELECT DISTINCT municipality_id FROM arpa_temperature)
+        ORDER BY m.name
+    """
+    rows = db_manager.execute_query(query)
+    return pd.DataFrame(rows, columns=['municipality_name', 'province_name', 'geometry_wkt'])
+
+
+@st.cache_data(ttl=600)
+def get_arpa_seasonal_decomposition(municipality_name: str) -> pd.DataFrame:
+    """
+    Scomposizione STL calcolata al volo sulla serie ARPA di un comune - non
+    esiste un CSV precalcolato per ARPA (a differenza di
+    `get_seasonal_decomposition`, che legge l'output di
+    `src/analysis/seasonal_analysis.py`, eseguito solo su Open-Meteo).
+    """
+    from src.analysis.seasonal_analysis import decompose
+
+    daily = get_arpa_daily_temperature(municipality_name)
+    if daily.empty:
+        return pd.DataFrame()
+
+    series = daily.set_index('date')['temp_mean'].asfreq('D')
+    if series.isna().any():
+        series = series.interpolate(method='linear')
+
+    decomposed = decompose(series).reset_index()
+    return decomposed
+
+
+def compute_annual_kpi_from_daily(daily: pd.DataFrame) -> pd.DataFrame:
+    """
+    Aggregati annuali (temp_mean_annual/temp_max_annual/temp_min_annual) da
+    una serie giornaliera - stessa semantica della vista materializzata
+    `kpi_annual_by_municipality` (vedi sql/01_init_database.sql: media di
+    temp_mean, MASSIMO di temp_max, MINIMO di temp_min nell'anno, non medie
+    di max/min). Usata per fonti senza vista precalcolata (ARPA).
+    """
+    d = daily.copy()
+    d['year'] = d['date'].dt.year
+    return d.groupby('year', as_index=False).agg(
+        temp_mean_annual=('temp_mean', 'mean'),
+        temp_max_annual=('temp_max', 'max'),
+        temp_min_annual=('temp_min', 'min'),
+    )
+
+
+@st.cache_data(ttl=600)
+def get_arpa_heatwave_events(municipality_names: tuple, threshold: float = 35.0, min_duration: int = 3) -> pd.DataFrame:
+    """
+    Ondate di calore (definizione canonica a soglia fissa, stessa di
+    `identify_heatwaves()` in SQL) calcolate al volo sui dati ARPA per
+    l'insieme di comuni indicato - non esiste una `heatwave_events`
+    equivalente per ARPA (popolata solo dalla fonte Open-Meteo).
+    """
+    from components.heatwave_definitions import identify_heatwaves_events
+
+    daily = get_arpa_daily_temperature_multi(municipality_names)
+    events = identify_heatwaves_events(daily, threshold=threshold, min_duration=min_duration)
+    if events.empty:
+        return events
+    meta = get_arpa_municipality_metadata()
+    return events.merge(meta, on='municipality_name', how='left')
+
+
+def compute_frequency_by_year(events: pd.DataFrame) -> pd.DataFrame:
+    """
+    Frequenza/durata/intensità media delle ondate per anno - equivalente
+    calcolato al volo di `heatwave_frequency_by_year.csv`
+    (`src/analysis/heatwave_stats.py`), usato quando gli eventi vengono da
+    una fonte senza CSV precalcolato (ARPA).
+    """
+    if events.empty:
+        return pd.DataFrame(columns=['year', 'n_heatwaves', 'avg_duration_days', 'avg_intensity'])
+    e = events.copy()
+    e['year'] = e['start_date'].apply(lambda d: d.year)
+    return e.groupby('year', as_index=False).agg(
+        n_heatwaves=('start_date', 'size'),
+        avg_duration_days=('duration_days', 'mean'),
+        avg_intensity=('intensity_index', 'mean'),
+    )
+
+
+def compute_stats_by_municipality(events: pd.DataFrame) -> pd.DataFrame:
+    """
+    Statistiche per comune (n. ondate, durata/intensità media e massima,
+    temp. max media) - equivalente calcolato al volo di
+    `heatwave_stats_by_municipality.csv`, per fonti senza CSV precalcolato
+    (ARPA).
+    """
+    if events.empty:
+        return pd.DataFrame(columns=[
+            'municipality_name', 'n_heatwaves', 'avg_duration_days', 'max_duration_days',
+            'avg_intensity', 'max_intensity', 'avg_max_temp',
+        ])
+    return events.groupby('municipality_name', as_index=False).agg(
+        n_heatwaves=('start_date', 'size'),
+        avg_duration_days=('duration_days', 'mean'),
+        max_duration_days=('duration_days', 'max'),
+        avg_intensity=('intensity_index', 'mean'),
+        max_intensity=('intensity_index', 'max'),
+        avg_max_temp=('max_temp', 'mean'),
+    )
+
+
+@st.cache_data(ttl=600)
 def get_kpi_annual_by_province() -> pd.DataFrame:
     """Serie annuale di KPI per provincia (vista kpi_annual_by_province)."""
     query = """
