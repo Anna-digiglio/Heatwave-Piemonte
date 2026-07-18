@@ -2660,3 +2660,17 @@ Log cronologico append-only. Ogni riga: data, azione, pagine toccate.
   codice Python). Verificato con `AppTest`, nessuna eccezione.
 
   Pagine aggiornate: `dashboard.md`.
+
+- **2026-07-18 (sera, sesta parte)** — INGEST: Home.py estesa a Open-Meteo
+  + ARPA combinati, su richiesta dell'utente ("sommarli"). Interpretato
+  come unione dei comuni (non somma ingenua, evitando il doppio conteggio
+  dei 51 comuni con entrambe le fonti) per copertura/mappa/tabella trend,
+  e somma legittima per le righe di temperatura (osservazioni distinte).
+  Nuove funzioni in `queries.py`: `get_arpa_overview_stats()`,
+  `get_combined_trend_analysis()`, `get_combined_municipality_geometries_wkt()`,
+  `get_combined_heatwave_count()` (quest'ultima evita di sommare due
+  conteggi di ondate sullo stesso comune). Copertura Home ora 344/1180
+  comuni (era 177/1180), tabella trend con nuova colonna "Fonte".
+  Verificato con `AppTest`, nessuna eccezione.
+
+  Pagine aggiornate: `dashboard.md`.

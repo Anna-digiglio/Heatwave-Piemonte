@@ -179,6 +179,31 @@ filtro (vedi sopra).
   tabella accanto), con la stessa colormap divergente e la stessa legenda
   a 5 fasce (`render_gradient_legend()`) della mappa trend di Analisi
   Spaziale — coerenza visiva tra le due pagine.
+- **Estesa a Open-Meteo + ARPA combinati (2026-07-18, sera)**: la Home
+  mostrava solo i 177 comuni Open-Meteo, mentre le altre 3 pagine avevano
+  già il selettore fonte. L'utente ha chiesto di "sommare" i dati ARPA
+  invece di lasciare la Home indietro — non una somma ingenua (177+218
+  conterebbe due volte i 51 comuni con entrambe le fonti), ma
+  un'**unione**: Open-Meteo dove disponibile, ARPA per i comuni scoperti
+  da Open-Meteo, mai le due fonti sullo stesso comune insieme. Home non
+  ha (e non ha bisogno di) un selettore a 3 vie come le altre pagine — è
+  una vista di sintesi, non di confronto.
+  - Nuove funzioni in `queries.py`: `get_arpa_overview_stats()`,
+    `get_combined_trend_analysis()` (unisce `trend_analysis.csv` con
+    `get_arpa_trend_analysis()` per i soli comuni ARPA-only, colonna
+    `source` per distinguerli), `get_combined_municipality_geometries_wkt()`,
+    `get_combined_heatwave_count()` (conteggio ondate `heatwave_events`
+    più le ondate rilevate al volo su ARPA **solo** per i comuni senza
+    Open-Meteo — mai sommando due conteggi sullo stesso comune, che
+    sarebbe la stessa ondata reale contata due volte da due metodi
+    diversi).
+  - Hero, warning di copertura, "Il progetto in numeri", mappa e tabella
+    trend tutti aggiornati: **344/1180 comuni** (era 177/1180), riga di
+    temperatura = Open-Meteo + ARPA sommate (somma legittima, sono
+    osservazioni distinte), tabella trend con nuova colonna "Fonte".
+  - Verificato con `AppTest`, nessuna eccezione (18s, più veloce delle
+    pagine con selettore perché qui si calcola una sola combinazione, non
+    tre).
 
 ### Analisi Temporale (`02_analisi_temporale.py`) — ampliata il 2026-07-15
 
