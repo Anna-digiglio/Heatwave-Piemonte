@@ -61,3 +61,48 @@ def identify_heatwaves_percentile(daily: pd.DataFrame, percentile: int = 90, min
             })
 
     return {'threshold': threshold, 'events': pd.DataFrame(events)}
+
+
+def identify_heatwaves_events(daily: pd.DataFrame, threshold: float = 35.0, min_duration: int = 3) -> pd.DataFrame:
+    """
+    Versione Python della definizione **canonica** (soglia fissa, non
+    percentile) già implementata lato SQL in `identify_heatwaves()`
+    (`sql/01_init_database.sql`) - usata per calcolare le ondate al volo su
+    serie non presenti in `heatwave_events` (che è popolata solo dalla
+    fonte Open-Meteo), tipicamente dati ARPA.
+
+    Args:
+        daily: DataFrame con colonne 'municipality_name', 'date', 'temp_max',
+            'temp_mean' - una o più comuni insieme (non richiede ordinamento
+            in ingresso).
+
+    Returns:
+        DataFrame con le stesse colonne di `get_heatwave_events()` (tranne
+        province_name, da aggiungere con un merge a valle): municipality_name,
+        start_date, end_date, duration_days, max_temp, mean_temp,
+        intensity_index.
+    """
+    if daily.empty:
+        return pd.DataFrame(columns=[
+            'municipality_name', 'start_date', 'end_date', 'duration_days',
+            'max_temp', 'mean_temp', 'intensity_index',
+        ])
+
+    events = []
+    for name, group in daily.sort_values('date').groupby('municipality_name'):
+        is_hot = group['temp_max'] > threshold
+        run_id = (is_hot != is_hot.shift()).cumsum()
+        for _, run in group.groupby(run_id):
+            if not is_hot.loc[run.index[0]] or len(run) < min_duration:
+                continue
+            max_temp = run['temp_max'].max()
+            events.append({
+                'municipality_name': name,
+                'start_date': run['date'].iloc[0],
+                'end_date': run['date'].iloc[-1],
+                'duration_days': len(run),
+                'max_temp': max_temp,
+                'mean_temp': run['temp_mean'].mean(),
+                'intensity_index': (max_temp - threshold) * len(run),
+            })
+    return pd.DataFrame(events)
