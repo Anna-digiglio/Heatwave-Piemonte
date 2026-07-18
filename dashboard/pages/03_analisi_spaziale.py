@@ -108,7 +108,7 @@ st.info(
     f"{len(metadata)} comuni con dati Open-Meteo su 1180 totali (8 capoluoghi + "
     f"{len(metadata) - 8} scelti per coprire il territorio); {len(arpa_metadata)} "
     "con dati ARPA (stazione reale). Le mappe provinciali aggregano solo i comuni "
-    "disponibili in ciascuna provincia — vedi `wiki/pages/etl-pipeline.md`."
+    "disponibili in ciascuna provincia."
 )
 
 tab_overview, tab_detail = st.tabs(["📊 Panoramica", "🔬 Dettaglio tecnico / metodologia"])
@@ -385,7 +385,7 @@ with tab_overview:
                 "quota media, calcolata sulle due fonti separatamente: se il bias "
                 "cresce salendo da Pianura a Montagna, conferma che Open-Meteo "
                 "sottostima di più in quota (coerente con la validazione — vedi \"Validazione "
-                "ARPA — dettaglio\" nel tab Dettaglio tecnico e `src/analysis/validate_arpa.py`)."
+                "ARPA — dettaglio\" nel tab Dettaglio tecnico)."
             )
             st.dataframe(
                 comparison_fascia.style.format({
@@ -549,20 +549,18 @@ with tab_overview:
             "della lettura \"a parità di colore\" suggerita sopra) — un valore "
             "alto qui può derivare in parte dal fatto che i comuni di pianura "
             "sono sia più caldi sia più urbanizzati. Un modello che isola "
-            "l'effetto di ciascuna variabile dalle altre esiste già "
-            "(`src/analysis/spatial_regression.py`, modello a errore "
-            "spaziale): controllando per elevazione, **né % urbano né NDVI "
-            "risultano significativi** con il campione attuale (p=0.19 e "
-            "p=0.58) — solo l'elevazione resta un predittore robusto. Le due "
+            "l'effetto di ciascuna variabile dalle altre (regressione a errore "
+            "spaziale) esiste già: controllando per elevazione, **né % urbano "
+            "né NDVI risultano significativi** con il campione attuale (p=0.19 "
+            "e p=0.58) — solo l'elevazione resta un predittore robusto. Le due "
             "variabili sono instabili in modo diverso: il coefficiente di "
             "NDVI è quasi crollato a zero (da +1.09 a +0.16) man mano che il "
             "campione è cresciuto, segno che l'effetto visto in precedenza "
             "era probabilmente un artefatto di un campione ancora piccolo; "
             "quello di % urbano è rimasto piccolo ma stabile, solo la sua "
             "significatività statistica è oscillata — più coerente con un "
-            "effetto debole ma reale, da confermare con più dati — vedi "
-            "`wiki/pages/statistical-analysis.md` per il dettaglio "
-            "completo, risultato ancora provvisorio (n=177 comuni)."
+            "effetto debole ma reale, da confermare con più dati. Risultato "
+            "ancora provvisorio (n=177 comuni)."
         )
 
 with tab_detail:
@@ -608,7 +606,7 @@ with tab_detail:
         "non perché l'algoritmo lo sappia in anticipo."
     )
     if spatial_df.empty:
-        st.info("Esegui `python -m src.analysis.spatial_analysis` per generare questi risultati.")
+        st.info("Dati dei cluster climatici non ancora disponibili.")
     else:
         merged = geo_df.merge(spatial_df, on='municipality_name')
         col_map, col_info = st.columns([3, 2])
@@ -709,7 +707,7 @@ with tab_detail:
         trend_comparison = get_arpa_trend_comparison()
 
         if validation.empty:
-            st.info("Dati di validazione non ancora generati (`python -m src.analysis.validate_arpa`).")
+            st.info("Dati di validazione ARPA non ancora disponibili.")
         else:
             validation_elev = validation.merge(
                 metadata[['municipality_name', 'elevation_m']], on='municipality_name', how='left'
@@ -793,13 +791,13 @@ with tab_detail:
                 )
 
             st.caption(
-                "**Metodologia validazione**: fonte ARPA `utility.arpa.piemonte.it/meteoidro/` "
-                "(vedi `wiki/pages/data-sources.md`); matching comune↔stazione per quota più "
-                "vicina quando un comune ha più stazioni attive; bias/MAE/RMSE/correlazione "
-                "calcolati su tutte le coppie (comune, data) disponibili in entrambe le fonti, "
-                "2000-oggi. **Caveat**: la stazione scelta non è necessariamente rappresentativa "
-                "dell'intero territorio comunale, specie nei comuni alpini estesi dove può essere "
-                "un rifugio a quota molto diversa dal fondovalle abitato."
+                "**Metodologia validazione**: fonte ARPA Piemonte (rete di stazioni meteo "
+                "ufficiali della regione); quando un comune ha più stazioni attive si sceglie "
+                "quella con quota più vicina al comune; bias/MAE/RMSE/correlazione calcolati su "
+                "tutte le coppie (comune, data) disponibili in entrambe le fonti, 2000-oggi. "
+                "**Caveat**: la stazione scelta non è necessariamente rappresentativa dell'intero "
+                "territorio comunale, specie nei comuni alpini estesi dove può essere un rifugio a "
+                "quota molto diversa dal fondovalle abitato."
             )
 
     st.subheader("Metodologia")
@@ -819,15 +817,13 @@ with tab_detail:
         "quota — ma il coefficiente di correlazione mostrato resta "
         "calcolato su tutti i comuni insieme, senza isolare "
         "matematicamente l'effetto della quota da quello dell'uso del "
-        "suolo. Un modello che lo fa **esiste ora** "
-        "(`src/analysis/spatial_regression.py`): OLS con "
-        "elevazione+popolazione+%urbano+NDVI, seguito da un modello a "
+        "suolo. Un modello che lo fa **esiste**: una regressione OLS con "
+        "elevazione+popolazione+%urbano+NDVI, seguita da un modello a "
         "errore spaziale dato che l'indice di Moran sui residui restava "
         "significativo (coerente con quello qui sotto). Risultato: "
         "l'effetto urbano diventa significativo col segno atteso solo nel "
-        "modello spaziale — l'OLS classico lo mascherava. Vedi "
-        "`wiki/pages/statistical-analysis.md`; risultato provvisorio, da "
-        "confermare al crescere del campione di comuni.\n"
+        "modello spaziale — l'OLS classico lo mascherava. Risultato "
+        "provvisorio, da confermare al crescere del campione di comuni.\n"
         "- **Da dove viene l'uso del suolo, e che limite ha?** CORINE Land "
         "Cover 2018 (Copernicus) — uno scatto del 2018, confrontato qui "
         "con le temperature dell'intero periodo disponibile e popolazione "
