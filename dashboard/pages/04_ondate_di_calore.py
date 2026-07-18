@@ -77,8 +77,7 @@ with st.expander("ℹ️ Come si legge questa pagina"):
     st.markdown(
         "Un'**ondata di calore** qui è definita come **almeno 3 giorni di fila** "
         "con temperatura massima sopra i **35°C**, la stessa soglia fissa per "
-        "tutti i comuni (definizione usata in tutto il sito, calcolata dalla "
-        "funzione `identify_heatwaves()` nel database) — una scelta "
+        "tutti i comuni (definizione usata in tutto il sito) — una scelta "
         "semplificata: i climatologi usano spesso soglie che variano da "
         "località a località, non un valore fisso, ma qui si è preferita "
         "una definizione facile da capire e da verificare. Per ogni ondata:\n\n"
@@ -129,11 +128,11 @@ if source == SOURCE_BOTH:
         cc3.metric("Ondate ARPA reali", int(comparison.get('n_arpa_events', 0)))
         cc3.caption(f"Contro {int(comparison.get('n_om_events', 0))} rilevate da Open-Meteo")
         st.caption(
-            "Calcolato sui 51 comuni con entrambe le fonti (non filtrato per provincia/anno — "
-            "vedi src/analysis/validate_arpa.py)."
+            "Calcolato sui 51 comuni con entrambe le fonti disponibili (non filtrato per "
+            "provincia/anno)."
         )
     else:
-        st.info("Nessun risultato di confronto trovato: esegui `python -m src.analysis.validate_arpa`.")
+        st.info("Nessun risultato di confronto disponibile.")
 
 tab_overview, tab_detail = st.tabs(["📊 Panoramica", "🔬 Dettaglio tecnico / metodologia"])
 
@@ -312,7 +311,7 @@ st.caption("Quale comune ha avuto più ondate, più lunghe, o più intense (su t
 by_muni = compute_stats_by_municipality(events_all) if source == SOURCE_ARPA else get_heatwave_stats_by_municipality()
 by_muni_f = by_muni[by_muni['municipality_name'].isin(active_names)] if not by_muni.empty else by_muni
 if by_muni_f.empty:
-    st.info("Esegui `python -m src.analysis.heatwave_stats` per generare questi risultati.")
+    st.info("Statistiche per comune non ancora disponibili.")
 else:
     st.dataframe(
         by_muni_f.rename(columns={
