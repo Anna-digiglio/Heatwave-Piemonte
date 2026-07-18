@@ -38,6 +38,74 @@ def get_overview_stats() -> dict:
 
 
 @st.cache_data(ttl=600)
+def get_arpa_overview_stats() -> dict:
+    """Statistiche generali ARPA (equivalenti a `get_overview_stats()`), per la Home combinata."""
+    n_rows = db_manager.execute_query('SELECT COUNT(*) FROM arpa_temperature;')[0][0]
+    n_municipalities = db_manager.execute_query('SELECT COUNT(DISTINCT municipality_id) FROM arpa_temperature;')[0][0]
+    return {'n_arpa_rows': n_rows, 'n_arpa_municipalities': n_municipalities}
+
+
+@st.cache_data(ttl=600)
+def get_combined_trend_analysis() -> pd.DataFrame:
+    """
+    Trend per **tutti** i comuni con dati reali, unendo le due fonti invece
+    di limitarsi a Open-Meteo: i 177 comuni Open-Meteo usano il trend
+    Open-Meteo (fonte più validata finora, vedi
+    wiki/pages/statistical-analysis.md), i 167 comuni **solo ARPA** (nessun
+    dato Open-Meteo) usano il trend ARPA calcolato al volo
+    (`get_arpa_trend_analysis()`) - nessuna doppia conta: ogni comune
+    compare una sola volta, con un'unica fonte. Colonna `source` aggiunta
+    per distinguere le due provenienze in tabella/mappa. Usata dalla Home
+    per estendere la copertura mostrata da 177 a 344 comuni.
+    """
+    om = get_trend_analysis().copy()
+    if not om.empty:
+        om['source'] = 'Open-Meteo'
+    arpa_names = get_arpa_municipality_names_with_data()
+    om_names = set(om['municipality_name']) if not om.empty else set()
+    arpa_only_names = [n for n in arpa_names if n not in om_names]
+    if arpa_only_names:
+        arpa = get_arpa_trend_analysis()
+        arpa = arpa[arpa['municipality_name'].isin(arpa_only_names)].copy()
+        arpa['source'] = 'ARPA'
+    else:
+        arpa = pd.DataFrame()
+    return pd.concat([om, arpa], ignore_index=True) if not arpa.empty else om
+
+
+@st.cache_data(ttl=600)
+def get_combined_municipality_geometries_wkt() -> pd.DataFrame:
+    """Geometrie (WKT) di tutti i comuni con dati reali, Open-Meteo o ARPA (unione, 344 comuni)."""
+    om_names = set(get_municipality_names_with_data())
+    arpa_names = set(get_arpa_municipality_names_with_data())
+    all_names = om_names | arpa_names
+    geo_all = get_all_municipality_geometries_wkt()
+    return geo_all[geo_all['municipality_name'].isin(all_names)]
+
+
+@st.cache_data(ttl=600)
+def get_combined_heatwave_count() -> int:
+    """
+    N. ondate di calore totali sull'unione dei comuni: quelle già in
+    `heatwave_events` (Open-Meteo, 177 comuni) più quelle rilevate al volo
+    su ARPA **solo** per i 167 comuni senza Open-Meteo - mai sommando due
+    conteggi per lo stesso comune (sarebbe la stessa ondata reale contata
+    due volte da due metodi diversi, non due ondate diverse).
+    """
+    from components.heatwave_definitions import identify_heatwaves_events
+
+    om_count = db_manager.execute_query('SELECT COUNT(*) FROM heatwave_events;')[0][0]
+    om_names = set(get_municipality_names_with_data())
+    arpa_names = set(get_arpa_municipality_names_with_data())
+    arpa_only_names = tuple(sorted(arpa_names - om_names))
+    if not arpa_only_names:
+        return om_count
+    daily = get_arpa_daily_temperature_multi(arpa_only_names)
+    arpa_only_events = identify_heatwaves_events(daily)
+    return om_count + len(arpa_only_events)
+
+
+@st.cache_data(ttl=600)
 def get_kpi_annual() -> pd.DataFrame:
     """Serie annuale di KPI per comune (vista kpi_annual_by_municipality)."""
     query = """
