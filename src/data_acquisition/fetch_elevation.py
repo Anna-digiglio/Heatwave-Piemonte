@@ -23,6 +23,10 @@ from src.utils.logger import get_logger
 logger = get_logger(__name__)
 
 ELEVATION_URL = "https://api.open-meteo.com/v1/elevation"
+# L'endpoint rifiuta con 400 oltre 100 coordinate per richiesta ("Parameter
+# 'latitude' and 'longitude' must not exceed 100 coordinates") - scoperto il
+# 2026-07-18 quando i comuni con temperatura hanno superato quota 100.
+MAX_COORDS_PER_REQUEST = 100
 
 
 def get_municipalities_with_data() -> list:
@@ -41,16 +45,21 @@ def get_municipalities_with_data() -> list:
 
 def fetch_elevations(points: list) -> list:
     """
-    Interroga la Elevation API in un'unica richiesta batch (lat/lon
-    separate da virgola), come documentato per l'endpoint.
+    Interroga la Elevation API a lotti di al massimo
+    `MAX_COORDS_PER_REQUEST` coordinate (lat/lon separate da virgola in
+    un'unica richiesta per lotto, come documentato per l'endpoint).
     """
-    params = {
-        'latitude': ','.join(str(p['lat']) for p in points),
-        'longitude': ','.join(str(p['lon']) for p in points),
-    }
-    response = requests.get(ELEVATION_URL, params=params, timeout=30)
-    response.raise_for_status()
-    return response.json()['elevation']
+    elevations = []
+    for i in range(0, len(points), MAX_COORDS_PER_REQUEST):
+        chunk = points[i:i + MAX_COORDS_PER_REQUEST]
+        params = {
+            'latitude': ','.join(str(p['lat']) for p in chunk),
+            'longitude': ','.join(str(p['lon']) for p in chunk),
+        }
+        response = requests.get(ELEVATION_URL, params=params, timeout=30)
+        response.raise_for_status()
+        elevations.extend(response.json()['elevation'])
+    return elevations
 
 
 def update_elevations(points: list, elevations: list) -> None:
