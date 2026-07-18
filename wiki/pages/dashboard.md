@@ -1028,6 +1028,93 @@ un'app client-rendered (SPA), quindi la risposta HTTP grezza è solo il
 "guscio" statico — il contenuto vero (metriche, tabelle, titoli) non è nel
 markup HTML iniziale e va verificato con `AppTest` o un browser reale.
 
+## Nessuna connessione DB live: export statico per il deploy (2026-07-18, sera, nona parte)
+
+**Sorgenti**: `src/data_processing/export_dashboard_data.py`,
+`dashboard/components/queries.py`, `requirements-dashboard.txt`.
+
+Dopo aver discusso con l'utente dimensioni del DB (419 MB a 177 comuni,
+proiezione ~1 GB a 300 comuni + 250 stazioni ARPA — poi superata: si è
+arrivati a **218 stazioni ARPA e 756 MB reali lo stesso giorno**) e costi di
+hosting, decisione esplicita dell'utente: **niente DB live in produzione**. I
+dati cambiano solo quando l'utente rilancia la pipeline in locale, quindi una
+connessione Postgres sempre aperta da un sito pubblico costerebbe (fuori dai
+free tier di Supabase/Neon a queste dimensioni) senza portare benefici
+percepibili, oltre ad aggiungere superficie di sicurezza (credenziali
+esposte). Obiettivo: `dashboard/` deployabile su Streamlit Community Cloud
+leggendo solo file statici dal repo Git.
+
+**Scoperta che ha allargato lo scope**: `output/` (dove `src/analysis/*.py`
+scrive i CSV già letti da metà delle funzioni di `queries.py`) è escluso da
+Git (`.gitignore`: `output/`, `*.csv`, `*.geojson`). Quindi anche le pagine
+già "file-based" non avrebbero funzionato su un deploy da GitHub — il
+problema non era solo "togliere il DB live", ma unificare **tutto** l'accesso
+dati della dashboard su un'unica cartella versionata.
+
+**Ulteriore complicazione emersa a metà lavoro**: mentre questo cambio era in
+corso, in parallelo l'utente ha esteso ARPA a 218 comuni e aggiunto
+l'architettura "seconda fonte dati" descritta sopra (selettore
+Open-Meteo/ARPA/Confronto) — per i 167 comuni solo-ARPA, trend/ondate/
+cluster/Moran's I/STL sono calcolati **al volo in Python** da
+`arpa_temperature` grezza, non da CSV precalcolati. `queries.py` è passato da
+25 a 35 funzioni pubbliche nel frattempo. Il piano di export è stato
+aggiornato di conseguenza prima di scrivere codice.
+
+**Soluzione**: un solo export "a valle" invece di DB + CSV sparsi.
+`export_dashboard_data.py` legge Postgres (Open-Meteo e ARPA) e i CSV di
+`output/` (inclusi i 177 file per-comune di `output/seasonal_decomposition/`,
+**consolidati in un solo Parquet** — 121 MB in CSV diventano 46 MB), e scrive
+tutto come **Parquet** (via `pyarrow`) sotto `data/dashboard_export/`
+(**69 MB totali**, non intercettata da nessuna regola `.gitignore`
+esistente, quindi tracciata di default). File principali: `temperature_daily_all.parquet`
+e `arpa_temperature_daily_all.parquet` (serie giornaliere complete, da cui
+`queries.py` filtra/aggrega in pandas invece che con `WHERE`/`GROUP BY` SQL),
+`municipality_metadata_all.parquet`/`all_municipality_geometries.parquet`
+(unificati per tutti i 1180 comuni, invece di file separati Open-Meteo/ARPA),
+`overview_stats.json`, le viste KPI, geometrie provincia, uso del
+suolo/NDVI, e la copia Parquet delle CSV di analisi già esistenti.
+
+`queries.py` riscritta: stesse ~35 funzioni pubbliche, stessa firma e stesso
+valore di ritorno — **nessuna pagina in `dashboard/pages/` toccata**. Le
+funzioni "calcolate al volo" per ARPA (`identify_heatwaves_events`,
+`climate_clustering`, `morans_i_permutation_test`, `mann_kendall_trend`,
+`decompose`, ecc.) non sono cambiate: erano già funzioni pure su DataFrame,
+solo la funzione a monte che le alimentava con una query SQL live è diventata
+un filtro pandas su Parquet. Rimossi gli import di `sqlalchemy`/
+`src.utils.database.db_manager` da `queries.py`; nessun file sotto
+`dashboard/` importa più `db_manager` (verificato con grep).
+
+**`requirements-dashboard.txt`** (nuovo): sottoinsieme minimale di
+`requirements.txt` per il deploy, esclude `psycopg2-binary`, `geoalchemy2`,
+`rasterio`, `cdsapi`, `netCDF4`, `spreg`, `libpysal` (mai usate da codice
+raggiungibile dalla dashboard). **Nota non ovvia**: `sqlalchemy` resta
+comunque necessaria anche qui — `queries.py` importa a runtime funzioni pure
+di `src/analysis/trend_analysis.py`/`seasonal_analysis.py`/`spatial_analysis.py`,
+che a livello di modulo fanno `from sqlalchemy import text` e
+`from src.utils.database import db_manager` (mai una connessione vera: la
+classe è istanziata lazy, l'engine si crea solo alla prima query, mai
+eseguita da questi percorsi) — verificato leggendo il codice di
+`src/utils/database.py`, non assunto.
+
+**Verifica**: script di export rieseguito contro il DB reale (locale, non
+toccato/modificato dall'export, sola lettura); dimensione confermata con `du
+-sh`; `streamlit.testing.v1.AppTest` su tutte le pagine reali della dashboard
+— nessuna eccezione. Durante la verifica scoperto che la pagina dedicata
+`06_validazione_dati.py` **non esiste più** (rimossa lo stesso giorno,
+contenuto confluito nel selettore fonte dati di
+`03_analisi_spaziale.py`/`04_ondate_di_calore.py`, vedi sezione sopra) — lo
+script di verifica aggiornato di conseguenza, nessun impatto sul resto del
+lavoro. Non è stato spento Postgres per una verifica "a interruttore" (altre
+sessioni potrebbero dipendere dal servizio essere attivo); l'assenza di
+dipendenza dal DB è comunque confermata sia dal grep sia dal fatto che
+l'intero `AppTest` gira leggendo solo `data/dashboard_export/`.
+
+**Cosa resta manuale, deliberatamente**: dopo ogni sessione di aggiornamento
+dati, l'utente rilancia `python -m src.data_processing.export_dashboard_data`
+e fa commit/push dei Parquet aggiornati — nessun refresh automatico. Push su
+GitHub e collegamento a Streamlit Community Cloud non ancora fatti (azione
+visibile su servizio esterno, da fare solo su richiesta esplicita).
+
 ## Bug trovati eseguendo la dashboard per la prima volta (2026-07-15)
 
 - **`ModuleNotFoundError: No module named 'components'`**: Streamlit
@@ -1072,3 +1159,9 @@ completo del drift risolto in tutto `requirements.txt`). Le mappe
 coropletiche aggiunte il 2026-07-15 usano `branca.colormap.LinearColormap`
 (già presente come dipendenza transitiva di `folium`, non serve
 aggiungerla a `requirements.txt`).
+
+**`requirements-dashboard.txt` (2026-07-18)**: file separato, minimale, per
+il deploy pubblico — vedi sezione "Nessuna connessione DB live" sopra per il
+dettaglio completo (cosa include/esclude e perché). `requirements.txt`
+resta invariato per l'uso locale della pipeline completa; entrambi
+includono ora `pyarrow` (formato dei file in `data/dashboard_export/`).

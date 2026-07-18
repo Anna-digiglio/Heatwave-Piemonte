@@ -2707,3 +2707,51 @@ Log cronologico append-only. Ogni riga: data, azione, pagine toccate.
   prossima esecuzione dello script (si autocorregge da solo).
 
   Pagine aggiornate: `dashboard.md`, `index.md`.
+
+- **2026-07-18 (sera, nona parte)** — INGEST: rimossa la connessione DB live
+  dalla dashboard, su decisione esplicita dell'utente dopo discussione su
+  dimensioni del DB (419 MB a 177 comuni Open-Meteo, poi 756 MB reali lo
+  stesso giorno con l'estensione ARPA a 218 comuni fatta in parallelo) e
+  costi di hosting: niente DB live in produzione, i dati cambiano solo
+  quando l'utente rilancia la pipeline in locale. Scoperto durante
+  l'esplorazione che anche i CSV di `output/` già usati da metà di
+  `queries.py` erano esclusi da Git (`.gitignore`) — quindi il problema non
+  era solo "togliere il DB", ma unificare tutto l'accesso dati su
+  un'unica cartella versionata.
+
+  Nuovo `src/data_processing/export_dashboard_data.py`: legge Postgres
+  (Open-Meteo + ARPA) e i CSV di `output/` (inclusi i 177 file per-comune
+  di `seasonal_decomposition/`, consolidati in un solo Parquet — da 121 MB
+  CSV a 46 MB), scrive tutto come Parquet in `data/dashboard_export/`
+  (69 MB totali, non intercettato da `.gitignore`). `dashboard/components/queries.py`
+  riscritta (stesse ~35 funzioni pubbliche, stessa firma — nessuna pagina
+  toccata): le ~24 funzioni che facevano query SQL ora leggono/filtrano
+  Parquet in pandas; le funzioni già pure per l'analisi ARPA al volo
+  (`identify_heatwaves_events`, `climate_clustering`,
+  `morans_i_permutation_test`, `decompose`, ecc., aggiunte da una sessione
+  parallela lo stesso giorno) non sono cambiate. Nuovo
+  `requirements-dashboard.txt` minimale per il deploy (esclude
+  psycopg2-binary/geoalchemy2/rasterio/cdsapi/netCDF4/spreg/libpysal; nota
+  non ovvia: `sqlalchemy` resta necessaria per import transitivi innocui di
+  `src/analysis/*.py`, mai una connessione vera).
+
+  Il piano è stato rivisto a metà lavoro (via `/plan`) quando si è scoperto
+  che una sessione parallela dell'utente aveva esteso ARPA a 218 comuni e
+  aggiunto un'intera architettura "seconda fonte dati" a `queries.py` (25 →
+  35 funzioni) — lavoro sospeso e ripreso solo dopo conferma esplicita
+  dell'utente che quella sessione fosse conclusa, per non esportare uno
+  snapshot a metà aggiornamento.
+
+  Verificato: export rieseguito contro il DB reale, dimensioni controllate
+  con `du -sh`; `streamlit.testing.v1.AppTest` su tutte le pagine reali
+  (nessuna eccezione) — durante la verifica scoperto che
+  `06_validazione_dati.py` non esiste più (rimossa e confluita nel
+  selettore fonte dati, vedi sessione parallela sopra), script di verifica
+  corretto di conseguenza. Nessun file sotto `dashboard/` importa più
+  `db_manager` (verificato con grep). Postgres non è stato spento per un
+  test "a interruttore" (altre sessioni potrebbero dipendere dal servizio).
+
+  **Non ancora fatto** (deliberatamente, azione visibile su servizio
+  esterno): push su GitHub e collegamento a Streamlit Community Cloud.
+
+  Pagine aggiornate: `dashboard.md`, `project-status.md`.

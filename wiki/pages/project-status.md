@@ -437,16 +437,21 @@ completo:
 8. ~~Contenuto delle 3 pagine di analisi della dashboard troppo
    essenziale~~ — **ampliato sostanzialmente il 2026-07-15**, vedi
    [Dashboard](dashboard.md)
-9. **Valutare il deploy pubblico gratuito della dashboard** (Streamlit
-   Community Cloud) — discusso il 2026-07-15, rimandato. Blocco tecnico
-   noto: la dashboard si connette a Postgres/PostGIS su `localhost`, non
-   raggiungibile da un server remoto. Due strade possibili da valutare:
-   (a) database Postgres/PostGIS gratuito in cloud (es. Supabase/Neon,
-   verificare supporto PostGIS nel piano free) con credenziali spostate
-   in `st.secrets`; (b) far leggere la dashboard solo dai CSV già in
-   `output/`/`data/processed/` (nessuna connessione DB dal vivo, ma
-   niente aggiornamento automatico se in futuro si ricaricano dati
-   nuovi). Vedi [Dashboard](dashboard.md).
+9. ~~Valutare il deploy pubblico gratuito della dashboard~~ (Streamlit
+   Community Cloud) — discusso il 2026-07-15, rimandato allora per il
+   blocco tecnico noto (connessione a Postgres/PostGIS su `localhost`, non
+   raggiungibile da un server remoto). **Deciso e implementato il
+   2026-07-18**: scartata l'opzione DB in cloud (Supabase/Neon) per i costi
+   a queste dimensioni (DB reale arrivato a 756 MB lo stesso giorno, con
+   218 stazioni ARPA), scelta l'opzione "nessuna connessione DB dal vivo" —
+   `src/data_processing/export_dashboard_data.py` esporta uno snapshot
+   Parquet in `data/dashboard_export/` (69 MB, tracciato in Git),
+   `dashboard/components/queries.py` riscritta per leggere solo da lì,
+   `requirements-dashboard.txt` nuovo per il deploy. Resta manuale
+   l'aggiornamento (nessun refresh automatico) e **non ancora fatto** il
+   push su GitHub + collegamento a Streamlit Community Cloud (azione da
+   fare esplicitamente quando l'utente vorrà pubblicare davvero). Vedi
+   [Dashboard](dashboard.md) per il dettaglio completo.
 10. ~~Importare i 35 comuni extra scaricati dalla seconda macchina~~ —
     **fatto lo stesso giorno (2026-07-17)**: pulizia + risoluzione
     `municipality_id`, poi rilancio di `identify_heatwaves()`/viste
