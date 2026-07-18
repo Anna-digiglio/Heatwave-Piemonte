@@ -159,6 +159,42 @@ def get_heatwave_stats_by_municipality() -> pd.DataFrame:
 
 
 @st.cache_data(ttl=600)
+def get_arpa_validation() -> pd.DataFrame:
+    """Bias/MAE/RMSE/correlazione Open-Meteo vs ARPA per comune (src/analysis/validate_arpa.py)."""
+    path = _output_path('arpa_validation.csv')
+    if not path.exists():
+        return pd.DataFrame()
+    return pd.read_csv(path)
+
+
+@st.cache_data(ttl=600)
+def get_arpa_hot_day_bias() -> pd.DataFrame:
+    """Bias per condizione (tutti i giorni / giorni caldi), src/analysis/validate_arpa.py."""
+    path = _output_path('arpa_hot_day_bias.csv')
+    if not path.exists():
+        return pd.DataFrame()
+    return pd.read_csv(path)
+
+
+@st.cache_data(ttl=600)
+def get_arpa_trend_comparison() -> pd.DataFrame:
+    """Confronto trend ARPA vs Open-Meteo per comune, src/analysis/validate_arpa.py."""
+    path = _output_path('arpa_trend_comparison.csv')
+    if not path.exists():
+        return pd.DataFrame()
+    return pd.read_csv(path)
+
+
+@st.cache_data(ttl=600)
+def get_arpa_event_comparison_summary() -> dict:
+    """Precision/recall delle ondate Open-Meteo vs ARPA (src/analysis/validate_arpa.py), riga unica."""
+    path = _output_path('arpa_event_comparison_summary.csv')
+    if not path.exists():
+        return {}
+    return pd.read_csv(path).iloc[0].to_dict()
+
+
+@st.cache_data(ttl=600)
 def get_heatwave_frequency_by_year() -> pd.DataFrame:
     path = _output_path('heatwave_frequency_by_year.csv')
     if not path.exists():
