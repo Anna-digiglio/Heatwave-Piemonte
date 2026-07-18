@@ -6,26 +6,41 @@ tipografia, sidebar). Palette e font vivono come token in `constants.py`
 fonte di verità invece di ripetere gli hex in due posti.
 
 Il tema chiaro/scuro nativo di Streamlit (vedi `.streamlit/config.toml`)
-resta gestito da Streamlit stesso e NON viene toccato qui: widget nativi
-(bottoni, slider, dataframe, i st.metric delle altre pagine) continuano a
-seguire il toggle chiaro/scuro dell'utente. Hero, card di navigazione e
-striscia "numeri chiave" sono invece componenti nuovi, disegnati con
-un'identità scura fissa (scelta deliberata, validata su un mockup con
-l'utente il 2026-07-17 — sfondo poi schiarito da nero puro a grigio ardesia
-su suo feedback): non provano a inseguire il toggle, sono un "pannello a
-tema" come farebbe un badge di brand, non un layer che reagisce al tema.
+resta gestito da Streamlit stesso: widget nativi (bottoni, slider,
+dataframe, gli st.metric delle altre pagine) seguono il toggle chiaro/scuro
+dell'utente senza bisogno di CSS qui. Hero, card di navigazione e striscia
+"numeri chiave" sono invece componenti nuovi: fino al 2026-07-17 avevano
+un'identità scura fissa che ignorava il toggle (scelta validata su un
+mockup con l'utente, sfondo poi schiarito da nero puro a grigio ardesia
+su suo feedback). Con il tema chiaro nativo attivato, però, questo produceva
+pannelli neri fuori posto su una pagina bianca ("cambia solo lo sfondo in
+bianco ed è brutto" - feedback utente, 2026-07-18): questi componenti ora
+leggono `st.context.theme.type` e scelgono la coppia di token corrispondente
+da `THEME_TOKENS` in `constants.py`, così lo sfondo del pannello si fonde
+con lo sfondo nativo dello stesso modo invece di restare bloccato sullo
+scuro.
+
+Limite noto (documentato da Streamlit stesso per `st.context.theme.type`):
+il cambio tema dal menu Impostazioni è puramente lato client e NON forza un
+rerun dello script, quindi subito dopo il click i colori di questi pannelli
+restano quelli del rerun precedente finché non arriva una vera esecuzione
+dello script (navigazione tra pagine, refresh, qualunque interazione con un
+widget). Verificato manualmente con Playwright il 2026-07-18: dopo un
+refresh la corrispondenza è sempre corretta, lo sfasamento è solo nella
+finestra "ho appena cliccato Dark/Light senza ancora interagire di nuovo".
 """
 
 import streamlit as st
 
 from .constants import (
     FONT_BODY, FONT_DISPLAY, FONT_MONO,
-    THEME_BORDER, THEME_BORDER_STRONG, THEME_COLD, THEME_HOT, THEME_INK,
-    THEME_MID, THEME_SURFACE, THEME_SURFACE_RAISED, THEME_TEXT,
-    THEME_TEXT_FAINT, THEME_TEXT_MUTED,
+    THEME_COLD, THEME_HOT, THEME_MID, THEME_TOKENS,
 )
 
-_CUSTOM_CSS = f"""
+
+def _build_custom_css(tokens: dict) -> str:
+    glow_a, glow_b, glow_c = tokens["glow_opacity"]
+    return f"""
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400..700&family=Manrope:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
 
@@ -91,7 +106,7 @@ div[data-testid="stMetricLabel"] {{
     box-shadow: inset 3px 0 0 0 {THEME_HOT};
 }}
 
-/* ================== Componenti custom (identità scura fissa) ============ */
+/* ================== Componenti custom (adattivi chiaro/scuro) =========== */
 
 .hw-hero {{
     position: relative;
@@ -99,10 +114,10 @@ div[data-testid="stMetricLabel"] {{
     padding: 40px 32px 32px;
     margin: -1rem -1rem 1.5rem;
     border-radius: 16px;
-    background: {THEME_INK};
-    border: 1px solid {THEME_BORDER};
+    background: {tokens["ink"]};
+    border: 1px solid {tokens["border"]};
     isolation: isolate;
-    color: {THEME_TEXT};
+    color: {tokens["text"]};
 }}
 .hw-hero::before {{
     content: "";
@@ -110,9 +125,9 @@ div[data-testid="stMetricLabel"] {{
     inset: -30%;
     z-index: -1;
     background:
-        radial-gradient(38% 55% at 10% 10%, rgba(52,152,219,0.30), transparent 70%),
-        radial-gradient(40% 55% at 55% -10%, rgba(243,156,18,0.20), transparent 70%),
-        radial-gradient(45% 60% at 95% 35%, rgba(231,76,60,0.26), transparent 70%);
+        radial-gradient(38% 55% at 10% 10%, rgba(52,152,219,{glow_a}), transparent 70%),
+        radial-gradient(40% 55% at 55% -10%, rgba(243,156,18,{glow_b}), transparent 70%),
+        radial-gradient(45% 60% at 95% 35%, rgba(231,76,60,{glow_c}), transparent 70%);
     filter: blur(40px);
     animation: hwDrift 26s ease-in-out infinite alternate;
 }}
@@ -143,27 +158,27 @@ div[data-testid="stMetricLabel"] {{
     margin: 0 0 12px !important;
     text-wrap: balance;
     max-width: 18ch;
-    background: linear-gradient(100deg, #fff 30%, #ffe9c7 55%, #ffb199 78%);
+    background: {tokens["hero_title_gradient"]};
     -webkit-background-clip: text;
     background-clip: text;
     -webkit-text-fill-color: transparent;
 }}
 .hw-lede {{
     max-width: 68ch;
-    color: {THEME_TEXT_MUTED};
+    color: {tokens["text_muted"]};
     font-size: 1rem;
     margin: 0 0 20px;
 }}
-.hw-lede b {{ color: {THEME_TEXT}; font-weight: 700; }}
+.hw-lede b {{ color: {tokens["text"]}; font-weight: 700; }}
 .hw-hero-meta {{
     display: flex;
     gap: 24px;
     flex-wrap: wrap;
     font-family: {FONT_MONO};
     font-size: 0.78rem;
-    color: {THEME_TEXT_FAINT};
+    color: {tokens["text_faint"]};
 }}
-.hw-hero-meta b {{ color: {THEME_TEXT_MUTED}; font-weight: 600; }}
+.hw-hero-meta b {{ color: {tokens["text_muted"]}; font-weight: 600; }}
 
 /* Card di navigazione: il wrapper è un vero `st.container(key=...)`, che
    Streamlit espone come classe `st-key-<key>` sull'elemento (vedi
@@ -172,8 +187,8 @@ div[data-testid="stMetricLabel"] {{
    nativo dentro lo stesso container, per non rompere la navigazione SPA. */
 [class*="st-key-navcard-"] {{
     position: relative;
-    background: {THEME_SURFACE};
-    border: 1px solid {THEME_BORDER};
+    background: {tokens["surface"]};
+    border: 1px solid {tokens["border"]};
     border-radius: 14px;
     padding: 18px 18px 6px;
     overflow: hidden;
@@ -188,8 +203,8 @@ div[data-testid="stMetricLabel"] {{
 }}
 [class*="st-key-navcard-"]:hover {{
     transform: translateY(-4px);
-    border-color: {THEME_BORDER_STRONG};
-    background: {THEME_SURFACE_RAISED};
+    border-color: {tokens["border_strong"]};
+    background: {tokens["surface_raised"]};
     box-shadow: 0 16px 32px -14px rgba(0,0,0,0.55);
 }}
 .st-key-navcard-temporale::before {{ background: linear-gradient(90deg, {THEME_COLD}, #6dc1f0); }}
@@ -209,18 +224,18 @@ div[data-testid="stMetricLabel"] {{
     display: flex; align-items: center; justify-content: center;
     font-size: 1.05rem;
     line-height: 1;
-    background: {THEME_SURFACE_RAISED};
-    border: 1px solid {THEME_BORDER};
+    background: {tokens["surface_raised"]};
+    border: 1px solid {tokens["border"]};
 }}
 [class*="st-key-navcard-"] h3 {{
     font-family: {FONT_DISPLAY} !important;
     font-size: 1.12rem !important;
     font-weight: 600 !important;
-    color: {THEME_TEXT} !important;
+    color: {tokens["text"]} !important;
     margin: 0 !important;
 }}
 [class*="st-key-navcard-"] p {{
-    color: {THEME_TEXT_MUTED} !important;
+    color: {tokens["text_muted"]} !important;
     font-size: 0.86rem !important;
     margin: 0 0 12px !important;
 }}
@@ -238,22 +253,22 @@ div[data-testid="stMetricLabel"] {{
     display: grid;
     grid-template-columns: repeat(4, 1fr);
     gap: 1px;
-    background: {THEME_BORDER};
-    border: 1px solid {THEME_BORDER};
+    background: {tokens["border"]};
+    border: 1px solid {tokens["border"]};
     border-radius: 14px;
     overflow: hidden;
     margin-bottom: 0.25rem;
 }}
 @media (max-width: 760px) {{ .hw-stats {{ grid-template-columns: repeat(2,1fr); }} }}
 .hw-stat {{
-    background: {THEME_SURFACE};
+    background: {tokens["surface"]};
     padding: 18px 20px;
     transition: background 0.2s ease;
 }}
-.hw-stat:hover {{ background: {THEME_SURFACE_RAISED}; }}
+.hw-stat:hover {{ background: {tokens["surface_raised"]}; }}
 .hw-stat-label {{
     font-size: 0.7rem;
-    color: {THEME_TEXT_FAINT};
+    color: {tokens["text_faint"]};
     text-transform: uppercase;
     letter-spacing: 0.06em;
     margin-bottom: 8px;
@@ -263,12 +278,12 @@ div[data-testid="stMetricLabel"] {{
     font-variant-numeric: tabular-nums;
     font-size: 1.55rem;
     font-weight: 600;
-    color: {THEME_TEXT};
+    color: {tokens["text"]};
     display: flex;
     align-items: baseline;
     gap: 6px;
 }}
-.hw-stat-value .hw-unit {{ font-size: 0.8rem; color: {THEME_TEXT_MUTED}; font-weight: 500; }}
+.hw-stat-value .hw-unit {{ font-size: 0.8rem; color: {tokens["text_muted"]}; font-weight: 500; }}
 .hw-stat-spark {{ margin-top: 10px; display: block; }}
 .hw-stat-spark path.hw-fill {{ opacity: 0.18; }}
 </style>
@@ -276,8 +291,15 @@ div[data-testid="stMetricLabel"] {{
 
 
 def inject_custom_css() -> None:
-    """Da richiamare una volta per pagina, subito dopo st.set_page_config()."""
-    st.markdown(_CUSTOM_CSS, unsafe_allow_html=True)
+    """Da richiamare una volta per pagina, subito dopo st.set_page_config().
+
+    Sceglie i token chiaro/scuro in base a `st.context.theme.type`
+    (rilevato dal tema nativo attivo, non da una preferenza salvata a
+    parte) così hero/card/stats restano coerenti con qualunque modo
+    l'utente abbia scelto dal menu impostazioni di Streamlit.
+    """
+    theme_type = st.context.theme.type if st.context.theme.type in THEME_TOKENS else "dark"
+    st.markdown(_build_custom_css(THEME_TOKENS[theme_type]), unsafe_allow_html=True)
 
 
 def render_hero(eyebrow: str, title: str, lede: str, meta: list[tuple[str, str]]) -> None:
