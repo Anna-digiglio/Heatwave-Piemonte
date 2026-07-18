@@ -22,9 +22,11 @@ from streamlit_folium import st_folium
 from components.constants import MAP_TILES, THEME_COLD, THEME_HOT, THEME_MID, format_mk_trend
 from components.maps import render_gradient_legend, wkt_to_geojson
 from components.queries import (
-    get_municipality_geometries_wkt,
+    get_arpa_overview_stats,
+    get_combined_heatwave_count,
+    get_combined_municipality_geometries_wkt,
+    get_combined_trend_analysis,
     get_overview_stats,
-    get_trend_analysis,
 )
 from components.styling import inject_custom_css, render_hero, render_nav_card_header, render_stats_row
 from src.utils.config import config
@@ -36,7 +38,14 @@ st.set_page_config(
 inject_custom_css()
 
 stats = get_overview_stats()
+arpa_stats = get_arpa_overview_stats()
 n_years = stats['date_end'].year - stats['date_start'].year + 1
+# Copertura combinata: unione dei comuni Open-Meteo (177) e ARPA (218),
+# 51 in comune a entrambe - non una somma ingenua (177+218), che
+# conterebbe due volte quei 51. Vedi wiki/pages/dashboard.md.
+combined_trend_df = get_combined_trend_analysis()
+n_municipalities_combined = combined_trend_df['municipality_name'].nunique() if not combined_trend_df.empty else 0
+n_rows_combined = stats['n_temperature_rows'] + arpa_stats['n_arpa_rows']
 
 render_hero(
     eyebrow="Analisi spazio-temporale",
@@ -49,7 +58,7 @@ render_hero(
     ),
     meta=[
         ("Periodo", f"{stats['date_start'].year}–{stats['date_end'].year}"),
-        ("Comuni con dati", f"{stats['n_municipalities_with_data']} / {stats['n_municipalities']}"),
+        ("Comuni con dati (Open-Meteo + ARPA)", f"{n_municipalities_combined} / {stats['n_municipalities']}"),
         ("Ultimo aggiornamento", stats['date_end'].strftime('%d/%m/%Y')),
     ],
 )
@@ -93,18 +102,24 @@ st.divider()
 
 st.warning(
     f"**Limite importante dei dati**: le temperature reali coprono "
-    f"**{stats['n_municipalities_with_data']} dei {stats['n_municipalities']} "
-    "comuni piemontesi** — gli 8 capoluoghi di provincia più altri comuni "
-    "scelti per coprire bene il territorio (zone di montagna, pianura, "
-    "collina), non un censimento completo. Ogni grafico e mappa di questo "
-    f"sito riflette solo questi {stats['n_municipalities_with_data']} comuni."
+    f"**{n_municipalities_combined} dei {stats['n_municipalities']} comuni "
+    f"piemontesi** — {stats['n_municipalities_with_data']} con dati Open-Meteo "
+    f"e {arpa_stats['n_arpa_municipalities']} con dati ARPA (stazione reale), "
+    f"51 dei quali con entrambe le fonti — non un censimento completo. Gli "
+    "8 capoluoghi di provincia più altri comuni scelti per coprire bene il "
+    "territorio (zone di montagna, pianura, collina). Le pagine di analisi "
+    "hanno un selettore per scegliere quale fonte guardare comune per "
+    "comune; questa Home e la mappa/tabella sotto usano invece l'**unione** "
+    "delle due (Open-Meteo dove disponibile, ARPA per i comuni scoperti da "
+    "Open-Meteo)."
 )
 
 st.subheader("Il progetto in numeri")
+st.caption("Open-Meteo + ARPA combinati (unione dei comuni, mai la stessa ondata contata due volte).")
 render_stats_row([
     {
-        'label': "Righe di temperatura", 'unit': "righe", 'color': THEME_COLD,
-        'value': f"{stats['n_temperature_rows']:,}".replace(',', '.'),
+        'label': "Righe di temperatura", 'unit': "Open-Meteo + ARPA", 'color': THEME_COLD,
+        'value': f"{n_rows_combined:,}".replace(',', '.'),
         'spark': [0.3, 0.35, 0.5, 0.45, 0.65, 0.6, 0.8, 1.0],
     },
     {
@@ -114,20 +129,20 @@ render_stats_row([
     },
     {
         'label': "Comuni con dati reali", 'unit': f"/ {stats['n_municipalities']}", 'color': THEME_MID,
-        'value': str(stats['n_municipalities_with_data']),
+        'value': str(n_municipalities_combined),
         'spark': [0.15, 0.15, 0.2, 0.3, 0.5, 0.7, 0.9, 1.0],
     },
     {
         'label': "Ondate di calore identificate", 'unit': "eventi", 'color': THEME_HOT,
-        'value': str(stats['n_heatwaves']),
+        'value': str(get_combined_heatwave_count()),
         'spark': [0.05, 0.1, 0.15, 0.3, 0.4, 0.55, 0.75, 1.0],
     },
 ])
 
 st.divider()
 
-geo_df = get_municipality_geometries_wkt()
-trend_df = get_trend_analysis()
+geo_df = get_combined_municipality_geometries_wkt()
+trend_df = combined_trend_df
 
 st.subheader("Velocità di riscaldamento per comune")
 st.caption(
@@ -135,8 +150,10 @@ st.caption(
     f"{stats['date_start'].year} e il {stats['date_end'].year}: più il "
     "colore vira verso il rosso, più il riscaldamento è stato rapido; il "
     "blu segnala le zone rimaste più stabili (o leggermente più fresche). "
-    "Passa il mouse su un comune per il valore esatto, oppure scorri la "
-    "tabella qui sotto per vedere tutti i numeri insieme."
+    f"{stats['n_municipalities_with_data']} comuni usano il trend Open-Meteo, "
+    f"{n_municipalities_combined - stats['n_municipalities_with_data']} (senza dati Open-Meteo) "
+    "usano il trend ARPA — vedi la colonna \"Fonte\" nella tabella sotto. Passa il mouse su un "
+    "comune per il valore esatto."
 )
 m = folium.Map(location=[45.0, 8.0], zoom_start=8, tiles=MAP_TILES)
 
@@ -150,7 +167,7 @@ if trend_df.empty:
     st_folium(m, width=None, height=420, returned_objects=[])
     st.info("Esegui `python -m src.analysis.trend_analysis` per colorare la mappa per trend.")
 else:
-    merged = geo_df.merge(trend_df[['municipality_name', 'lr_slope_per_decade']], on='municipality_name')
+    merged = geo_df.merge(trend_df[['municipality_name', 'lr_slope_per_decade', 'source']], on='municipality_name')
     max_abs_slope = merged['lr_slope_per_decade'].abs().max() or 1
     cmap_trend = LinearColormap(['#3498db', '#f7f7f7', '#e74c3c'], vmin=-max_abs_slope, vmax=max_abs_slope)
 
@@ -158,7 +175,7 @@ else:
         color = cmap_trend(row['lr_slope_per_decade'])
         folium.GeoJson(
             wkt_to_geojson(row['geometry_wkt']),
-            tooltip=f"{row['municipality_name']}: {row['lr_slope_per_decade']:+.2f} °C/decade",
+            tooltip=f"{row['municipality_name']} ({row['source']}): {row['lr_slope_per_decade']:+.2f} °C/decade",
             style_function=lambda _, c=color: {'fillColor': c, 'color': '#555', 'weight': 1, 'fillOpacity': 0.75},
         ).add_to(m)
     st_folium(m, width=None, height=420, returned_objects=[])
@@ -174,13 +191,17 @@ st.caption("La temperatura media di ogni comune sta salendo, scendendo, o restan
 if trend_df.empty:
     st.info("Esegui `python -m src.analysis.trend_analysis` per generare questi risultati.")
 else:
-    display_df = trend_df[['municipality_name', 'mk_trend', 'lr_slope_per_decade', 'lr_p_value']].copy()
+    display_df = trend_df[['municipality_name', 'source', 'mk_trend', 'lr_slope_per_decade', 'lr_p_value']].copy()
     display_df['mk_trend'] = display_df['mk_trend'].apply(format_mk_trend)
-    display_df.columns = ['Comune', 'Trend (Mann-Kendall)', '°C/decade', 'p-value']
+    display_df.columns = ['Comune', 'Fonte', 'Trend (Mann-Kendall)', '°C/decade', 'p-value']
     display_df['°C/decade'] = display_df['°C/decade'].round(2)
     display_df['p-value'] = display_df['p-value'].round(4)
-    st.dataframe(display_df, hide_index=True, width='stretch')
-    st.caption("Trend significativo se p-value < 0.05. Vedi pagina 'Analisi Temporale' per il dettaglio.")
+    st.dataframe(display_df.sort_values('Comune'), hide_index=True, width='stretch')
+    st.caption(
+        "Trend significativo se p-value < 0.05. Colonna \"Fonte\": Open-Meteo dove disponibile, "
+        "ARPA (stazione reale) per i comuni non coperti da Open-Meteo. Vedi pagina 'Analisi "
+        "Temporale' per il confronto diretto comune per comune."
+    )
 
 st.divider()
 st.caption(
