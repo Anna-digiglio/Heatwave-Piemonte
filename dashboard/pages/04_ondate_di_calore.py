@@ -20,10 +20,18 @@ from streamlit_folium import st_folium
 
 from components.charts import apply_chart_theme
 from components.constants import MAP_TILES, TEMPERATURE_COLORSCALE
+from components.data_source import SOURCE_ARPA, SOURCE_BOTH, SOURCE_OPENMETEO, render_source_selector
 from components.filters import render_province_filter, render_year_range_filter
 from components.heatwave_definitions import identify_heatwaves_percentile
 from components.maps import render_gradient_legend, wkt_to_geojson
 from components.queries import (
+    compute_frequency_by_year,
+    compute_stats_by_municipality,
+    get_arpa_daily_temperature,
+    get_arpa_event_comparison_summary,
+    get_arpa_heatwave_events,
+    get_arpa_municipality_geometries_wkt,
+    get_arpa_municipality_metadata,
     get_daily_temperature,
     get_heatwave_events,
     get_heatwave_frequency_by_year,
@@ -45,6 +53,25 @@ with col_prov:
     provinces = render_province_filter(key='ondate_province')
 st.caption("Entrambi i filtri sopra si applicano a tutti i grafici, la mappa e le tabelle di questa pagina.")
 
+metadata = get_municipality_metadata()
+names_in_provinces = sorted(metadata[metadata['province_name'].isin(provinces)]['municipality_name'])
+arpa_metadata = get_arpa_municipality_metadata()
+names_in_provinces_arpa = sorted(arpa_metadata[arpa_metadata['province_name'].isin(provinces)]['municipality_name'])
+
+source = render_source_selector(
+    key='ondate_source', has_om=bool(names_in_provinces), has_arpa=bool(names_in_provinces_arpa),
+)
+if source == SOURCE_ARPA:
+    st.caption(
+        f"Fonte **ARPA** (stazioni reali): {len(names_in_provinces_arpa)} comuni con dati nel "
+        "filtro attuale — un insieme diverso da quello Open-Meteo, non necessariamente sovrapposto."
+    )
+elif source == SOURCE_BOTH:
+    st.caption(
+        "Grafici, mappa e tabelle sotto restano calcolati su Open-Meteo; il pannello di confronto "
+        "qui sotto aggiunge le metriche di validazione contro ARPA."
+    )
+
 with st.expander("ℹ️ Come si legge questa pagina"):
     st.markdown(
         "Un'**ondata di calore** qui è definita come **almeno 3 giorni di fila** "
@@ -62,17 +89,20 @@ with st.expander("ℹ️ Come si legge questa pagina"):
         "invece che fissa per tutti)."
     )
 
-metadata = get_municipality_metadata()
-names_in_provinces = sorted(metadata[metadata['province_name'].isin(provinces)]['municipality_name'])
+active_names = names_in_provinces_arpa if source == SOURCE_ARPA else names_in_provinces
 
-events_all = get_heatwave_events()
+if source == SOURCE_ARPA:
+    events_all = get_arpa_heatwave_events(tuple(names_in_provinces_arpa))
+else:
+    events_all = get_heatwave_events()
+
 events = events_all[
     (events_all['start_date'].apply(lambda d: d.year) >= year_start)
     & (events_all['start_date'].apply(lambda d: d.year) <= year_end)
-    & (events_all['municipality_name'].isin(names_in_provinces))
+    & (events_all['municipality_name'].isin(active_names))
 ]
 
-freq_df = get_heatwave_frequency_by_year()
+freq_df = compute_frequency_by_year(events_all) if source == SOURCE_ARPA else get_heatwave_frequency_by_year()
 freq_f = freq_df[(freq_df['year'] >= year_start) & (freq_df['year'] <= year_end)]
 
 n_last_year = int(events[events['start_date'].apply(lambda d: d.year) == year_end].shape[0])
@@ -85,6 +115,24 @@ k2.caption("Ultimo anno della finestra selezionata")
 k3.metric("Durata media", f"{events['duration_days'].mean():.1f} gg" if not events.empty else "n/d")
 k4.metric("Intensità media", f"{events['intensity_index'].mean():.1f}" if not events.empty else "n/d")
 k4.caption("(Tmax - soglia) × durata")
+
+if source == SOURCE_BOTH:
+    comparison = get_arpa_event_comparison_summary()
+    if comparison:
+        st.subheader("Confronto ARPA vs Open-Meteo — quante ondate reali vengono rilevate?")
+        cc1, cc2, cc3 = st.columns(3)
+        cc1.metric("Recall (su ondate ARPA reali)", f"{comparison.get('recall', float('nan')):.1%}")
+        cc1.caption("Quota di ondate ARPA reali anche rilevate da Open-Meteo")
+        cc2.metric("Precision", f"{comparison.get('precision', float('nan')):.1%}")
+        cc2.caption("Quota di ondate Open-Meteo confermate anche da ARPA")
+        cc3.metric("Ondate ARPA reali", int(comparison.get('n_arpa_events', 0)))
+        cc3.caption(f"Contro {int(comparison.get('n_om_events', 0))} rilevate da Open-Meteo")
+        st.caption(
+            "Calcolato sui 51 comuni con entrambe le fonti (non filtrato per provincia/anno — "
+            "vedi src/analysis/validate_arpa.py)."
+        )
+    else:
+        st.info("Nessun risultato di confronto trovato: esegui `python -m src.analysis.validate_arpa`.")
 
 tab_overview, tab_detail = st.tabs(["📊 Panoramica", "🔬 Dettaglio tecnico / metodologia"])
 
@@ -162,9 +210,8 @@ with tab_overview:
 
     st.subheader("Dove si concentrano geograficamente le ondate")
     st.caption("Colore più intenso = più ondate rilevate in quel comune (periodo/filtro attuale).")
-    by_muni_full = get_heatwave_stats_by_municipality()
     events_count = events.groupby('municipality_name').size().rename('n_heatwaves_filtro').reset_index()
-    geo_df = get_municipality_geometries_wkt()
+    geo_df = get_arpa_municipality_geometries_wkt() if source == SOURCE_ARPA else get_municipality_geometries_wkt()
     merged_geo = geo_df.merge(events_count, on='municipality_name', how='left')
     merged_geo['n_heatwaves_filtro'] = merged_geo['n_heatwaves_filtro'].fillna(0)
 
@@ -214,8 +261,8 @@ with tab_overview:
 
 st.subheader("Statistiche per comune")
 st.caption("Quale comune ha avuto più ondate, più lunghe, o più intense (su tutto il periodo disponibile)?")
-by_muni = get_heatwave_stats_by_municipality()
-by_muni_f = by_muni[by_muni['municipality_name'].isin(names_in_provinces)] if not by_muni.empty else by_muni
+by_muni = compute_stats_by_municipality(events_all) if source == SOURCE_ARPA else get_heatwave_stats_by_municipality()
+by_muni_f = by_muni[by_muni['municipality_name'].isin(active_names)] if not by_muni.empty else by_muni
 if by_muni_f.empty:
     st.info("Esegui `python -m src.analysis.heatwave_stats` per generare questi risultati.")
 else:
@@ -264,11 +311,11 @@ with tab_detail:
         "originali, per un comune di montagna sarà molto più basso, perché "
         "riflette cosa è davvero \"eccezionale\" lì."
     )
-    municipality_detail = st.selectbox("Comune per il confronto", names_in_provinces or [""], key='detail_municipality')
+    municipality_detail = st.selectbox("Comune per il confronto", active_names or [""], key='detail_municipality')
     percentile = st.slider("Percentile soglia", 80, 99, 90, key='detail_percentile')
 
     if municipality_detail:
-        daily = get_daily_temperature(municipality_detail)
+        daily = get_arpa_daily_temperature(municipality_detail) if source == SOURCE_ARPA else get_daily_temperature(municipality_detail)
         result = identify_heatwaves_percentile(daily, percentile=percentile)
         n_percentile = len(result['events'])
         n_fixed = len(events_all[events_all['municipality_name'] == municipality_detail])
