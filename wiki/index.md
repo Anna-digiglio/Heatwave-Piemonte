@@ -20,6 +20,7 @@ dubbio, la sorgente grezza (codice/SQL/config) prevale sempre sulla wiki.
 - [Fonti dati](pages/data-sources.md) — Open-Meteo, Copernicus ERA5, ARPA, ISTAT, OSM (stato e bug noti)
 - [Modello dati](pages/data-model.md) — schema PostgreSQL/PostGIS: tabelle, viste, funzione `identify_heatwaves()`
 - [Pipeline ETL](pages/etl-pipeline.md) — extract/transform/load reali, gap noti
+- [Comuni già coperti](pages/comuni-coperti.md) — elenco dei 98 comuni già in `temperature`, guida al formato per nuovi download collaborativi (evitare doppioni)
 
 ## Analisi
 

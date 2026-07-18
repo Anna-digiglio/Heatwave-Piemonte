@@ -94,6 +94,13 @@ stesso giorno).
   il comune con più ondate (15), seguita da Casalnoceto (14, uno dei 35
   nuovi) e Asti (13). 45/98 comuni non hanno mai raggiunto 3 giorni
   consecutivi sopra i 35°C (prevalentemente comuni alpini/di alta quota).
+- **STL (scomposizione stagionale)**: ampiezza stagionale 27.4-35.3°C.
+  Trend in aumento in 95/98 comuni (da 62/63) — oltre a Briga Alta, i 35
+  nuovi comuni hanno portato alla luce altri due casi non in aumento
+  (Grondona -0.21°C, Pietraporzio 0.00°C), entrambi coerenti con un
+  Mann-Kendall "no trend" (non significativi), a differenza di Briga Alta
+  che resta l'unico raffreddamento sia significativo sia sostanziale. Vedi
+  dettaglio nella sezione dedicata sotto.
 - **Moran's I = 0.1523** (atteso sotto casualità: -0.0105), **p=0.001 su
   999 permutazioni** — leggero miglioramento rispetto a 63 comuni
   (0.1319, p=0.001): il segnale di autocorrelazione spaziale resta stabile
@@ -199,6 +206,25 @@ Mann-Kendall+regressione guardano l'intera serie annuale), **concordano
 sullo stesso comune anomalo** — un indizio che il segnale è reale e non
 un artefatto di un singolo metodo, pur restando un solo caso su 63 che
 non permette conclusioni forti sulle cause.
+
+**Rieseguita di nuovo lo stesso giorno (pomeriggio) su 98 comuni**, dopo
+l'import dei 35 comuni extra da una seconda macchina (~56 minuti in
+background, 18:39→19:35 — più lenta della stima iniziale di ~40 minuti,
+coerente con l'aumento non lineare del numero di serie da processare).
+Ampiezza stagionale 27.4-35.3°C (Gravere/San Giorio di Susa/Claviere le
+più ampie, comuni alpini di alta quota; Alto/Verbania/Momo le più
+contenute). **Trend in aumento in 95 comuni su 98** (da 62/63) — tra i 35
+nuovi comuni sono emersi altri **2 casi non in aumento** oltre a Briga
+Alta: **Grondona** (-0.21°C, lieve) e **Pietraporzio** (0.00°C,
+sostanzialmente piatta). Nessuno dei due è però un raffreddamento
+*significativo* per Mann-Kendall/regressione lineare (entrambi "no
+trend", p=0.22 e p=0.27 — vedi tabella comuni non significativi sopra):
+le due metodologie restano coerenti anche qui, dato che "variazione STL
+quasi nulla" e "nessun trend rilevato da Mann-Kendall" descrivono la
+stessa realtà con strumenti diversi. **Briga Alta resta l'unico caso di
+raffreddamento sia significativo (Mann-Kendall) sia sostanziale (STL)** —
+l'aggiunta di più comuni non ha smentito questo risultato, lo ha solo
+affiancato a due casi più deboli (piatti, non significativi).
 
 ## `spatial_analysis.py` — Moran's I e clustering climatico
 

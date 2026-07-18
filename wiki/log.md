@@ -2053,3 +2053,135 @@ Log cronologico append-only. Ogni riga: data, azione, pagine toccate.
   (struttura a sezioni/tabelle adeguata), non toccate. Nessuna pagina
   orfana rilevata, nessun claim contraddittorio trovato durante la
   rilettura completa.
+
+- **2026-07-17 (pomeriggio)** — IMPORT DEI 35 COMUNI EXTRA + RICALCOLO
+  COMPLETO A 98 COMUNI + CONSOLIDAMENTO FILE. Su richiesta dell'utente
+  ("fai prima pull del progetto" per vedere il materiale lasciato dalla
+  collaboratrice, poi "procedi"), portati a termine i due passi lasciati
+  aperti dalla sessione precedente (import dei 35 comuni e ricalcolo a
+  valle), poi due richieste aggiuntive di pulizia file.
+
+  **Import**: letto `data/raw/temperature_data_extra_helper_35comuni.csv`
+  con `dtype={'istat_code': str}` (necessario per non perdere gli zeri
+  iniziali del codice ISTAT — lo stesso file, se ricaricato con
+  `DataCleaner.load_data()`/`pd.read_csv()` senza specificare il dtype,
+  avrebbe interpretato la colonna come intera). Passato manualmente
+  attraverso gli stessi passi di `DataCleaner.clean_data()` (0 righe
+  scartate, 666 outlier IQR), poi risolto `istat_code` → `municipality_id`
+  via join contro `municipalities` (35/35 trovati, nessuna sovrapposizione
+  con i 63 comuni già presenti). Caricato con
+  `insert_temperature_for_municipalities()`: **63 → 98 comuni, 950.110
+  righe** in `temperature` (verificato via query diretta).
+
+  **Ricalcolo a valle** (stesso giro delle estensioni precedenti):
+  elevazione ri-scaricata per tutti i comuni con temperatura
+  (`fetch_elevation.py`, 98/98 popolati — la query è già scoperta sui
+  comuni con dati, copre automaticamente anche i nuovi); `TRUNCATE
+  heatwave_events` + `identify_heatwaves()` (**331 ondate**, da 190);
+  `REFRESH MATERIALIZED VIEW` su entrambe le viste KPI
+  (`kpi_annual_by_municipality` 2.646 righe, `kpi_annual_by_province`
+  216); tutti e 5 i moduli di `src/analysis/` rieseguiti in sequenza
+  (`trend_analysis`, `heatwave_stats`, `spatial_analysis` subito,
+  `seasonal_analysis` in background — vedi sotto — e `spatial_regression`,
+  prima riesecuzione dopo la sua introduzione lo stesso giorno); mappe
+  QGIS rigenerate (`python-qgis-ltr.bat build_maps.py`).
+
+  **Risultato più significativo, registrato onestamente**: a n=98 il
+  modello a errore spaziale di `spatial_regression.py` **non conferma**
+  il risultato più rilevante di n=63 — **% urbano non è più
+  statisticamente significativo** (p=0.334, era p=0.011). Nessun errore
+  di calcolo: stessa pipeline, solo più osservazioni. Aggiornati di
+  conseguenza `wiki/pages/paper-scientifico.md` (il punto sul "primo
+  risultato quantitativo" ora riporta anche il ribaltamento) e
+  `dashboard/pages/03_analisi_spaziale.py` (la caption che dichiarava %
+  urbano significativo era diventata falsa — corretta, non lasciata
+  perché "era vera quando scritta": a differenza di questo log, i testi
+  live nella UI devono riflettere lo stato attuale). Verificato con
+  `AppTest`: nessuna eccezione.
+
+  Il job `seasonal_analysis.py` (STL su 98 serie giornaliere) è stato
+  lanciato in background e si è **disaccoppiato dal tracking del tool**:
+  una notifica di "completato" è arrivata a ~44/98 comuni, mentre il
+  processo ha continuato a scrivere file fino al completamento reale
+  (98/98, riepilogo rigenerato) circa 56 minuti dopo l'avvio — verificato
+  ignorando la notifica e controllando direttamente il filesystem
+  (contenuto/timestamp di `output/seasonal_trend_summary.csv`) prima di
+  considerarlo concluso. Risultato: ampiezza stagionale 27.4-35.3°C,
+  trend in aumento in 95/98 comuni (da 62/63) — tra i 35 nuovi comuni,
+  altri due casi non in aumento oltre a Briga Alta (Grondona -0.21°C,
+  Pietraporzio 0.00°C), entrambi coerenti con un Mann-Kendall "no trend"
+  non significativo, a differenza di Briga Alta che resta l'unico
+  raffreddamento sia significativo sia sostanziale.
+
+  **Consolidamento `data/raw/`** (richiesta esplicita dell'utente): i due
+  file consegnati dalla collaboratrice, ridondanti dopo l'import, sono
+  stati uniti invece di lasciati come file separati.
+  `temperature_data_extra_helper_35comuni.csv` riformattato allo schema
+  di `temperature_data_extra.csv` (`istat_code` → `municipality_id`) e
+  appeso in coda (526.078 → 865.403 righe); `riepilogo_35_comuni_extra.csv`
+  eliminato senza sostituto (tabella di comodo, resa inutile dall'import).
+  `data/raw/` ora ha un solo file per gli "8 capoluoghi"
+  (`temperature_data.csv`) e uno solo per tutti i comuni extra
+  (`temperature_data_extra.csv`), indipendentemente da quale sessione li
+  abbia scaricati.
+
+  **Consolidamento `data/processed/`** (richiesta esplicita successiva
+  dell'utente): la cartella aveva accumulato 5 file da sessioni diverse.
+  Verificato prima di toccare nulla che `temperature_clean_extra_delta.csv`
+  (19 comuni) fosse un sottoinsieme già interamente contenuto in
+  `temperature_clean_extra.csv` (55 comuni) e che
+  `temperature_clean_recent.csv` (delta 2026 per tutti i 63 comuni
+  preesistenti) non avesse **nessuna riga in comune** con gli altri file
+  su `(municipality_id, date)` — solo dopo aver confermato l'assenza di
+  sovrapposizioni, uniti in 2 file lungo la stessa distinzione già usata
+  dai loader (`insert_temperature()` per nome vs
+  `insert_temperature_for_municipalities()` per ID): `temperature_clean.csv`
+  (solo 8 capoluoghi, esteso a oggi: 75.976 → 77.560 righe) e
+  `temperature_clean_extra.csv` (tutti i 90 comuni non-capoluogo: 526.078
+  → 872.550 righe). Nel farlo, scoperto un dettaglio di schema non ovvio:
+  la colonna `province` usa il nome del **comune** in
+  `temperature_clean_recent.csv` ma il nome della **provincia** nello
+  schema storico di `temperature_clean.csv` (differenza che riguarda solo
+  Verbano-Cusio-Ossola/Verbania) — normalizzato prima di unire, altrimenti
+  un futuro `insert_temperature()` non avrebbe trovato la provincia per
+  quella riga. Eliminati `temperature_clean_extra_delta.csv`,
+  `temperature_clean_recent.csv`, `temperature_extra_35_clean.csv` solo
+  dopo aver verificato zero righe duplicate nei file consolidati e che
+  77.560 + 872.550 = 950.110, combaciando esattamente col totale reale in
+  `temperature`. `data/processed/` ora ha solo 2 file invece di 5.
+
+  Pagine aggiornate: `etl-pipeline.md` (import + consolidamento raw e
+  processed, sezione riscritta da "in attesa di import" a "completato"),
+  `data-sources.md`, `data-model.md`, `statistical-analysis.md`
+  (risultati completi a 98 comuni per tutti e 5 i moduli, inclusa la
+  sezione dedicata al ribaltamento di `spatial_regression.py`),
+  `project-status.md`, `gis-maps.md`, `dashboard.md`,
+  `paper-scientifico.md`.
+
+- **2026-07-18** — NUOVA PAGINA `comuni-coperti.md`, guida per il
+  collaboratore. Richiesta esplicita dell'utente: un documento da passare
+  a un collega perché possa scaricare nuovi comuni da Open-Meteo senza
+  sovrapporsi ai 98 già coperti (lo stesso tipo di collaborazione già
+  avvenuta il 2026-07-17 con un'altra collaboratrice, ma questa volta
+  preparata **in anticipo** invece di essere ricostruita a posteriori
+  dalle preview PNG delle mappe QGIS).
+
+  Contenuto: elenco completo dei 98 comuni già in `temperature` (nome +
+  codice ISTAT), organizzato per provincia con conteggio "N/totale comuni
+  coperti" per dare un senso della copertura residua per zona; istruzioni
+  sul formato esatto del CSV da consegnare (stesso schema già rodato il
+  2026-07-17: `date, temp_max, temp_min, temp_mean, precipitation,
+  province, data_source, istat_code, province_name`), con enfasi
+  esplicita sul bug più probabile (istat_code letto come numero invece
+  che come testo, perdendo gli zeri iniziali — già incontrato due volte
+  in sessioni precedenti, sia lato encoding shapefile che lato import);
+  promemoria sul limite giornaliero di Open-Meteo (~19-20 comuni/giorno,
+  scoperto il 2026-07-17) e sul canale di consegna (fuori Git); riepilogo
+  dei passi di import per chi riceverà il file (pulizia, risoluzione
+  `municipality_id`, caricamento, ricalcolo a valle), con link diretto
+  all'esempio concreto già eseguito.
+
+  Dati estratti live dal DB (non trascritti a mano) per evitare che
+  l'elenco vada fuori sincrono con lo stato reale.
+
+  Pagina aggiunta a `index.md` sotto "Dati".
