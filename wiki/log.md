@@ -2674,3 +2674,16 @@ Log cronologico append-only. Ogni riga: data, azione, pagine toccate.
   Verificato con `AppTest`, nessuna eccezione.
 
   Pagine aggiornate: `dashboard.md`.
+
+- **2026-07-18 (sera, settima parte)** — INGEST: rimossi dal frontend
+  della dashboard tutti i riferimenti a wiki/script interni (13
+  occorrenze in `Home.py`/`03_analisi_spaziale.py`/`04_ondate_di_calore.py`,
+  cercate sistematicamente con un sub-agent dedicato), su richiesta
+  dell'utente — la dashboard può essere vista da persone esterne al
+  progetto. Commenti/docstring nel codice (mai renderizzati) lasciati
+  intatti, fuori scope. Richiesta anche di cambiare il titolo "Heatwave
+  Piemonte" — chiesto un nome sostitutivo con `AskUserQuestion`, risposta
+  "ci penso": **ancora da fare**. Verificato con `AppTest`, nessuna
+  eccezione.
+
+  Pagine aggiornate: `dashboard.md`.

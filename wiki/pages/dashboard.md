@@ -709,6 +709,48 @@ alla convenzione "Confronto = Open-Meteo + pannello numerico", perché
 sono i punti dove il confronto visivo diretto vale più di un numero.
 Ri-verificato con `AppTest` (OM + Confronto), nessuna eccezione.
 
+## Riferimenti a wiki/codice rimossi dal frontend (2026-07-18, sera)
+
+L'utente ha fatto notare che la dashboard è potenzialmente visibile anche
+a persone esterne al progetto (recruiter/tech lead, dato l'uso da
+portfolio) — testo come "vedi `wiki/pages/statistical-analysis.md`" o
+"esegui `python -m src.analysis.spatial_analysis`" nei caption/markdown
+renderizzati non ha senso per chi non ha accesso al codice sorgente.
+Cercati sistematicamente (con un sub-agent di ricerca dedicato, per non
+mancarne nessuno) tutti i punti dove testo passato a `st.caption`/
+`st.markdown`/`st.info`/etc. citava percorsi wiki, script Python o nomi
+di funzioni interne — **13 occorrenze** in `Home.py` (3),
+`03_analisi_spaziale.py` (9), `04_ondate_di_calore.py` (4). Tutte
+riscritte in linguaggio semplice, senza percorsi/nomi tecnici: i
+messaggi di fallback ("dati non ancora generati") non citano più il
+comando da eseguire, i riferimenti a moduli di analisi diventano
+descrizioni testuali ("una regressione OLS con...", non
+"`src/analysis/spatial_regression.py`").
+
+**Cosa NON è stato toccato** (deliberatamente): i commenti Python (`#`)
+e le docstring nel codice (mai renderizzati a schermo, es. tutte le
+funzioni di `components/queries.py`) restano pieni di riferimenti
+wiki/script — sono documentazione per chi legge il codice, non per chi
+guarda la dashboard nel browser, quindi fuori dallo scope di questa
+richiesta. Anche la citazione di `ARPA Piemonte` come fonte dati è
+rimasta (non è un riferimento al codice/wiki del progetto, ma
+un'attribuzione della fonte dei dati, legittima in un portfolio).
+
+**Non ancora fatto**: l'utente ha anche chiesto di cambiare il titolo
+"Heatwave Piemonte" (giudicato poco significativo) — non ancora deciso
+un nome sostitutivo (`AskUserQuestion` proposto 3 opzioni, risposta
+"ci penso"). Da applicare in `config.yaml` (`dashboard.title`), in tutti
+gli `st.set_page_config(page_title=...)` delle pagine, e nell'hero della
+Home (`render_hero(title=...)`) una volta deciso. Se in futuro il
+repository GitHub diventa pubblico, l'utente ha detto che un link ad
+esso in fondo alla pagina sarebbe accettabile (non un riferimento a
+wiki/codice interno, ma un invito a esplorare il progetto completo) —
+non aggiunto ora perché il repository non è ancora pubblico.
+
+**Verifica**: `py_compile` su tutti i file toccati; `AppTest` su
+`Home.py` e su tutte le combinazioni di fonte di Analisi Spaziale e
+Ondate di Calore, nessuna eccezione.
+
 ## Baseline delle anomalie: da configurabile a fissa (2026-07-15)
 
 La prima versione lasciava scegliere all'utente inizio/fine della baseline
