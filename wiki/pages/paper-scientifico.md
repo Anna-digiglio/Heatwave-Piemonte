@@ -70,6 +70,29 @@ presente in dashboard (`03_analisi_spaziale.py`) è dichiarato esplicitamente
    coerente con l'autocorrelazione spaziale residua già vista nel modello
    a errore spaziale (fase 4 sotto) — un'ipotesi già scritta in questa
    pagina prima ancora di avere il dato per verificarla.
+
+   **Approfondimento 2026-07-18 (stesso giorno, su richiesta esplicita
+   dell'utente): bias sui giorni caldi + confronto a livello di evento**.
+   Il bias medio sopra è calcolato su tutti i giorni — ristretto ai giorni
+   davvero caldi (ARPA temp_max > 35°C), il bias resta simile (-2.21°C) ma
+   la **correlazione crolla da 0.956 a 0.400**: Open-Meteo perde quasi del
+   tutto la capacità di distinguere quali giorni estremi lo sono di più,
+   proprio nella fascia che conta per le ondate di calore. Più diretto
+   ancora: riapplicando la stessa logica di `identify_heatwaves()` ai dati
+   ARPA (verità di terra) per i 51 comuni e confrontando con
+   `heatwave_events` (Open-Meteo) per sovrapposizione temporale, **ARPA
+   mostra 322 ondate reali contro le 150 rilevate da Open-Meteo — un
+   recall del 31.4%**: Open-Meteo cattura meno di un terzo delle ondate di
+   calore effettivamente accadute in questi comuni. Anche le 150 rilevate
+   non sono tutte "vere" (precision 62%). **Questo è il risultato più
+   importante di tutta la validazione**: non solo le temperature Open-Meteo
+   sono distorte, ma le **640 ondate totali già contate nel progetto su 177
+   comuni sono quasi certamente un sottoconteggio sostanziale** del
+   fenomeno reale — non un numero "prudente", un numero probabilmente
+   troppo basso. Va scritto nel paper come limite quantificato (non
+   qualitativo) del disegno di studio, non minimizzato. Vedi
+   [Analisi statistica](statistical-analysis.md#bias-sui-giorni-davvero-caldi-2026-07-18)
+   per il dettaglio completo.
 2. **Estendere il campione di comuni con temperatura** oltre gli attuali
    44/1180, per dare potenza statistica a una regressione multivariata **—
    in corso**: l'utente sta estendendo la copertura a 300 comuni tramite

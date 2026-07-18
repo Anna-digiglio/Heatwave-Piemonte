@@ -325,6 +325,19 @@ riportabile nel paper, non solo un limite dichiarato qualitativamente. Vedi
 [Analisi statistica](statistical-analysis.md#validazione-contro-arpa-piemonte-2026-07-18)
 per il dettaglio completo per comune.
 
+**Approfondimento stesso giorno — bias sui giorni caldi + confronto a
+livello di evento**: sui giorni davvero caldi (ARPA temp_max>35°C) la
+correlazione crolla a 0.400 (da 0.956 su tutti i giorni). Più diretto:
+riapplicando `identify_heatwaves()` ai dati ARPA per i 51 comuni, **ARPA
+mostra 322 ondate reali contro le 150 rilevate da Open-Meteo (recall
+31.4%, precision 62%)** — Open-Meteo cattura meno di un terzo delle
+ondate di calore realmente accadute in questi comuni. Implica che le 640
+ondate totali già contate nel progetto su 177 comuni sono probabilmente un
+sottoconteggio sostanziale, non un numero prudente — risultato più
+rilevante di tutta la validazione, da riportare nel paper come limite
+quantificato. Vedi
+[Analisi statistica](statistical-analysis.md#confronto-a-livello-di-evento-quante-ondate-di-calore-vere-mancano-2026-07-18).
+
 ## Prossimi passi
 
 Tutti minori/non bloccanti — il nucleo pianificato del progetto è

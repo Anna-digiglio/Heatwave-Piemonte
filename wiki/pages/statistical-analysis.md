@@ -44,6 +44,55 @@ contribuire a quel residuo, come già ipotizzato in
 [Articolo scientifico](paper-scientifico.md) prima ancora di avere questo
 controllo empirico.
 
+### Bias sui giorni davvero caldi (2026-07-18)
+
+Il bias medio sopra è calcolato su tutti i giorni dell'anno — ma il
+progetto misura ondate di calore, non temperatura media. Ristretto ai
+giorni **realmente caldi** (soglia su `arpa_temp_max`, ARPA come verità di
+terra, tutti i 51 comuni aggregati):
+
+| Condizione | n giorni | Bias | MAE | RMSE | r |
+|---|---|---|---|---|---|
+| Tutti i giorni | 442.332 | -1.71°C | 2.48°C | 3.25°C | 0.956 |
+| ARPA temp_max > 30°C | 25.922 | -2.10°C | 2.32°C | 2.82°C | **0.687** |
+| ARPA temp_max > 35°C | 2.335 | -2.21°C | 2.43°C | 3.02°C | **0.400** |
+
+Il bias medio non peggiora drammaticamente sui giorni caldi (-1.71°C →
+-2.21°C), ma la **correlazione crolla** (0.956 → 0.400): Open-Meteo continua
+a sottostimare di circa la stessa quantità, ma perde quasi completamente la
+capacità di distinguere *quali* giorni estremi lo sono davvero di più
+rispetto ad altri, proprio nella fascia che definisce le ondate di calore.
+
+### Confronto a livello di evento: quante ondate di calore "vere" mancano? (2026-07-18)
+
+Il test più diretto: `identify_heatwaves()` (stessa logica del DB — ≥3
+giorni consecutivi con temp_max > 35°C — reimplementata in Python su
+`arpa_temperature` in `identify_heatwaves_from_series()`) applicata ai dati
+ARPA (verità di terra) per i 51 comuni, confrontata con le ondate già in
+`heatwave_events` (da Open-Meteo) per **gli stessi comuni**, per
+sovrapposizione temporale (non serve che le date coincidano esattamente).
+
+| | Conteggio |
+|---|---|
+| Ondate reali (ARPA) | **322** |
+| Ondate rilevate da Open-Meteo | **150** |
+| Precision (delle ondate OM, quante sono confermate da ARPA) | 62.0% |
+| Recall (delle ondate reali, quante OM cattura) | **31.4%** |
+
+Risultato più rilevante di tutta la validazione: sui 51 comuni con
+riscontro reale, Open-Meteo **rileva meno di un terzo delle ondate di
+calore effettivamente accadute** (recall 31.4%) — coerente con il bias
+negativo sistematico, che tiene sistematicamente più giorni sotto soglia
+35°C di quanti dovrebbero esserci. Anche le ondate che Open-Meteo rileva
+non sono tutte "vere": il 38% (100% - 62% precision) non trova riscontro
+in un evento ARPA sovrapposto nello stesso comune. Implicazione diretta
+per il paper: le **640 ondate totali già contate su 177 comuni sono quasi
+certamente un sottoconteggio sostanziale** del fenomeno reale, non solo un
+numero "conservativo" — da dichiarare esplicitamente come limite
+quantificato, non solo qualitativo. Dettaglio per evento in
+`output/arpa_heatwave_events.csv`; bias per condizione in
+`output/arpa_hot_day_bias.csv`.
+
 **Caveat**: la stazione ARPA scelta per ciascun comune è quella più vicina
 per *quota* al centroide comunale, non necessariamente rappresentativa
 dell'intero territorio comunale (specie nei comuni alpini estesi, dove la

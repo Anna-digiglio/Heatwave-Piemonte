@@ -2314,3 +2314,57 @@ Log cronologico append-only. Ogni riga: data, azione, pagine toccate.
   `paper-scientifico.md` (fase 1 segnata fatta con i risultati, prossimi
   passi aggiornati), `project-status.md` (nuova voce di cronologia),
   `index.md` (riga di `statistical-analysis.md` aggiornata).
+
+- **2026-07-18** — VALIDAZIONE ARPA APPROFONDITA: BIAS SUI GIORNI CALDI +
+  CONFRONTO A LIVELLO DI EVENTO (STESSO GIORNO, SU RICHIESTA ESPLICITA
+  DELL'UTENTE). Dopo aver chiesto "come procederesti con le analisi di
+  comparazione", l'utente ha scelto di procedere prima con l'analisi sui
+  giorni caldi + confronto a livello di ondate (tra le opzioni proposte:
+  confronto trend, nuova pagina dashboard, aggiornamento manoscritto —
+  rimandate).
+
+  **Esteso `src/analysis/validate_arpa.py`** con tre nuove funzioni:
+  `hot_day_bias()` (bias/MAE/RMSE/r ristretti ai giorni con
+  `arpa_temp_max` sopra soglia, invece che su tutti i giorni),
+  `identify_heatwaves_from_series()` (reimplementazione Python pura,
+  fedele alla logica PL/pgSQL di `identify_heatwaves()` in
+  `01_init_database.sql` — sequenze di giorni calendariali consecutivi
+  sopra soglia, non solo righe consecutive), `compare_heatwave_events()`
+  (confronto per sovrapposizione temporale tra eventi Open-Meteo e ARPA
+  nello stesso comune, framing precision/recall con ARPA come verità di
+  terra).
+
+  **Bug in corso d'opera**: `TypeError: Cannot compare Timestamp with
+  datetime.date` — gli eventi Open-Meteo arrivano da Postgres come
+  `datetime.date` (via `pd.read_sql`), quelli ARPA come `pd.Timestamp` (via
+  `pd.to_datetime` dentro `identify_heatwaves_from_series`). Fix:
+  normalizzati entrambi a `pd.Timestamp` dentro `_events_overlap()` prima
+  del confronto.
+
+  **Risultati reali, eseguiti sui 51 comuni con stazione ARPA**:
+  - Bias sui giorni caldi: a tutti i giorni bias=-1.71°C/r=0.956; sopra
+    30°C bias=-2.10°C/r=0.687; **sopra 35°C bias=-2.21°C/r=0.400**. Il bias
+    medio non peggiora drammaticamente, ma la correlazione crolla — Open-Meteo
+    perde la capacità di distinguere quali giorni estremi lo sono di più,
+    proprio nella fascia rilevante per le ondate di calore.
+  - Confronto a livello di evento (soglia 35°C/3gg, stessa logica DB):
+    **ARPA (verità di terra) mostra 322 ondate reali nei 51 comuni, contro
+    le 150 già rilevate da Open-Meteo in `heatwave_events`** per gli stessi
+    comuni — **recall 31.4%** (Open-Meteo cattura meno di un terzo delle
+    ondate reali), **precision 62%** (delle ondate rilevate, oltre un terzo
+    non trova riscontro in un evento ARPA sovrapposto).
+
+  **Implicazione per il progetto, non solo per la fase di validazione**:
+  le 640 ondate totali già contate su 177 comuni (vedi cronologia
+  precedente) sono quasi certamente un sottoconteggio sostanziale del
+  fenomeno reale, non un numero prudente/conservativo — il risultato più
+  importante di tutta la validazione ARPA, da scrivere nel paper come
+  limite quantificato (non solo dichiarato qualitativamente come prima
+  del 2026-07-18).
+
+  Nuovi file in `output/`: `arpa_hot_day_bias.csv`,
+  `arpa_heatwave_events.csv` (le 322 ondate ARPA, dettaglio per comune).
+
+  Pagine aggiornate: `statistical-analysis.md` (due nuove sottosezioni),
+  `paper-scientifico.md` (fase 1, approfondimento aggiunto),
+  `project-status.md` (voce di cronologia estesa).
