@@ -241,6 +241,52 @@ class DatabaseLoader:
         logger.success(f'{len(records)} righe inserite in temperature (comuni extra)')
         return len(records)
 
+    def insert_arpa_temperature(self, csv_path: Optional[Path] = None, page_size: int = 5000) -> int:
+        """
+        Carica `data/raw/arpa_temperature.csv` (osservazioni di stazione
+        reali ARPA Piemonte, vedi `src/data_acquisition/download_arpa.py`)
+        nella tabella `arpa_temperature`, per la validazione delle stime
+        Open-Meteo in `temperature`.
+        """
+        import pandas as pd
+        from psycopg2.extras import execute_values
+
+        if csv_path is None:
+            csv_path = Path(config.get('paths.raw_data')) / 'arpa_temperature.csv'
+        if not csv_path.exists():
+            raise FileNotFoundError(
+                f'{csv_path} non trovato. Esegui prima '
+                'src.data_acquisition.download_arpa.'
+            )
+
+        df = pd.read_csv(csv_path, parse_dates=['date'])
+
+        records = [
+            (
+                int(row.municipality_id),
+                row.station_code,
+                row.station_name,
+                row.date.date(),
+                None if pd.isna(row.temp_mean) else float(row.temp_mean),
+                None if pd.isna(row.temp_max) else float(row.temp_max),
+                None if pd.isna(row.temp_min) else float(row.temp_min),
+            )
+            for row in df.itertuples(index=False)
+        ]
+
+        insert_sql = (
+            "INSERT INTO arpa_temperature "
+            "(municipality_id, station_code, station_name, date, temp_mean, temp_max, temp_min) VALUES %s "
+            "ON CONFLICT (station_code, date) DO NOTHING"
+        )
+
+        with db_manager.engine.begin() as conn:
+            cursor = conn.connection.cursor()
+            execute_values(cursor, insert_sql, records, page_size=page_size)
+
+        logger.success(f'{len(records)} righe inserite/aggiornate in arpa_temperature')
+        return len(records)
+
     def insert_sample_province(self) -> None:
         """Inserisce un record di prova nella tabella provinces."""
         query = text(
