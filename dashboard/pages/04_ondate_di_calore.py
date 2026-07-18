@@ -68,8 +68,9 @@ if source == SOURCE_ARPA:
     )
 elif source == SOURCE_BOTH:
     st.caption(
-        "Grafici, mappa e tabelle sotto restano calcolati su Open-Meteo; il pannello di confronto "
-        "qui sotto aggiunge le metriche di validazione contro ARPA."
+        "Grafici e tabelle sotto restano calcolati su Open-Meteo (il pannello di confronto qui "
+        "sotto aggiunge le metriche di validazione contro ARPA); la mappa di concentrazione più "
+        "in basso è l'eccezione — mostra due mappe affiancate, una per fonte."
     )
 
 with st.expander("ℹ️ Come si legge questa pagina"):
@@ -208,18 +209,7 @@ with tab_overview:
     fig_cum.update_layout(height=300, margin=dict(t=10, b=10))
     st.plotly_chart(apply_chart_theme(fig_cum), width='stretch')
 
-    st.subheader("Dove si concentrano geograficamente le ondate")
-    st.caption("Colore più intenso = più ondate rilevate in quel comune (periodo/filtro attuale).")
-    events_count = events.groupby('municipality_name').size().rename('n_heatwaves_filtro').reset_index()
-    geo_df = get_arpa_municipality_geometries_wkt() if source == SOURCE_ARPA else get_municipality_geometries_wkt()
-    merged_geo = geo_df.merge(events_count, on='municipality_name', how='left')
-    merged_geo['n_heatwaves_filtro'] = merged_geo['n_heatwaves_filtro'].fillna(0)
-
-    if merged_geo.empty or merged_geo['n_heatwaves_filtro'].sum() == 0:
-        st.info("Nessuna ondata nel periodo/filtro selezionato.")
-    else:
-        vmax = max(merged_geo['n_heatwaves_filtro'].max(), 1)
-        cmap = LinearColormap(['#fee5d9', '#fb6a4a', '#a50f15'], vmin=0, vmax=vmax)
+    def render_concentration_map(merged_geo: pd.DataFrame, cmap, map_key: str) -> None:
         m = folium.Map(location=[45.0, 8.0], zoom_start=8, tiles=MAP_TILES)
         for _, row in merged_geo.iterrows():
             color = cmap(row['n_heatwaves_filtro'])
@@ -228,12 +218,70 @@ with tab_overview:
                 tooltip=f"{row['municipality_name']}: {int(row['n_heatwaves_filtro'])} ondate",
                 style_function=lambda _, c=color: {'fillColor': c, 'color': '#555', 'weight': 1, 'fillOpacity': 0.8},
             ).add_to(m)
-        st_folium(m, width=None, height=420, returned_objects=[], key='map_heatwave_concentration')
-        render_gradient_legend(
-            cmap, 0, vmax,
-            labels=["Poche", "Basso", "Moderato", "Alto", "Molto alto"],
-            unit="ondate", title="Legenda — concentrazione ondate", integer=True,
-        )
+        st_folium(m, width=None, height=420, returned_objects=[], key=map_key)
+
+    def count_events_by_municipality(events_df: pd.DataFrame, geo: pd.DataFrame) -> pd.DataFrame:
+        counts = events_df.groupby('municipality_name').size().rename('n_heatwaves_filtro').reset_index()
+        merged = geo.merge(counts, on='municipality_name', how='left')
+        merged['n_heatwaves_filtro'] = merged['n_heatwaves_filtro'].fillna(0)
+        return merged
+
+    st.subheader("Dove si concentrano geograficamente le ondate")
+    st.caption("Colore più intenso = più ondate rilevate in quel comune (periodo/filtro attuale).")
+
+    if source == SOURCE_BOTH:
+        events_arpa_all = get_arpa_heatwave_events(tuple(names_in_provinces_arpa))
+        events_arpa_f = events_arpa_all[
+            (events_arpa_all['start_date'].apply(lambda d: d.year) >= year_start)
+            & (events_arpa_all['start_date'].apply(lambda d: d.year) <= year_end)
+        ] if not events_arpa_all.empty else events_arpa_all
+
+        merged_om = count_events_by_municipality(events, get_municipality_geometries_wkt())
+        merged_arpa = count_events_by_municipality(events_arpa_f, get_arpa_municipality_geometries_wkt())
+
+        if merged_om['n_heatwaves_filtro'].sum() == 0 and merged_arpa['n_heatwaves_filtro'].sum() == 0:
+            st.info("Nessuna ondata nel periodo/filtro selezionato.")
+        else:
+            # Stessa scala colore per le due mappe (max assoluto tra le due
+            # fonti), altrimenti lo stesso rosso potrebbe rappresentare
+            # conteggi diversi da una mappa all'altra.
+            vmax = max(merged_om['n_heatwaves_filtro'].max(), merged_arpa['n_heatwaves_filtro'].max(), 1)
+            cmap = LinearColormap(['#fee5d9', '#fb6a4a', '#a50f15'], vmin=0, vmax=vmax)
+
+            col_om, col_arpa = st.columns(2)
+            with col_om:
+                st.markdown(f"**Open-Meteo** ({int(merged_om['n_heatwaves_filtro'].sum())} ondate)")
+                render_concentration_map(merged_om, cmap, 'map_heatwave_concentration_om')
+            with col_arpa:
+                st.markdown(f"**ARPA — stazione reale** ({int(merged_arpa['n_heatwaves_filtro'].sum())} ondate)")
+                render_concentration_map(merged_arpa, cmap, 'map_heatwave_concentration_arpa')
+
+            render_gradient_legend(
+                cmap, 0, vmax,
+                labels=["Poche", "Basso", "Moderato", "Alto", "Molto alto"],
+                unit="ondate", title="Legenda — concentrazione ondate (stessa scala per entrambe le mappe)",
+                integer=True,
+            )
+            st.caption(
+                "Le due mappe non coprono esattamente gli stessi comuni (51 hanno entrambe le "
+                "fonti, gli altri solo una): confronta le zone dove **entrambe** hanno un colore, "
+                "non l'assenza di colore in una delle due."
+            )
+    else:
+        geo_df = get_arpa_municipality_geometries_wkt() if source == SOURCE_ARPA else get_municipality_geometries_wkt()
+        merged_geo = count_events_by_municipality(events, geo_df)
+
+        if merged_geo.empty or merged_geo['n_heatwaves_filtro'].sum() == 0:
+            st.info("Nessuna ondata nel periodo/filtro selezionato.")
+        else:
+            vmax = max(merged_geo['n_heatwaves_filtro'].max(), 1)
+            cmap = LinearColormap(['#fee5d9', '#fb6a4a', '#a50f15'], vmin=0, vmax=vmax)
+            render_concentration_map(merged_geo, cmap, 'map_heatwave_concentration')
+            render_gradient_legend(
+                cmap, 0, vmax,
+                labels=["Poche", "Basso", "Moderato", "Alto", "Molto alto"],
+                unit="ondate", title="Legenda — concentrazione ondate", integer=True,
+            )
 
     st.subheader("Distribuzione nell'anno: si spostano verso primavera/autunno?")
     st.caption(
