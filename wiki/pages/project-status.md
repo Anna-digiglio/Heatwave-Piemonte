@@ -345,6 +345,27 @@ diffuso e significativo" del paper non è un artefatto, il conteggio delle
 ondate sì. Vedi
 [Analisi statistica](statistical-analysis.md#il-trend-di-riscaldamento-regge-sui-dati-di-stazione-reali-2026-07-18).
 
+### 2026-07-18 (tardo pomeriggio) — COPERTURA ARPA ESTESA A 218 COMUNI
+
+Discussione con l'utente su come riorganizzare la dashboard: invece di
+una pagina "Validazione Dati" separata, un **selettore per pagina** (tab
+temporale, spaziale, ondate di calore) tra tre modalità — "ARPA +
+Open-Meteo", "solo ARPA", "solo Open-Meteo". Durante la discussione,
+verificato che il matching comuni↔stazioni ARPA era filtrato solo sui 177
+comuni con Open-Meteo per un vincolo di contesto (fase di validazione),
+non un limite reale dell'API. Esteso a tutti i 1180 comuni: **167 comuni
+nuovi** trovati con stazione ARPA attiva e nessun dato Open-Meteo
+esistente. Scaricati con successo, **zero errori/blocchi** (l'API ARPA
+non ha mostrato segni di rate limit su questo volume, a differenza di
+Open-Meteo) — vedi
+[Fonti dati](data-sources.md#estensione-a-218-comuni-2026-07-18) per il
+dettaglio tecnico completo. **Copertura ARPA ora: 218 comuni, 1.965.138
+righe** (era 51 comuni, 451.502 righe).
+
+**Non ancora fatto**: il selettore di fonte per pagina discusso con
+l'utente non è ancora implementato in dashboard — resta il prossimo passo
+concreto (vedi sotto).
+
 ## Prossimi passi
 
 Tutti minori/non bloccanti — il nucleo pianificato del progetto è
@@ -392,6 +413,14 @@ completo:
 11. ~~Importare i 57 comuni extra del 2026-07-18~~ — **fatto lo stesso
     giorno**, insieme a un download diretto di altri 22 comuni (98 → 155
     → 177) e al ricalcolo completo a valle (vedi cronologia sopra).
+12. **Selettore fonte per pagina in dashboard** (ARPA+Open-Meteo / solo
+    ARPA / solo Open-Meteo) — discusso con l'utente il 2026-07-18, dati
+    ARPA già estesi a 218 comuni per supportarlo (vedi sopra), ma il
+    componente UI non è ancora scritto. Pagine target: Ondate di Calore
+    (già esiste `get_arpa_event_comparison_summary()`) e Analisi Temporale
+    (già esiste `get_arpa_trend_comparison()`); da decidere cosa fare
+    della pagina "Validazione Dati" dedicata una volta introdotto il
+    selettore.
 
 ## Discrepanze da tenere a mente quando si presenta il progetto
 

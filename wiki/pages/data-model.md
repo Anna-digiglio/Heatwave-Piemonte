@@ -51,6 +51,20 @@ può divergere leggermente, in caso di conflitto fidati dello script SQL).
 - **Popolata il 2026-07-18**: 451.502 righe, **51 comuni** (dei 177 con
   temperatura Open-Meteo — quelli con almeno una stazione ARPA attiva con
   sensore di temperatura), 2000-01-01 → oggi, ~2% `temp_max` nulli.
+- **Estesa lo stesso giorno (pomeriggio) a 218 comuni**: il matching
+  comuni↔stazioni era filtrato solo sui 177 comuni già coperti da
+  Open-Meteo — allargato a tutti i 1180 comuni piemontesi (registry ARPA
+  completa, 336 stazioni totali), trovando **167 comuni aggiuntivi** con
+  stazione ARPA attiva ma **nessun dato Open-Meteo**. Scaricati con
+  `download_arpa.py --only-uncovered` (nuovo flag, vedi
+  [Fonti dati](data-sources.md#estensione-a-218-comuni-2026-07-18) per il
+  dettaglio) in `arpa_temperature_new.csv`, poi caricati con
+  `insert_arpa_temperature()` (già `ON CONFLICT (station_code, date) DO
+  NOTHING`, idempotente). **Totale dopo l'estensione: 1.965.138 righe, 218
+  comuni** — di questi, 167 hanno **solo** dati ARPA (nessuna riga in
+  `temperature`), utile per estendere la copertura geografica reale del
+  progetto indipendentemente dal limite giornaliero di Open-Meteo (vedi
+  [Fonti dati](data-sources.md) per il limite noto).
 - Tabella satellite separata da `temperature` (non un `data_source`
   aggiuntivo nella stessa tabella): sono due fonti concettualmente diverse
   (modello vs osservazione) che vanno confrontate riga per riga sullo

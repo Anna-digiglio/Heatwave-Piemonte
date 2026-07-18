@@ -2569,3 +2569,18 @@ Log cronologico append-only. Ogni riga: data, azione, pagine toccate.
   5 i moduli, tabella di confronto coefficienti n=63/98/177 per
   `spatial_regression.py`), `project-status.md`, `gis-maps.md`,
   `dashboard.md`, `paper-scientifico.md`, `comuni-coperti.md`.
+
+- **2026-07-18 (tardo pomeriggio)** — INGEST: estensione copertura ARPA a
+  218 comuni. Durante una discussione con l'utente su come riorganizzare
+  la dashboard (selettore per pagina ARPA+Open-Meteo/solo ARPA/solo
+  Open-Meteo, invece di una pagina "Validazione Dati" separata), rilevato
+  che `download_arpa.py` filtrava il matching comuni↔stazioni solo sui
+  177 comuni con Open-Meteo — non un limite reale dell'API. Aggiunti flag
+  `--only-uncovered`/`--output-name`, resa la ripresa dopo interruzione
+  sicura (nessuna cancellazione del CSV di output a ogni avvio), scaricati
+  167 comuni nuovi senza errori (API ARPA senza segni di rate limit su
+  questo volume), caricati in `arpa_temperature` (idempotente via `ON
+  CONFLICT`). Totale: 51 → **218 comuni, 1.965.138 righe**. Selettore UI
+  ancora da implementare (prossimo passo).
+
+  Pagine aggiornate: `data-sources.md`, `data-model.md`, `project-status.md`.

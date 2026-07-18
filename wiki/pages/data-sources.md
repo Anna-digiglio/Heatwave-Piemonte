@@ -212,6 +212,53 @@ massime — coerente con l'ipotesi che un prodotto di rianalisi (risoluzione
 di griglia, non un punto stazione) mediando il rilievo complesso alpino
 smussi le temperature estreme reali osservate in quota.
 
+## Estensione a 218 comuni (2026-07-18)
+
+**Motivazione**: durante la discussione sulla riorganizzazione della
+dashboard (selettore per pagina "ARPA+Open-Meteo / solo ARPA / solo
+Open-Meteo", vedi [Dashboard](dashboard.md)), è emerso che il matching
+comuni↔stazioni in `download_arpa.py` era filtrato solo sui 177 comuni
+già coperti da Open-Meteo (`JOIN temperature`) — un vincolo arbitrario
+rimasto dal contesto originario (validare Open-Meteo), non un limite
+reale dell'API ARPA. Verificato con un dry-run contro tutti i 1180
+comuni: **218 comuni** hanno una stazione ARPA attiva con sensore di
+temperatura (su una registry di 336 stazioni totali), di cui **167
+completamente nuovi** — comuni senza nessun dato di temperatura, né
+Open-Meteo né ARPA, fino a quel momento.
+
+**Script modificato** (non riscritto): aggiunti due flag a
+`download_arpa.py`,
+- `--only-uncovered` — matching contro i comuni **senza** dati Open-Meteo
+  *e* senza dati ARPA già scaricati (`NOT IN (SELECT municipality_id FROM
+  arpa_temperature)`), invece del join su `temperature`;
+- `--output-name` — CSV di output parametrico, per non mischiare batch
+  diversi (usato `arpa_temperature_new.csv` per questo giro).
+
+**Ripresa resa sicura prima del download**: a differenza della versione
+originaria (che cancellava il CSV di output a ogni avvio), ora se il file
+esiste già lo script legge i `municipality_id` già presenti e li salta —
+un'interruzione a metà (blocco della API, mai osservato in pratica ma non
+escludibile a priori) non fa ripartire lo scaricamento da zero. Stessa
+prudenza già adottata per Open-Meteo (vedi sotto), qui per un'API di cui
+**non è noto se esista un limite** (nessun blocco osservato finora, ma
+mai testato su questo volume).
+
+**Download reale**: 167/167 comuni scaricati **senza un solo errore o
+segnale di blocco** (nessun `429`, nessun timeout), ~40 secondi a comune
+(paginazione di ~26 anni di storico), **1.513.636 righe nuove** in
+~1h45. Caricate in `arpa_temperature` con `insert_arpa_temperature()`
+(`ON CONFLICT (station_code, date) DO NOTHING`, sicuro anche se rilanciato
+per errore). Verificato in DB: **1.965.138 righe totali, 218 comuni
+distinti** — combacia esattamente con l'atteso (51 + 167).
+
+**Nota per il paper/validazione**: dei 218 comuni ARPA, solo i 51
+originari hanno anche Open-Meteo — la validazione bias/correlazione (vedi
+[Analisi statistica](statistical-analysis.md)) resta calcolata su quei
+51, non sui 218 (i 167 nuovi non hanno un termine di confronto). I 167
+nuovi comuni sono utili solo per estendere la copertura reale del
+progetto (dashboard, mappe) con la fonte ARPA da sola, non per la
+validazione incrociata.
+
 ## Scoperto il limite giornaliero di Open-Meteo (2026-07-17)
 
 Richiesta dell'utente: coprire tutti i 1180 comuni piemontesi e portare i
