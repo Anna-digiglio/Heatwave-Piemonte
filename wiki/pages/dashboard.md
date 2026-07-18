@@ -669,6 +669,21 @@ Dati" (differenza diretta OM−ARPA sullo stesso comune/giorno — richiede
 limitata ai 51 comuni con copertura doppia, non estendibile ai 167
 solo-ARPA finché non ci sarà più sovrapposizione tra le due fonti).
 
+**Stesso bug trovato di nuovo in Ondate di Calore**: dopo la correzione
+sopra, l'utente ha notato che anche la mappa "Dove si concentrano
+geograficamente le ondate" in Ondate di Calore aveva lo stesso problema
+(in Confronto mostrava solo Open-Meteo). Corretta con lo stesso pattern —
+due mappe affiancate (Open-Meteo/ARPA), stessa scala colore condivisa,
+codice di disegno estratto in due funzioni locali
+(`render_concentration_map()`/`count_events_by_municipality()`) per non
+duplicarlo tra il ramo Confronto e quello a fonte singola. Gli altri
+grafici/tabelle della pagina (frequenza per anno, heatmap calendario,
+statistiche/elenco ondate) restano su Open-Meteo in Confronto, dichiarato
+in caption — solo le due mappe di concentrazione/trend fanno eccezione
+alla convenzione "Confronto = Open-Meteo + pannello numerico", perché
+sono i punti dove il confronto visivo diretto vale più di un numero.
+Ri-verificato con `AppTest` (OM + Confronto), nessuna eccezione.
+
 ## Baseline delle anomalie: da configurabile a fissa (2026-07-15)
 
 La prima versione lasciava scegliere all'utente inizio/fine della baseline

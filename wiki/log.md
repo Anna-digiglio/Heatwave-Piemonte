@@ -2649,3 +2649,14 @@ Log cronologico append-only. Ogni riga: data, azione, pagine toccate.
   `Home.py`, nessuna eccezione.
 
   Pagine aggiornate: `dashboard.md`, `index.md`, `project-status.md`.
+
+- **2026-07-18 (sera, quinta parte)** — INGEST: stesso bug della mappa
+  trend (Confronto mostrava solo Open-Meteo) trovato di nuovo dall'utente
+  sulla mappa "Dove si concentrano geograficamente le ondate" in Ondate di
+  Calore. Corretta con lo stesso pattern (due mappe affiancate, stessa
+  scala colore). Verificato che il server Streamlit già attivo (un solo
+  processo, nessun duplicato questa volta) fosse sano dopo le modifiche
+  (hot-reload automatico, nessun riavvio necessario per un cambio di solo
+  codice Python). Verificato con `AppTest`, nessuna eccezione.
+
+  Pagine aggiornate: `dashboard.md`.
