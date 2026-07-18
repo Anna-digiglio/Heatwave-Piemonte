@@ -2210,3 +2210,37 @@ Log cronologico append-only. Ogni riga: data, azione, pagine toccate.
   deliberatamente **non** toccata in questa sessione: la sua stessa
   istruzione dice di aggiornarla solo dopo l'import, che non è di
   competenza di questa macchina (nessun accesso al DB).
+
+- **2026-07-18** — RICERCA (SOLO WIKI, NESSUN CODICE SCRITTO): TROVATA UNA
+  API REALE PER LA VALIDAZIONE ARPA. Domanda dell'utente: "manca il
+  confronto con ARPA Piemonte, come potremmo implementarlo?" — fase 1 del
+  piano paper ([Articolo scientifico](paper-scientifico.md)), bloccata dal
+  2026-07-16 (`config.yaml`/`arpa_piemonte.url` risponde 404,
+  `ArpaPiemonteDownloader` esistente ma mai funzionante).
+
+  Ricerca web mirata (non solo la pagina pubblica "Banca Dati Storica",
+  che resta dietro un'interfaccia a mappa): trovata un'API REST pubblica
+  **senza chiave**, Django REST Framework, sotto
+  `utility.arpa.piemonte.it/meteoidro/` — non documentata in nessuna pagina
+  ufficiale linkata dal sito principale, scoperta seguendo un URL comparso
+  a margine di risultati di ricerca generici. Confermato con richieste
+  dirette (non solo lettura di documentazione): endpoint
+  `stazione_meteorologica/` (anagrafica con `codice_istat_comune`,
+  coordinate, quota, date attività) e `dati_giornalieri_meteo/
+  ?fk_id_punto_misura_meteo=<codice>` (JSON paginato, `tmax`/`tmin`/
+  `tmedia` giornalieri, un punto di test con 10.645 record dal 1993).
+  Distinta da un'altra API trovata nello stesso dominio
+  (`api_realtime/`, `/data_pie`, `/ggd`) che copre solo gli ultimi 6
+  giorni — le due non vanno confuse.
+
+  **Nessuna integrazione nel codice fatta in questa sessione** — solo
+  esplorazione via `WebFetch`/`WebSearch` e documentazione del risultato.
+  Resta da verificare (prima di scrivere qualunque script): quanti dei 177
+  comuni già in `temperature` hanno davvero una stazione ARPA
+  corrispondente (rete ARPA ~400 stazioni su 1180 comuni, sovrapposizione
+  reale con i 177 non nota), il comportamento esatto della paginazione e
+  di eventuali filtri di data, ed eventuali limiti di rate non documentati.
+
+  Pagine aggiornate: `data-sources.md` (nuova sezione con gli endpoint
+  trovati e cosa resta da verificare), `paper-scientifico.md` (fase 1
+  aggiornata con il link alla nuova sezione).

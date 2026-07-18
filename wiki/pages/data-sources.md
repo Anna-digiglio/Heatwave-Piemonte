@@ -6,7 +6,7 @@
 |---|---|---|---|
 | **Open-Meteo** | Implementata (`WeatherDataDownloader`) | Sì | Nessuna API key. Endpoint `archive-api.open-meteo.com/v1/archive`. Scarica `temperature_2m_max/min/mean` e `precipitation_sum` giornalieri. Due modalità: `download_historical_data(region)` per gli 8 capoluoghi hardcoded in `PIEMONTE_REGIONS`, e (dal 2026-07-15) `download_for_coordinates(name, lat, lon)` per coordinate arbitrarie — usata per estendere la copertura ad altri comuni, vedi sotto. |
 | **Copernicus ERA5** | Implementata (`CopernicusERA5Downloader`) | Sì (in `config.yaml`) | Richiede libreria `cdsapi` (in `requirements.txt`) e variabile d'ambiente `CDS_KEY`. Vedi bug noto sotto. |
-| **ARPA Piemonte** | Implementata (`ArpaPiemonteDownloader`) | No | Download CSV da URL configurato in `config.yaml`, per validazione/calibrazione locale. |
+| **ARPA Piemonte** | Implementata ma rotta (`ArpaPiemonteDownloader`) | No | L'URL in `config.yaml` (`arpa_piemonte.url`, pagina statica `/dati/climatici`) risponde 404 — mai stato un endpoint dati reale. **API reale trovata via ricerca web il 2026-07-18, non ancora integrata nel codice**, vedi sotto. |
 | **ISTAT** | Implementata (`IstatGeodataDownloader`) | No | Confini amministrativi comuni in shapefile (zip), via `geopandas`. `download_municipalities()` riscritto il 2026-07-04 (vedi sotto); `download_provinces()`/`provinces_url` non ancora verificati (province già seedate come punti in `sql/01_init_database.sql`). |
 | **OpenStreetMap** | Implementata (`OpenStreetMapDownloader`) | No | Confine regionale via Nominatim (`nominatim.openstreetmap.org`), richiede `User-Agent`. |
 | **Open-Meteo Elevation API** | Implementata (`src/data_acquisition/fetch_elevation.py`) | Solo one-off | Endpoint separato `api.open-meteo.com/v1/elevation` (stessa piattaforma, nessuna API key). Non fa parte del flusso `download_data.py` regolare: script a sé, eseguito una volta il 2026-07-15 per popolare `municipalities.elevation_m` dei comuni con dati di temperatura reali (coordinate = centroide della geometria, letto da PostGIS). Vedi [Modello Dati](data-model.md). |
@@ -127,6 +127,56 @@ per un errore di connessione TLS transitorio (`ConnectionResetError`, non
 un `429` — il retry-on-429 esistente non copriva questo caso), riscaricati
 con una seconda passata mirata. Risultato finale: 36/36 comuni, 341.892
 righe, nessun dato mancante.
+
+## API reale ARPA Piemonte trovata (2026-07-18, ricerca web — non ancora integrata nel codice)
+
+**Contesto**: fase 1 del piano paper ([Articolo scientifico](paper-scientifico.md)) —
+validare le temperature Open-Meteo (dati di rianalisi/modello) contro
+osservazioni di stazione reali — era bloccata dal 2026-07-16 (URL in
+`config.yaml` risponde 404, l'unica alternativa nota era l'interfaccia a
+mappa `map_meteoweb` o una richiesta manuale via email).
+
+**Trovata via ricerca web** (non nel codice, non in `config.yaml`): ARPA
+Piemonte espone una **API REST pubblica, senza chiave**, costruita su Django
+REST Framework, sotto `utility.arpa.piemonte.it/meteoidro/` — root
+browsable con 30 endpoint (meteo, idro, nivo, piezometrico, stazioni
+centenarie). Non è la stessa cosa della "Banca Dati Storica" citata nella
+pagina pubblica (quella resta dietro la mappa interattiva) né della
+`api_realtime` (quella copre solo gli ultimi 6 giorni, endpoint
+`/data_pie`, `/ggd`) — è un terzo sistema distinto, trovato solo cercando
+uno degli URL citati a margine dai risultati di ricerca.
+
+Endpoint rilevanti per la validazione:
+
+- **`stazione_meteorologica/`** — anagrafica stazioni: `denominazione`,
+  `codice_stazione`, `comune`, `sigla_prov`, `codice_istat_comune` (stessa
+  chiave già usata per `municipalities.istat_code` in tutto il progetto —
+  join diretto, nessuna risoluzione nome↔codice necessaria), coordinate
+  (`latitudine_n_wgs84_d`/`longitudine_e_wgs84_d`), `quota_stazione`,
+  `data_inizio`/`data_fine` (null se stazione ancora attiva), `tipo_staz`.
+- **`punti_misura_meteo/`** — punti di misura, con `data_inizio_dati`/
+  `data_fine_dati` (copertura temporale reale dei dati, non solo della
+  stazione fisica) — un punto di test (`ALA DI STURA`, comune
+  `001003`) copre 1993-07-22 → 2025-12-31.
+- **`dati_giornalieri_meteo/?fk_id_punto_misura_meteo=<codice>`** — dati
+  giornalieri veri: JSON paginato stile DRF (`count`/`next`/`previous`/
+  `results`), campi `data`, `tmedia`/`tmax`/`tmin`, `ptot`, `umedia`/
+  `umin`/`umax`, `vmedia`/`vraffica`, `bmedia`, `hdd_base18`/`cdd_base18`,
+  ecc. Un punto di test ha restituito 10.645 record giornalieri —
+  coerente con ~29 anni di storico. **Molti campi risultano `null` nei
+  record più vecchi** (copertura sensori non uniforme nel tempo, da
+  verificare per stazione prima di usarla per la validazione).
+
+**Non ancora verificato** (da fare prima di scrivere codice): quanti dei
+177 comuni già in `temperature` hanno una stazione ARPA con
+`codice_istat_comune` corrispondente (la rete ARPA ha ~400 stazioni su
+1180 comuni piemontesi, quindi la sovrapposizione reale potrebbe essere
+molto minore di 177); il comportamento esatto della paginazione
+(`page`/`page_size`, non confermato se supporta filtri di data
+`data_after`/`data_before` come query string); eventuali limiti di rate
+impliciti (non documentati, il pattern del progetto con Open-Meteo
+suggerisce di verificarli empiricamente con un lotto piccolo prima di
+lanciare un download massivo).
 
 ## Scoperto il limite giornaliero di Open-Meteo (2026-07-17)
 

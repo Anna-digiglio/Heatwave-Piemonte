@@ -166,11 +166,17 @@ API rifiuta oltre 100 coordinate in un'unica richiesta).
 - **Regressione spaziale (`spatial_regression.py`, seconda riesecuzione)**:
   a n=177 **anche NDVI smette di essere significativo** (p=0.58, era
   p=0.007 a n=98), oltre a % urbano (già non significativo da n=98,
-  p=0.19 a n=177). **Nessuna delle tre versioni provate (n=63/98/177) ha
-  mai avuto entrambe le covariate significative insieme** — solo
-  l'elevazione resta un predittore robusto e stabile in tutte e tre. Vedi
+  p=0.19 a n=177). Per NDVI **non è solo il p-value a spostarsi: il
+  coefficiente stesso crolla dell'85%** (da +1.089 a +0.161 tra n=98 e
+  n=177) — segno che l'effetto visto a n=98 era probabilmente in parte un
+  artefatto di un campione ancora piccolo, non solo rumore attorno a una
+  soglia. % urbano invece ha un coefficiente piccolo ma stabile in
+  entrambe le versioni (+0.0056 → +0.0063): lì è cambiato solo il
+  p-value, coerente con un effetto debole ma reale che richiede più
+  potenza statistica per emergere. Solo l'elevazione resta un predittore
+  robusto e stabile in tutte e tre le versioni (n=63/98/177). Vedi
   sezione dedicata sotto per il dettaglio completo e la tabella di
-  confronto tra le tre versioni.
+  confronto.
 
 ## `trend_analysis.py` — trend di riscaldamento
 
@@ -487,26 +493,48 @@ si rafforza ulteriormente rispetto alle versioni precedenti.
 
 | Variabile | n=63 | n=98 | n=177 |
 |---|---|---|---|
-| Elevazione | -0.0055°C/m, p<0.001 | -0.0057°C/m, p<0.001 | -0.0058°C/m, p<0.001 — **unico predittore stabile nelle tre versioni** |
-| Popolazione | p=0.116, non signif. | p=0.968, non signif. | p=0.800, non signif. |
-| **% urbano** | **p=0.011, significativo** | p=0.334, non signif. | p=0.193, non signif. |
-| **NDVI** | p=0.0037, signif. | **p=0.0085, signif.** | p=0.581, non signif. |
+| Elevazione | coef=-0.0055, p<0.001 | coef=-0.0057, p<0.001 | coef=-0.0058, p<0.001 — **unico predittore stabile: stesso segno, stessa grandezza, sempre significativo** |
+| Popolazione | p=0.116, non signif. | coef≈0, p=0.968, non signif. | coef≈0, p=0.800, non signif. |
+| **% urbano** | **p=0.011, significativo** (coefficiente non registrato in questa pagina) | coef=+0.0056, p=0.334, non signif. | coef=+0.0063, p=0.193, non signif. |
+| **NDVI** | p=0.0037, signif. (coefficiente non registrato) | **coef=+1.089, p=0.0085, signif.** | coef=+0.161, p=0.581, non signif. |
 
-**Nessuna delle due covariate "interessanti" (% urbano, NDVI) è mai
-risultata significativa in più di una versione su tre, e mai insieme
-nella stessa versione**: % urbano solo a n=63, NDVI solo a n=63 e n=98.
-A n=177 **entrambe smettono di esserlo**. Questo non è un problema del
-modello (la diagnostica — VIF, Moran's I sui residui, regola di Anselin —
-resta metodologicamente solida in tutte e tre le versioni) ma un segnale
-onesto sui limiti del campione attuale: 177 comuni su 1180 restano un
-sottoinsieme scelto per copertura spaziale, non un campione casuale, e
-la spatial econometrics con questo genere di dimensione campionaria
-produce stime dei coefficienti sulle covariate deboli che possono
-ragionevolmente oscillare intorno alla soglia di significatività. **Per
-il paper**: l'unico risultato quantitativo robusto finora è l'effetto
+**Non è solo il p-value a saltare sopra/sotto 0.05 — per NDVI il
+coefficiente stesso si è quasi azzerato**: da +1.089 (n=98) a +0.161
+(n=177), un crollo dell'85% nella stima puntuale, non solo nella sua
+significatività. Se fosse semplice rumore statistico attorno a un
+effetto reale stabile, ci si aspetterebbe che il coefficiente resti
+all'incirca della stessa grandezza mentre solo l'errore standard si
+restringe con più osservazioni (rendendo la stima *più* precisa, non
+diversa). Invece la stima stessa si è spostata verso zero — indizio che
+il "segnale" NDVI visto a n=98 fosse in parte un **artefatto di un
+campione ancora piccolo e non rappresentativo** (i comuni aggiunti nei
+lotti precedenti non erano una selezione casuale, e con l'elevazione che
+da sola spiega ~98% della varianza resta pochissimo per NDVI/% urbano da
+spiegare — la loro stima è quindi molto sensibile a quali comuni
+specifici entrano nel campione). % urbano, al contrario, ha un
+coefficiente che resta piccolo e stabile (+0.0056 → +0.0063) sia a n=98
+sia a n=177: lì il cambiamento è stato solo nel p-value, coerente con un
+effetto debole ma reale la cui significatività dipende dalla potenza
+statistica disponibile.
+
+**Interpretazione pratica**: questo non è un problema del modello (la
+diagnostica — VIF, Moran's I sui residui, regola di Anselin — resta
+metodologicamente solida in tutte e tre le versioni) ma un segnale
+onesto sui limiti del campione attuale, di due tipi diversi per le due
+covariate. **Per il paper**: l'unico risultato quantitativo robusto finora è l'effetto
 dell'elevazione; qualunque affermazione su uso del suolo/vegetazione
 richiede un campione più ampio prima di essere presentata con
 confidenza (vedi [Articolo scientifico](paper-scientifico.md)).
+
+> **Nota metodologica per le prossime estensioni**: da qui in avanti,
+> rieseguire `spatial_regression.py` a ogni nuova estensione del campione
+> resta utile, ma va trattato come un **esercizio di convergenza**, non
+> come una nuova "notizia" a ogni giro — l'obiettivo non è più "% urbano
+> è significativo oggi?" ma "il coefficiente si sta stabilizzando
+> (segno/grandezza simili a run precedenti) o continua a spostarsi in
+> modo sostanziale?". Un coefficiente che si stabilizza per 2-3 estensioni
+> consecutive è un'evidenza molto più solida di una singola soglia
+> p<0.05 superata per caso.
 
 Output: `output/spatial_regression.csv`,
 `output/spatial_regression_summary.txt` (OLS+VIF+Moran's I residui),

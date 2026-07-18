@@ -46,13 +46,16 @@ presente in dashboard (`03_analisi_spaziale.py`) è dichiarato esplicitamente
    `ArpaPiemonteDownloader` esiste già in `src/data_acquisition/download_data.py`
    ma **l'URL configurato (`config.yaml`, `arpa_piemonte.url`) risponde 404**
    (verificato il 2026-07-16, HTTP diretto) — stesso tipo di bug placeholder
-   già trovato per l'URL ISTAT dei confini comunali il 2026-07-04. I dati
-   reali non hanno un endpoint CSV/API diretto: stanno dietro un'interfaccia
-   a mappa (`webgis.arpa.piemonte.it/.../map_meteoweb`, pagina
-   "Banca Dati Storica") o una richiesta manuale ("Richiesta dati meteo
-   idro nivologici"). Va investigato se l'interfaccia a mappa espone un'API
-   JSON sottostante (come successo in passato con altri bug di questo
-   progetto), altrimenti resta una fase a maggior costo di quanto previsto.
+   già trovato per l'URL ISTAT dei confini comunali il 2026-07-04.
+   **Aggiornamento 2026-07-18**: trovata via ricerca web una vera API REST
+   pubblica e senza chiave (`utility.arpa.piemonte.it/meteoidro/`, Django
+   REST Framework) con anagrafica stazioni (join diretto su
+   `codice_istat_comune`) e dati giornalieri storici (`tmax`/`tmin`/`tmedia`
+   da JSON paginato) — non ancora integrata nel codice, vedi
+   [Fonti dati](data-sources.md#api-reale-arpa-piemonte-trovata-2026-07-18-ricerca-web--non-ancora-integrata-nel-codice)
+   per l'esplorazione completa degli endpoint. Resta da verificare
+   empiricamente la sovrapposizione reale tra le stazioni ARPA e i 177
+   comuni già coperti prima di impegnarsi nell'implementazione.
 2. **Estendere il campione di comuni con temperatura** oltre gli attuali
    44/1180, per dare potenza statistica a una regressione multivariata **—
    in corso**: l'utente sta estendendo la copertura a 300 comuni tramite
@@ -120,13 +123,30 @@ presente in dashboard (`03_analisi_spaziale.py`) è dichiarato esplicitamente
    p=0.007 a n=98) — nessuna delle due covariate (% urbano, NDVI) e'
    risultata significativa in piu' di una versione su tre provate
    (n=63/98/177), mai le stesse due insieme. Solo l'elevazione resta un
-   predittore robusto e stabile in tutte le versioni. Questo pattern
-   (coefficienti che appaiono/scompaiono al variare del campione, mai
-   nella stessa direzione due volte) e' di per se' un risultato da
-   riportare nel paper: allo stato attuale del campione, il progetto non
-   ha evidenza solida di un effetto urbano o di vegetazione sulla
-   temperatura, oltre alla quota. Dettaglio completo, incluso il caveat
-   sulla sensibilita' alla matrice pesi spaziale, in
+   predittore robusto e stabile in tutte le versioni (stesso segno,
+   stessa grandezza, sempre p<0.001).
+
+   **Le due covariate non instabili si comportano in modo diverso, e
+   vale la pena distinguerli nel paper**: per NDVI non e' solo il
+   p-value a superare/scendere sotto 0.05, e' il **coefficiente stesso a
+   crollare dell'85%** tra n=98 e n=177 (+1.089 → +0.161) — un
+   comportamento non spiegabile con la semplice riduzione dell'errore
+   standard all'aumentare di n (che renderebbe la stima piu' precisa
+   attorno allo stesso valore, non diversa), piu' coerente con l'ipotesi
+   che il "segnale" NDVI a n=98 fosse in parte un artefatto di un
+   campione ancora piccolo e non rappresentativo. % urbano invece ha un
+   coefficiente piccolo ma stabile sia a n=98 sia a n=177 (+0.0056 →
+   +0.0063): li' e' cambiato solo il p-value, piu' coerente con un
+   effetto debole ma reale che richiede piu' potenza statistica (quindi
+   piu' comuni) per emergere con sicurezza. Questa distinzione — "il
+   coefficiente si muove" vs "solo la sua significativita' oscilla" — e'
+   essa stessa un risultato da riportare nel paper, non solo un dettaglio
+   tecnico: allo stato attuale del campione, il progetto non ha evidenza
+   solida di un effetto urbano o di vegetazione sulla temperatura, oltre
+   alla quota, ma le due covariate meritano un trattamento diverso man
+   mano che il campione cresce (NDVI da rivalutare da capo, % urbano da
+   continuare a monitorare per convergenza). Dettaglio completo, incluso
+   il caveat sulla sensibilita' alla matrice pesi spaziale, in
    [Analisi statistica](statistical-analysis.md).
 5. **Percorso di pubblicazione realistico senza affiliazione accademica**:
    preprint (arXiv/EarthArXiv, gratuito e citabile subito) → conferenza SISC
