@@ -376,13 +376,13 @@ with tab_overview:
             "sono sia più caldi sia più urbanizzati. Un modello che isola "
             "l'effetto di ciascuna variabile dalle altre esiste già "
             "(`src/analysis/spatial_regression.py`, modello a errore "
-            "spaziale): controllando per elevazione, **% urbano non risulta "
-            "significativo** con il campione attuale (coefficiente positivo, "
-            "segno atteso, ma p=0.33), mentre l'NDVI resta significativo ma con "
-            "segno controintuitivo (più verde → più caldo, probabile "
-            "confondimento con l'agricoltura di pianura) — vedi "
+            "spaziale): controllando per elevazione, **né % urbano né NDVI "
+            "risultano significativi** con il campione attuale (p=0.19 e "
+            "p=0.58) — solo l'elevazione resta un predittore robusto. "
+            "Risultato non stabile al crescere del campione (a n=63 e n=98 "
+            "erano risultati significativi, uno alla volta) — vedi "
             "`wiki/pages/statistical-analysis.md` per il dettaglio "
-            "completo, risultato ancora provvisorio (n=98 comuni)."
+            "completo, risultato ancora provvisorio (n=177 comuni)."
         )
 
 with tab_detail:
