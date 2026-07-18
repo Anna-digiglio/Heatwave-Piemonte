@@ -196,21 +196,28 @@ div[data-testid="stMetricLabel"] {{
 .st-key-navcard-spaziale::before  {{ background: linear-gradient(90deg, {THEME_MID}, #f7c15c); }}
 .st-key-navcard-ondate::before    {{ background: linear-gradient(90deg, {THEME_HOT}, #ff8064); }}
 
+[class*="st-key-navcard-"] .hw-card-head {{
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 6px;
+}}
 [class*="st-key-navcard-"] .hw-card-icon {{
-    width: 38px; height: 38px;
+    width: 34px; height: 34px;
+    flex: none;
     border-radius: 10px;
     display: flex; align-items: center; justify-content: center;
-    font-size: 1.15rem;
+    font-size: 1.05rem;
+    line-height: 1;
     background: {THEME_SURFACE_RAISED};
     border: 1px solid {THEME_BORDER};
-    margin-bottom: 12px;
 }}
 [class*="st-key-navcard-"] h3 {{
     font-family: {FONT_DISPLAY} !important;
     font-size: 1.12rem !important;
     font-weight: 600 !important;
     color: {THEME_TEXT} !important;
-    margin: 0 0 6px !important;
+    margin: 0 !important;
 }}
 [class*="st-key-navcard-"] p {{
     color: {THEME_TEXT_MUTED} !important;
@@ -304,7 +311,8 @@ def render_nav_card_header(icon: str, title: str, description: str) -> None:
     costruito a mano qui romperebbe la navigazione SPA di Streamlit.
     """
     st.markdown(
-        f'<div class="hw-card-icon">{icon}</div><h3>{title}</h3><p>{description}</p>',
+        f'<div class="hw-card-head"><div class="hw-card-icon">{icon}</div><h3>{title}</h3></div>'
+        f'<p>{description}</p>',
         unsafe_allow_html=True,
     )
 
