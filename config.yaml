@@ -60,6 +60,7 @@ paths:
   external_data: "./data/external"
   sql_scripts: "./sql"
   output: "./output"
+  dashboard_export: "./data/dashboard_export"
   logs: "./logs"
 
 # --- PROCESSING PARAMETERS ---
