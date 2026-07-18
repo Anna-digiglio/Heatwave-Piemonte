@@ -243,6 +243,66 @@ def compare_heatwave_events(om_events: pd.DataFrame, arpa_events: pd.DataFrame) 
     }
 
 
+def load_arpa_annual_temperature(municipality_ids: list[int]) -> pd.DataFrame:
+    """Media annuale di `temp_mean` ARPA per comune - stessa granularita' di `kpi_annual_by_municipality`."""
+    from sqlalchemy import text as sql_text
+
+    query = sql_text("""
+        SELECT a.municipality_id, m.name AS municipality_name,
+               EXTRACT(YEAR FROM a.date)::int AS year,
+               AVG(a.temp_mean) AS temp_mean_annual
+        FROM arpa_temperature a
+        JOIN municipalities m ON m.municipality_id = a.municipality_id
+        WHERE a.municipality_id = ANY(:municipality_ids) AND a.temp_mean IS NOT NULL
+        GROUP BY a.municipality_id, m.name, EXTRACT(YEAR FROM a.date)
+        ORDER BY m.name, year
+    """)
+    with db_manager.engine.connect() as conn:
+        df = pd.read_sql(query, conn, params={'municipality_ids': municipality_ids})
+    return df
+
+
+def compare_trends(arpa_annual: pd.DataFrame) -> pd.DataFrame:
+    """
+    Confronta il trend di riscaldamento (Mann-Kendall + regressione lineare,
+    stesse funzioni pure di `src/analysis/trend_analysis.py`) calcolato su
+    ARPA (verita' di terra) contro quello gia' salvato in
+    `output/trend_analysis.csv` (Open-Meteo), comune per comune.
+    """
+    from src.analysis.trend_analysis import linear_trend, mann_kendall_trend
+
+    om_trends_path = Path(config.get('paths.output')) / 'trend_analysis.csv'
+    om_trends = pd.read_csv(om_trends_path)
+
+    rows = []
+    for name, group in arpa_annual.groupby('municipality_name'):
+        group = group.sort_values('year')
+        if len(group) < 4:  # troppo pochi anni per un test Mann-Kendall affidabile
+            continue
+        mk = mann_kendall_trend(group['temp_mean_annual'])
+        lr = linear_trend(group['year'], group['temp_mean_annual'])
+        row = {
+            'municipality_name': name,
+            'arpa_n_years': len(group),
+            'arpa_mk_trend': mk['mk_trend'],
+            'arpa_mk_p_value': mk['mk_p_value'],
+            'arpa_slope_per_decade': lr['lr_slope_per_decade'],
+            'arpa_lr_p_value': lr['lr_p_value'],
+        }
+        om_row = om_trends[om_trends['municipality_name'] == name]
+        if not om_row.empty:
+            om_row = om_row.iloc[0]
+            row.update({
+                'om_n_years': om_row['n_years'],
+                'om_mk_trend': om_row['mk_trend'],
+                'om_mk_p_value': om_row['mk_p_value'],
+                'om_slope_per_decade': om_row['lr_slope_per_decade'],
+                'om_lr_p_value': om_row['lr_p_value'],
+            })
+        rows.append(row)
+    return pd.DataFrame(rows).sort_values('municipality_name').reset_index(drop=True)
+
+
 def main():
     logger.info("=" * 70)
     logger.info("VALIDAZIONE OPEN-METEO vs ARPA PIEMONTE (dati di stazione reali)")
@@ -289,11 +349,33 @@ def main():
     save_results(arpa_events, filename='arpa_heatwave_events.csv')
 
     comparison = compare_heatwave_events(om_events, arpa_events)
+    save_results(pd.DataFrame([{'n_matched_municipalities': len(matched_ids), **comparison}]),
+                 filename='arpa_event_comparison_summary.csv')
     logger.info(f"\nConfronto a livello di evento (soglia 35°C/3gg, {len(matched_ids)} comuni con stazione ARPA):")
     logger.info(f"  Ondate Open-Meteo: {comparison['n_om_events']}")
     logger.info(f"  Ondate ARPA (verita' di terra): {comparison['n_arpa_events']}")
     logger.info(f"  Precision (delle ondate OM, quante sono confermate da ARPA): {comparison['precision']:.1%}")
     logger.info(f"  Recall (delle ondate ARPA reali, quante OM cattura): {comparison['recall']:.1%}")
+
+    # Confronto trend: il riscaldamento significativo gia' trovato su
+    # Open-Meteo regge anche sui dati di stazione reali?
+    arpa_annual = load_arpa_annual_temperature(matched_ids)
+    trend_comparison = compare_trends(arpa_annual)
+    save_results(trend_comparison, filename='arpa_trend_comparison.csv')
+
+    both = trend_comparison.dropna(subset=['om_slope_per_decade'])
+    sign_agree = (np.sign(both['arpa_slope_per_decade']) == np.sign(both['om_slope_per_decade'])).mean()
+    arpa_sig = (both['arpa_mk_p_value'] < 0.05).sum()
+    om_sig = (both['om_mk_p_value'] < 0.05).sum()
+    both_sig = ((both['arpa_mk_p_value'] < 0.05) & (both['om_mk_p_value'] < 0.05)).sum()
+    slope_diff = both['om_slope_per_decade'] - both['arpa_slope_per_decade']
+
+    logger.info(f"\nConfronto trend di riscaldamento (Mann-Kendall + regressione), {len(both)} comuni:")
+    logger.info(f"  Segno della pendenza concorde ARPA/Open-Meteo: {sign_agree:.1%}")
+    logger.info(f"  Trend ARPA significativo (p<0.05):       {arpa_sig}/{len(both)}")
+    logger.info(f"  Trend Open-Meteo significativo (p<0.05):  {om_sig}/{len(both)}")
+    logger.info(f"  Entrambi significativi:                   {both_sig}/{len(both)}")
+    logger.info(f"  Differenza media di pendenza (OM - ARPA): {slope_diff.mean():+.3f} °C/decade (sd={slope_diff.std():.3f})")
 
     logger.info("✓ Validazione ARPA completata")
 
