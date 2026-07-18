@@ -2244,3 +2244,73 @@ Log cronologico append-only. Ogni riga: data, azione, pagine toccate.
   Pagine aggiornate: `data-sources.md` (nuova sezione con gli endpoint
   trovati e cosa resta da verificare), `paper-scientifico.md` (fase 1
   aggiornata con il link alla nuova sezione).
+
+- **2026-07-18** — VALIDAZIONE ARPA IMPLEMENTATA ED ESEGUITA (SEGUITO DELLA
+  RICERCA DI SOPRA, STESSO GIORNO). Su richiesta esplicita dell'utente
+  ("procedi"), implementata e portata a termine l'integrazione ARPA appena
+  trovata via ricerca web.
+
+  **Derisking preliminare** (query dirette all'API + al DB, prima di
+  scrivere qualunque script): dei 336 stazioni nell'anagrafica ARPA
+  (`stazione_meteorologica/`), quelle con sensore di temperatura (`TERMA`)
+  attivo e `codice_istat_comune` tra i 177 comuni gia' in `temperature`
+  sono **51** — inclusi tutti gli 8 capoluoghi di provincia. Verificati in
+  questa fase anche due comportamenti non documentati dell'API: i
+  parametri intuitivi `data_after`/`data_before` vengono ignorati
+  silenziosamente (filtro corretto: `data_min`/`data_max`), e `page_size`
+  non ha effetto sull'endpoint dei dati giornalieri (sempre ~366
+  record/pagina, paginazione da seguire via `next`).
+
+  **Scritto `src/data_acquisition/download_arpa.py`**: anagrafica stazioni
+  scaricata una volta, matching comune→stazione (per i comuni alpini con
+  piu' stazioni attive, sceglie quella con quota piu' vicina a
+  `municipalities.elevation_m`), download giornalieri per stazione con
+  salvataggio incrementale (stessa lezione di `download_extra_municipalities.py`).
+  Eseguito realmente: 51/51 comuni, **451.502 righe** (`data/raw/arpa_temperature.csv`),
+  un solo fallimento transitorio (`Remote end closed connection without
+  response` su Borgomanero, non un limite di rate come quelli gia' visti
+  con Open-Meteo) risolto ri-scaricando la singola stazione mancante e
+  appendendola al CSV.
+
+  **Nuova tabella `arpa_temperature`** (`sql/05_arpa_temperature.sql`,
+  applicata manualmente come `03_land_cover.sql`/`04_ndvi.sql` — non fa
+  parte di `01_init_database.sql`), nuovo metodo
+  `DatabaseLoader.insert_arpa_temperature()` in `load_to_db.py` (stesso
+  pattern di `insert_temperature_for_municipalities`, `ON CONFLICT
+  (station_code, date) DO NOTHING`). Caricate 451.502 righe, tutte con
+  overlap `(municipality_id, date)` su `temperature` (stesso range
+  2000-01-01 → oggi scaricato apposta), ~2% `temp_max` nulli (sensori piu'
+  vecchi con copertura non uniforme).
+
+  **Scritto ed eseguito `src/analysis/validate_arpa.py`**: join
+  `temperature`/`arpa_temperature`, bias/MAE/RMSE/correlazione di Pearson
+  per comune. Risultato aggregato su `temp_max` (451.502 coppie):
+  correlazione molto alta (r medio 0.966) ma **bias sistematico negativo
+  di -1.71°C in media** (Open-Meteo sottostima le massime reali), range
+  molto ampio per comune (+3.27°C Limone Piemonte, -7.05°C Valprato
+  Soana). **Controllo aggiuntivo non pianificato in origine, fatto perche'
+  il pattern sembrava non casuale**: il bias correla con l'elevazione del
+  comune (r=-0.348, p=0.012, incrociando `arpa_validation.csv` con
+  `municipalities.elevation_m`) — piu' alto il comune, piu' Open-Meteo
+  sottostima. Interpretazione plausibile: un prodotto di rianalisi
+  rappresenta una cella di griglia, non un punto, e in rilievo alpino
+  complesso questo smussa le temperature estreme reali osservate da una
+  stazione puntuale — coerente con l'ipotesi gia' scritta in
+  `paper-scientifico.md` sull'autocorrelazione spaziale residua vista nel
+  modello a errore spaziale, ora con un controllo empirico quantitativo a
+  supporto.
+
+  **Nota su `ArpaPiemonteDownloader`** (in `download_data.py`): lasciata
+  intatta, non funzionante, con un commento che rimanda al nuovo script —
+  non e' stata "riparata" perche' l'approccio originale (URL singolo
+  configurato in `config.yaml`) non ha alcun endpoint reale dietro, non
+  era un bug puntuale ma un intero approccio sbagliato.
+
+  Pagine aggiornate: `data-sources.md` (nuova sezione con risultati reali
+  del download e della validazione), `data-model.md` (nuova tabella
+  `arpa_temperature`), `etl-pipeline.md` (nuova sezione "Validazione ARPA
+  — nuova pipeline parallela"), `statistical-analysis.md` (nuova sezione
+  con la tabella dei risultati e il controllo sull'elevazione),
+  `paper-scientifico.md` (fase 1 segnata fatta con i risultati, prossimi
+  passi aggiornati), `project-status.md` (nuova voce di cronologia),
+  `index.md` (riga di `statistical-analysis.md` aggiornata).

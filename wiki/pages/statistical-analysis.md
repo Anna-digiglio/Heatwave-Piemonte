@@ -2,7 +2,55 @@
 
 **Sorgenti**: `src/analysis/trend_analysis.py`, `src/analysis/heatwave_stats.py`,
 `src/analysis/seasonal_analysis.py`, `src/analysis/spatial_analysis.py`,
-`src/analysis/spatial_regression.py`.
+`src/analysis/spatial_regression.py`, `src/analysis/validate_arpa.py`.
+
+## Validazione contro ARPA Piemonte (2026-07-18)
+
+Fase 1 del piano paper ([Articolo scientifico](paper-scientifico.md)),
+priorità più alta — le temperature usate in tutto il resto di questa pagina
+sono stime Open-Meteo (rianalisi/modello), non osservazioni dirette.
+`src/analysis/validate_arpa.py` confronta, per i 51 comuni con una stazione
+ARPA reale corrispondente (vedi [Fonti dati](data-sources.md) per come sono
+stati trovati/scaricati), le due serie sullo stesso `(comune, data)`.
+
+**Risultato aggregato su `temp_max`** (451.502 coppie di osservazioni,
+2000-2026):
+
+| Metrica | Valore |
+|---|---|
+| Correlazione di Pearson (r), media sui 51 comuni | **0.966** |
+| Bias medio (Open-Meteo − ARPA) | **-1.71 °C** |
+| MAE medio | 2.49 °C |
+| RMSE medio | 3.00 °C |
+
+La correlazione è molto alta — Open-Meteo segue bene la variabilità
+giorno-per-giorno reale — ma c'è un **bias sistematico negativo**:
+Open-Meteo sottostima le temperature massime reali di quasi 2°C in media,
+con un range molto ampio per comune (da +3.27°C a Limone Piemonte a
+**-7.05°C a Valprato Soana**, entrambi comuni alpini — il bias non è
+uniforme nemmeno in direzione).
+
+**Il bias correla con l'elevazione** (r=-0.348, p=0.012, n=51, controllo
+fatto incrociando `arpa_validation.csv` con `municipalities.elevation_m`):
+più alto il comune, più negativo il bias — cioè più Open-Meteo sottostima
+le massime reali. Interpretazione plausibile (non a livello di certezza,
+un solo controllo con n=51): un prodotto di rianalisi rappresenta una cella
+di griglia, non un punto — in rilievo alpino complesso questo media
+esposizioni/quote diverse dentro la stessa cella, smussando le temperature
+estreme che una stazione puntuale osserva davvero. Questo è coerente con
+l'autocorrelazione spaziale residua già vista nel modello a errore
+spaziale (vedi sotto) — un dato di rianalisi "liscio per costruzione" può
+contribuire a quel residuo, come già ipotizzato in
+[Articolo scientifico](paper-scientifico.md) prima ancora di avere questo
+controllo empirico.
+
+**Caveat**: la stazione ARPA scelta per ciascun comune è quella più vicina
+per *quota* al centroide comunale, non necessariamente rappresentativa
+dell'intero territorio comunale (specie nei comuni alpini estesi, dove la
+stazione può essere un rifugio a un'altitudine molto diversa dal fondovalle
+abitato). ~2% dei valori ARPA sono nulli (sensori più vecchi con copertura
+non uniforme) — esclusi dal confronto via `dropna()` per coppia, non
+imputati. Dettaglio per comune in `output/arpa_validation.csv`.
 
 Implementata ed eseguita per la prima volta su dati reali il 2026-07-15,
 dopo che la pipeline ETL (vedi [ETL](etl-pipeline.md)) aveva reso

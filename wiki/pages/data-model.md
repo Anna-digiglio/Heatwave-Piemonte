@@ -35,6 +35,29 @@ può divergere leggermente, in caso di conflitto fidati dello script SQL).
   contrasto pianura/alpino già visto nel clustering climatico, vedi
   [Analisi statistica](statistical-analysis.md)).
 
+## `arpa_temperature` (nuova tabella, `sql/05_arpa_temperature.sql`, 2026-07-18)
+
+- PK `arpa_temperature_id BIGSERIAL`, FK `municipality_id → municipalities`
+- `station_code` (es. `PIE-001272-904`), `station_name`, `date`, `temp_mean`/
+  `temp_max`/`temp_min`, `UNIQUE (station_code, date)`
+- Osservazioni di stazione **reali** ARPA Piemonte (non rianalisi/modello
+  come `temperature`), usate per validare le stime Open-Meteo — fase 1 del
+  piano paper (vedi [Articolo scientifico](paper-scientifico.md)). Fonte:
+  `utility.arpa.piemonte.it/meteoidro/`, API REST pubblica trovata via
+  ricerca web il 2026-07-18 (non documentata su nessuna pagina pubblica
+  ARPA), scaricata da `src/data_acquisition/download_arpa.py` — vedi
+  [Fonti dati](data-sources.md) per il dettaglio completo (endpoint,
+  gotcha di paginazione/filtri di data, matching comuni↔stazioni).
+- **Popolata il 2026-07-18**: 451.502 righe, **51 comuni** (dei 177 con
+  temperatura Open-Meteo — quelli con almeno una stazione ARPA attiva con
+  sensore di temperatura), 2000-01-01 → oggi, ~2% `temp_max` nulli.
+- Tabella satellite separata da `temperature` (non un `data_source`
+  aggiuntivo nella stessa tabella): sono due fonti concettualmente diverse
+  (modello vs osservazione) che vanno confrontate riga per riga sullo
+  stesso `(municipality_id, date)`, non mescolate — vedi
+  `src/analysis/validate_arpa.py` e
+  [Analisi statistica](statistical-analysis.md) per il confronto.
+
 ## `municipality_land_cover` (nuova tabella, `sql/03_land_cover.sql`, 2026-07-16)
 
 - PK `municipality_id` (FK 1:1 verso `municipalities`, `ON DELETE CASCADE`)

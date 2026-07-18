@@ -298,6 +298,33 @@ Vedi [Fonti Dati](data-sources.md#seconda-sessione-collaborativa--download-diret
 e [Pipeline ETL](etl-pipeline.md#comuni-extra--57-dalla-collaboratrice--22-scaricati-direttamente-2026-07-18)
 per il dettaglio completo.
 
+### 2026-07-18 (pomeriggio) — VALIDAZIONE ARPA PIEMONTE: FASE 1 DEL PAPER RISOLTA
+
+Fase a priorità più alta del piano paper ([Articolo scientifico](paper-scientifico.md)),
+bloccata dal 2026-07-16 (URL ARPA in `config.yaml` risponde 404). Trovata
+via ricerca web una vera API REST pubblica di ARPA Piemonte
+(`utility.arpa.piemonte.it/meteoidro/`, non linkata da nessuna pagina
+ufficiale del sito ARPA) — vedi
+[Fonti dati](data-sources.md#arpa-piemonte--integrata-e-scaricata-2026-07-18)
+per il dettaglio tecnico completo.
+
+Implementato `src/data_acquisition/download_arpa.py`: dei 177 comuni con
+temperatura Open-Meteo, **51 hanno una stazione ARPA reale corrispondente**
+(sensore di temperatura attivo, `codice_istat_comune` come chiave di join —
+inclusi tutti gli 8 capoluoghi). Scaricate **451.502 righe** giornaliere
+reali (2000-01-01 → oggi), caricate in una nuova tabella `arpa_temperature`
+(`sql/05_arpa_temperature.sql`).
+
+**Risultato della validazione** (`src/analysis/validate_arpa.py`):
+correlazione molto alta con Open-Meteo (r medio 0.966 su temp_max) ma un
+**bias sistematico negativo di -1.71°C in media**, che peggiora con
+l'elevazione del comune (r=-0.348, p=0.012) — le rianalisi come Open-Meteo
+mediano una cella di griglia, non un punto, e in terreno alpino complesso
+questo smussa le temperature estreme reali. Risultato quantitativo
+riportabile nel paper, non solo un limite dichiarato qualitativamente. Vedi
+[Analisi statistica](statistical-analysis.md#validazione-contro-arpa-piemonte-2026-07-18)
+per il dettaglio completo per comune.
+
 ## Prossimi passi
 
 Tutti minori/non bloccanti — il nucleo pianificato del progetto è

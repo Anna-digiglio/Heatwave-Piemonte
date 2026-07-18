@@ -40,22 +40,36 @@ presente in dashboard (`03_analisi_spaziale.py`) è dichiarato esplicitamente
 
 ## Le 5 fasi del piano
 
-1. **Validazione contro dati stazione reali (ARPA Piemonte)** — priorità
-   alta. Le temperature Open-Meteo sono derivate da reanalisi/modello, non
-   osservazioni dirette; un revisore lo contesterebbe per primo.
-   `ArpaPiemonteDownloader` esiste già in `src/data_acquisition/download_data.py`
-   ma **l'URL configurato (`config.yaml`, `arpa_piemonte.url`) risponde 404**
-   (verificato il 2026-07-16, HTTP diretto) — stesso tipo di bug placeholder
-   già trovato per l'URL ISTAT dei confini comunali il 2026-07-04.
-   **Aggiornamento 2026-07-18**: trovata via ricerca web una vera API REST
-   pubblica e senza chiave (`utility.arpa.piemonte.it/meteoidro/`, Django
-   REST Framework) con anagrafica stazioni (join diretto su
-   `codice_istat_comune`) e dati giornalieri storici (`tmax`/`tmin`/`tmedia`
-   da JSON paginato) — non ancora integrata nel codice, vedi
-   [Fonti dati](data-sources.md#api-reale-arpa-piemonte-trovata-2026-07-18-ricerca-web--non-ancora-integrata-nel-codice)
-   per l'esplorazione completa degli endpoint. Resta da verificare
-   empiricamente la sovrapposizione reale tra le stazioni ARPA e i 177
-   comuni già coperti prima di impegnarsi nell'implementazione.
+1. **Validazione contro dati stazione reali (ARPA Piemonte)** — **fatta il
+   2026-07-18**, priorità alta risolta. Le temperature Open-Meteo sono
+   derivate da reanalisi/modello, non osservazioni dirette; un revisore lo
+   contesterebbe per primo. `ArpaPiemonteDownloader` in
+   `src/data_acquisition/download_data.py` non ha mai funzionato (URL
+   404, verificato il 2026-07-16) — trovata via ricerca web una vera API
+   REST pubblica e senza chiave (`utility.arpa.piemonte.it/meteoidro/`),
+   implementata in `src/data_acquisition/download_arpa.py` e scaricata per
+   davvero: **51 comuni** (dei 177 con temperatura Open-Meteo) hanno una
+   stazione ARPA reale corrispondente, 451.502 righe caricate in una nuova
+   tabella `arpa_temperature`. Vedi
+   [Fonti dati](data-sources.md#arpa-piemonte--integrata-e-scaricata-2026-07-18)
+   per il dettaglio tecnico completo (endpoint, gotcha dell'API) e
+   [Analisi statistica](statistical-analysis.md#validazione-contro-arpa-piemonte-2026-07-18)
+   per i risultati.
+
+   **Risultato, sostanziale per il paper**: correlazione molto alta (r
+   medio 0.966 su temp_max) ma un **bias sistematico negativo** — Open-Meteo
+   sottostima le massime reali di **-1.71°C in media**, e il bias è **tanto
+   più negativo quanto più alto il comune** (r=-0.348, p=0.012 tra bias ed
+   elevazione). Interpretazione plausibile: un prodotto di rianalisi
+   rappresenta una cella di griglia, non un punto — in rilievo alpino
+   complesso questo media quote/esposizioni diverse, smussando le
+   temperature estreme reali osservate in quota da una stazione puntuale.
+   Questo è un risultato citabile direttamente nel paper (sezione
+   metodologia/limiti): non solo dichiara la limitazione nota delle
+   rianalisi, la **quantifica** con un controllo empirico reale, ed è
+   coerente con l'autocorrelazione spaziale residua già vista nel modello
+   a errore spaziale (fase 4 sotto) — un'ipotesi già scritta in questa
+   pagina prima ancora di avere il dato per verificarla.
 2. **Estendere il campione di comuni con temperatura** oltre gli attuali
    44/1180, per dare potenza statistica a una regressione multivariata **—
    in corso**: l'utente sta estendendo la copertura a 300 comuni tramite
@@ -239,21 +253,27 @@ sottomissione).
 ## Prossimi passi
 
 Vedi [Stato del progetto](project-status.md) per lo stato operativo
-aggiornato di ETL/analisi. Con popolazione, uso del suolo e ora anche NDVI
-fatti (2026-07-16/17), e con una prima iterazione del modello statistico
-fatta il 2026-07-17 (vedi punto 4 sopra), restano aperti:
+aggiornato di ETL/analisi. Con popolazione, uso del suolo, NDVI (2026-07-16/17)
+e ora anche la validazione ARPA (2026-07-18, vedi fase 1 sopra) fatti,
+restano aperti:
 (a) l'estensione del campione di comuni con temperatura (in corso,
 gradualmente — 44→63→98→155→177 al 2026-07-18, vedi
 [Fonti dati](data-sources.md)) — priorita' alta anche per la
 modellazione: n=177 resta piccolo per la spatial econometrics, e nessun
 risultato su % urbano/NDVI e' stato stabile passando da 63 a 98 a 177
 (vedi punto 4 sopra) — il campione crescente andra' rilanciato attraverso
-`spatial_regression.py` via via che arrivano nuovi comuni;
-(b) la validazione ARPA (mai risolta, vedi fase 1 sopra) — resta la
-priorita' piu' alta in assoluto, dato che le temperature Open-Meteo sono
-dati di rianalisi/modello (spazialmente "lisci" per costruzione), il che
-potrebbe spiegare parte dell'autocorrelazione residua ancora vista nel
-modello spaziale;
+`spatial_regression.py` via via che arrivano nuovi comuni; la validazione
+ARPA andra' probabilmente ri-eseguita alla fine per gli stessi motivi
+(nuovi comuni possono aggiungere nuovi match con stazioni ARPA finora non
+coperte);
+(b) ~~la validazione ARPA~~ — **fatta il 2026-07-18** (vedi fase 1 sopra):
+confermato che le temperature Open-Meteo sono sistematicamente distorte in
+modo dipendente dall'elevazione (bias -1.71°C medio, più negativo nei
+comuni alti, r=-0.348 p=0.012) — non solo l'ipotesi qualitativa "dati di
+rianalisi spazialmente lisci", ma una quantificazione reale del fenomeno,
+utilizzabile nel paper sia come limite dichiarato sia come possibile
+spiegazione parziale dell'autocorrelazione residua vista nel modello
+spaziale;
 (c) approfondire il segno controintuitivo di NDVI nel modello (vedi punto
 4) prima di scriverlo nel manoscritto come risultato consolidato.
 Il file `paper/manoscritto.md` va aggiornato in parallelo.

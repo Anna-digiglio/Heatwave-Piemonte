@@ -167,16 +167,50 @@ Endpoint rilevanti per la validazione:
   record più vecchi** (copertura sensori non uniforme nel tempo, da
   verificare per stazione prima di usarla per la validazione).
 
-**Non ancora verificato** (da fare prima di scrivere codice): quanti dei
-177 comuni già in `temperature` hanno una stazione ARPA con
-`codice_istat_comune` corrispondente (la rete ARPA ha ~400 stazioni su
-1180 comuni piemontesi, quindi la sovrapposizione reale potrebbe essere
-molto minore di 177); il comportamento esatto della paginazione
-(`page`/`page_size`, non confermato se supporta filtri di data
-`data_after`/`data_before` come query string); eventuali limiti di rate
-impliciti (non documentati, il pattern del progetto con Open-Meteo
-suggerisce di verificarli empiricamente con un lotto piccolo prima di
-lanciare un download massivo).
+## ARPA Piemonte — integrata e scaricata (2026-07-18)
+
+Stessa sessione della scoperta sopra: implementato
+`src/data_acquisition/download_arpa.py` e scaricati i dati reali.
+
+**Comportamento dell'API verificato con richieste dirette** (due gotcha non
+documentati, che avrebbero causato bug silenziosi se non controllati prima):
+- I parametri con nome intuitivo `data_after`/`data_before` vengono
+  **ignorati silenziosamente** (nessun errore, l'API restituisce l'intera
+  serie storica della stazione ignorando il filtro) — i parametri corretti
+  sono `data_min`/`data_max`.
+- `page_size` viene ignorato sull'endpoint `dati_giornalieri_meteo/`: ogni
+  pagina restituisce sempre ~366 record, va seguita la paginazione tramite
+  `next`. Nessun limite di rate osservato durante il download reale (a
+  differenza di Open-Meteo).
+
+**Matching comuni↔stazioni**: dei 177 comuni con temperatura Open-Meteo,
+**51 hanno una stazione ARPA attiva con sensore di temperatura** (`TERMA`)
+il cui `codice_istat_comune` corrisponde — inclusi tutti gli 8 capoluoghi di
+provincia. Per i comuni alpini con più stazioni attive (es. Bardonecchia: 5
+rifugi/quote diverse), scelta quella con `quota_stazione` più vicina a
+`municipalities.elevation_m` del comune.
+
+**Download reale**: 51/51 comuni scaricati (1 fallimento transitorio su
+Borgomanero, `Remote end closed connection without response`, non un limite
+di rate — ri-scaricato singolarmente con successo), **451.502 righe** dal
+2000-01-01 a oggi, ~2% dei valori `temp_max` nulli (copertura sensori non
+uniforme nel tempo, coerente con quanto notato sopra esplorando l'API).
+Caricate in una nuova tabella `arpa_temperature`
+(`sql/05_arpa_temperature.sql`) via
+`DatabaseLoader.insert_arpa_temperature()` — vedi
+[Modello dati](data-model.md) e [Pipeline ETL](etl-pipeline.md).
+
+**Risultato della validazione** (`src/analysis/validate_arpa.py`, vedi
+[Analisi statistica](statistical-analysis.md) per il dettaglio completo):
+correlazione molto alta (r medio 0.966 su `temp_max`), ma un **bias
+sistematico negativo** — Open-Meteo sottostima `temp_max` di **-1.71°C in
+media** rispetto alle stazioni ARPA reali, con un range molto ampio per
+comune (da +3.27°C a Limone Piemonte a -7.05°C a Valprato Soana). Il bias
+correla in modo statisticamente significativo con l'elevazione del comune
+(r=-0.348, p=0.012): più alto il comune, più Open-Meteo sottostima le
+massime — coerente con l'ipotesi che un prodotto di rianalisi (risoluzione
+di griglia, non un punto stazione) mediando il rilievo complesso alpino
+smussi le temperature estreme reali osservate in quota.
 
 ## Scoperto il limite giornaliero di Open-Meteo (2026-07-17)
 

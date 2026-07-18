@@ -24,7 +24,7 @@ dubbio, la sorgente grezza (codice/SQL/config) prevale sempre sulla wiki.
 
 ## Analisi
 
-- [Analisi statistica e spaziale](pages/statistical-analysis.md) — `src/analysis/`: trend (Mann-Kendall/regressione), ondate di calore, STL, Moran's I, clustering, modello a errore spaziale (temp ~ elevazione/popolazione/uso del suolo/NDVI) — eseguita su dati reali
+- [Analisi statistica e spaziale](pages/statistical-analysis.md) — `src/analysis/`: trend (Mann-Kendall/regressione), ondate di calore, STL, Moran's I, clustering, modello a errore spaziale (temp ~ elevazione/popolazione/uso del suolo/NDVI), **validazione contro stazioni ARPA reali** (bias -1.71°C, correla con elevazione) — eseguita su dati reali
 - [Catalogo KPI](pages/kpi-catalog.md) — KPI definiti, formule, dove sono calcolati
 - [Query SQL](pages/sql-queries.md) — catalogo query di `sql/02_common_queries.sql`
 - [Glossario concetti](pages/concepts.md) — Mann-Kendall, Moran's I, STL, IQR, K-means, definizione di ondata di calore

@@ -411,6 +411,44 @@ per la collaboratrice e 22 per il titolare lo stesso giorno) — l'ipotesi
 di un limite legato al volume di dati più che al conteggio delle
 richieste resta non confermata ma coerente con le osservazioni.
 
+## Validazione ARPA — nuova pipeline parallela (2026-07-18)
+
+Fase 1 del piano paper ([Articolo scientifico](paper-scientifico.md)),
+priorità più alta, mai risolta prima (l'URL configurato in `config.yaml`
+per `arpa_piemonte` risponde 404 da sempre). Trovata via ricerca web
+un'API REST pubblica reale di ARPA Piemonte — vedi
+[Fonti dati](data-sources.md#arpa-piemonte--integrata-e-scaricata-2026-07-18)
+per il dettaglio completo della scoperta e dei due gotcha di comportamento
+dell'API (filtri di data silenziosamente ignorati, paginazione fissa).
+
+Nuova pipeline **indipendente** da quella Open-Meteo (fonte diversa, nessuna
+sovrapposizione di codice):
+
+1. **Extract**: `src/data_acquisition/download_arpa.py` — scarica
+   l'anagrafica stazioni ARPA, seleziona la stazione con sensore di
+   temperatura attivo più vicina (per quota) a ciascuno dei 177 comuni già
+   coperti da Open-Meteo (51 match trovati), scarica i giornalieri per
+   ciascuna stazione con salvataggio incrementale (stessa lezione imparata
+   con Open-Meteo — un'interruzione a metà non deve far perdere il
+   progresso). Eseguito realmente: 51/51 comuni, 451.502 righe
+   (`data/raw/arpa_temperature.csv`), un solo fallimento transitorio
+   (`Remote end closed connection`, non un limite di rate) risolto
+   ri-scaricando la singola stazione.
+2. **Load**: nuovo metodo `DatabaseLoader.insert_arpa_temperature()` in
+   `load_to_db.py` (stesso pattern di `insert_temperature_for_municipalities`,
+   `ON CONFLICT (station_code, date) DO NOTHING`), tabella
+   `arpa_temperature` (`sql/05_arpa_temperature.sql`, applicato manualmente
+   come per `03_land_cover.sql`/`04_ndvi.sql` — non fa parte di
+   `01_init_database.sql`). Nessun passaggio `clean_data.py`: i dati ARPA
+   non passano dal `DataCleaner` (pensato per il formato Open-Meteo), i
+   valori nulli nei sensori più vecchi restano tali, gestiti a valle nel
+   confronto (`dropna()` per coppia di osservazioni).
+3. **Confronto**: `src/analysis/validate_arpa.py` — join
+   `temperature`/`arpa_temperature` su `(municipality_id, date)`, bias/MAE/
+   RMSE/correlazione di Pearson per comune su `temp_max`/`temp_min`/
+   `temp_mean`. Risultati in `output/arpa_validation.csv` — vedi
+   [Analisi statistica](statistical-analysis.md) per i numeri reali.
+
 ## Passaggi pianificati ma non ancora scritti
 
 - Calcolo KPI giornalieri/annuali lato Python (oggi solo le viste
