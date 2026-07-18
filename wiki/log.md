@@ -2454,3 +2454,118 @@ Log cronologico append-only. Ogni riga: data, azione, pagine toccate.
   esplicita per §3.2, nuova voce sul caveat di rappresentatività della
   stazione, 5 righe aggiunte alla tabella di tracciabilità in Appendice A,
   nota in cima al documento aggiornata (ARPA non è più tra i **[DA FARE]**).
+
+- **2026-07-18** — INGEST + RICALCOLO: 98 → 177 COMUNI, IN DUE STEP.
+  Sessione lunga sul lato copertura dati (in parallelo alla sessione
+  ARPA sopra, che ha lavorato sul lato validazione).
+
+  **Step 1 — 57 comuni dalla seconda sessione della collaboratrice**.
+  `git pull` prima di tutto: ha portato il repo alla versione a 98 comuni
+  (import del 2026-07-17 già fatto dal titolare) e alla nuova pagina
+  [Comuni già coperti](comuni-coperti.md), scritta apposta la sessione
+  precedente per evitare alla collaboratrice di dover ricostruire la
+  copertura dai PNG QGIS come la prima volta. Nella cartella `data/raw/`
+  erano presenti due file: `temperature_data_extra_helper_batch2.csv`
+  (57 comuni, genuinamente nuovo, verificato zero sovrapposizioni con
+  l'esistente) e **una copia di `temperature_data_extra_helper_35comuni.csv`**
+  — stesso nome, stesse 339.325 righe, stessi 35 codici ISTAT del file
+  già importato ed eliminato il giorno prima. Verificato contro il DB
+  prima di toccarlo (tutti e 35 già presenti in `temperature`) e
+  **scartato senza importarlo**: la voce di log della collaboratrice per
+  questa sessione cita solo `batch2`, quasi certamente una copia locale
+  rimasta sul suo disco da prima del `git pull` precedente, finita per
+  errore nello stesso invio. Importare quel file avrebbe duplicato
+  silenziosamente 339mila righe (nessun vincolo di unicità
+  `(municipality_id, date)` in `temperature`). Import di `batch2`:
+  pulizia (`DataCleaner`, 0 righe scartate) + risoluzione `istat_code` →
+  `municipality_id` (57/57 trovati) + `insert_temperature_for_municipalities()`.
+  **98 → 155 comuni.**
+
+  **Step 2 — 22 comuni scaricati direttamente**. Lanciato
+  `download_extra_municipalities.py --count 40` (non da una macchina
+  esterna, dallo stesso ambiente con accesso al DB — la selezione esclude
+  per costruzione i comuni già in `temperature`, quindi nessuna
+  sovrapposizione possibile né coi 155 preesistenti né con `batch2`,
+  verificato comunque a posteriori: zero codici ISTAT in comune). Il rate
+  limit giornaliero, già in parte consumato dalla collaboratrice nella
+  stessa giornata, è scattato dopo **22 comuni riusciti** — ma con un
+  sintomo mai visto prima: nessun errore `429` esplicito, il processo è
+  rimasto "vivo" ma **fermo per oltre 12 minuti** senza scrivere righe
+  nuove nel CSV incrementale, con tempo CPU praticamente piatto (0:00:06
+  invariato su più controlli), più coerente con un blocco silenzioso nei
+  cicli di retry che con un fallimento pulito. Un primo tentativo di
+  aspettare la fine del processo con un loop di attesa è fallito per un
+  bug nello script di monitoraggio stesso (`[ ! -e /proc/PID ]` non ha
+  senso in Git Bash su Windows — nessun vero filesystem `/proc`, la
+  condizione risultava sempre vera, terminando il loop all'istante senza
+  aver davvero controllato nulla) — diagnosticato verificando il processo
+  con `tasklist` direttamente. Interrotto manualmente
+  (`Stop-Process`) dopo aver verificato che i 22 comuni già ottenuti
+  fossero completi (9.696 righe ciascuno — il salvataggio incrementale
+  scrive un comune alla volta, quindi l'interruzione non ha corrotto
+  nulla di già scritto) e importati normalmente. **155 → 177 comuni,
+  1.716.094 righe in `temperature`.**
+
+  **Bug reale trovato e corretto**: `fetch_elevation.py` interrogava
+  l'Elevation API di Open-Meteo con tutte le coordinate in un'unica
+  richiesta — funzionava fino a 100 comuni, ma con 177 ha restituito
+  `400 Bad Request` (`"must not exceed 100 coordinates"`, letto dal corpo
+  della risposta). Fix: richieste a lotti da `MAX_COORDS_PER_REQUEST =
+  100`, risultati concatenati — nessun impatto sul resto della pipeline,
+  tornerà rilevante a ogni multiplo di 100 comuni.
+
+  **Ricalcolo completo a valle**: elevazione 177/177 (col fix sopra),
+  `TRUNCATE` + `identify_heatwaves()` (**640 ondate**, da 331), refresh
+  viste KPI (`kpi_annual_by_municipality` 4.779 righe), tutti e 5 i
+  moduli di `src/analysis/` (incluso `seasonal_analysis.py`, ~112 minuti
+  in background — il job ha continuato a scrivere file per diversi minuti
+  dopo una notifica di completamento del tool rivelatasi prematura,
+  ignorata verificando direttamente il timestamp del CSV di riepilogo
+  finale prima di fidarsene, stesso problema già incontrato il
+  2026-07-17), mappe QGIS rigenerate.
+
+  **Risultato statistico più significativo**: a n=177,
+  `spatial_regression.py` mostra che **NDVI smette di essere
+  significativo** (oltre a % urbano, già non significativo da n=98). Ma
+  non è solo il p-value a muoversi: il **coefficiente di NDVI crolla
+  dell'85%** (da +1.089 a +0.161 tra n=98 e n=177) — un comportamento non
+  spiegabile con la semplice riduzione dell'errore standard all'aumentare
+  di n, più coerente con l'ipotesi che l'effetto visto a n=98 fosse in
+  parte un artefatto di un campione ancora piccolo/non rappresentativo.
+  Il coefficiente di % urbano invece resta piccolo ma stabile
+  (+0.0056 → +0.0063) in entrambe le versioni — lì è cambiato solo il
+  p-value, più coerente con un effetto debole ma reale in cerca di
+  potenza statistica. Solo l'elevazione resta un predittore robusto e
+  stabile in tutte e tre le versioni provate (n=63/98/177). Discusso con
+  l'utente il significato pratico di questo pattern (richiesta esplicita:
+  "questo cosa significa? non ha senso mantenere questo confronto?") —
+  concordato di continuare a rieseguire il modello a ogni estensione, ma
+  trattandolo come un **esercizio di convergenza** (il coefficiente si
+  stabilizza o continua a spostarsi?) invece che come una "notizia" a
+  ogni giro. Anche per `seasonal_analysis.py`: Briga Alta resta l'unico
+  raffreddamento sia significativo (Mann-Kendall) sia sostanziale (STL),
+  confermato per la terza estensione consecutiva del campione (n=63 →
+  n=98 → n=177) — un segnale sempre più difficile da liquidare come
+  rumore casuale del campionamento.
+
+  **Consolidamento file** (richiesta esplicita dell'utente, stesso
+  pattern del giorno prima): in `data/raw/`, `batch2` unito in
+  `temperature_data_extra.csv` ed eliminato insieme al file stantio dei
+  35 comuni e al riepilogo — tornato a 4 file. In `data/processed/`, i
+  due file puliti di oggi uniti in `temperature_clean_extra.csv` dopo
+  aver verificato zero sovrapposizioni su `(municipality_id, date)` —
+  tornato a 2 file. Verificato **77.560 + 1.638.534 = 1.716.094**,
+  combacia esattamente col totale reale in `temperature`.
+
+  [Comuni già coperti](comuni-coperti.md) aggiornata con l'elenco
+  completo dei 177 comuni (dati estratti live dal DB) e una nota rivista
+  sul limite giornaliero di Open-Meteo: non un numero fisso — 19-20 la
+  prima volta, 57 per la collaboratrice e solo 22 per il titolare lo
+  stesso giorno — ipotesi non confermata che sia legato al volume di dati
+  scaricato più che a un conteggio piatto di richieste.
+
+  Pagine aggiornate: `etl-pipeline.md`, `data-sources.md`, `data-model.md`,
+  `statistical-analysis.md` (risultati completi a 177 comuni per tutti e
+  5 i moduli, tabella di confronto coefficienti n=63/98/177 per
+  `spatial_regression.py`), `project-status.md`, `gis-maps.md`,
+  `dashboard.md`, `paper-scientifico.md`, `comuni-coperti.md`.
