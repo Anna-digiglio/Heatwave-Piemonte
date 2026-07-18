@@ -112,6 +112,137 @@ def save_results(df: pd.DataFrame, filename: str = 'arpa_validation.csv') -> Pat
     return output_path
 
 
+def hot_day_bias(paired: pd.DataFrame, thresholds=(30.0, 35.0)) -> pd.DataFrame:
+    """
+    Bias/MAE/RMSE su `temp_max` ristretto ai giorni **davvero caldi**
+    (ARPA, trattata come verita' di terra, sopra soglia) confrontati contro
+    la media su tutti i giorni. Le rianalisi come Open-Meteo tendono a
+    sottostimare gli estremi piu' della media - questa e' la verifica
+    diretta, dato che il progetto misura ondate di calore, non temperature
+    medie.
+    """
+    rows = []
+    all_days = validation_metrics(paired['om_temp_max'], paired['arpa_temp_max'])
+    rows.append({'condition': 'tutti i giorni', **all_days})
+    for threshold in thresholds:
+        hot = paired[paired['arpa_temp_max'] > threshold]
+        metrics = validation_metrics(hot['om_temp_max'], hot['arpa_temp_max'])
+        rows.append({'condition': f'ARPA temp_max > {threshold:.0f}°C', **metrics})
+    return pd.DataFrame(rows)
+
+
+def identify_heatwaves_from_series(
+    dates: pd.Series, temp_max: pd.Series, threshold: float = 35.0, min_duration: int = 3
+) -> list[dict]:
+    """
+    Replica in Python, su una singola serie (comune), la stessa logica di
+    `identify_heatwaves()` (SQL, vedi sql/01_init_database.sql): sequenze di
+    giorni **calendariali consecutivi** con temp_max > soglia, lunghe almeno
+    `min_duration`.
+    """
+    df = pd.DataFrame({'date': pd.to_datetime(dates), 'temp_max': temp_max}).dropna()
+    df = df[df['temp_max'] > threshold].sort_values('date')
+    if df.empty:
+        return []
+
+    dates_arr = df['date'].to_numpy()
+    temps_arr = df['temp_max'].to_numpy()
+    events = []
+    streak_start, streak_max, streak_len = dates_arr[0], temps_arr[0], 1
+
+    for i in range(1, len(dates_arr)):
+        if dates_arr[i] == dates_arr[i - 1] + np.timedelta64(1, 'D'):
+            streak_len += 1
+            streak_max = max(streak_max, temps_arr[i])
+        else:
+            if streak_len >= min_duration:
+                events.append({'start_date': streak_start, 'end_date': dates_arr[i - 1],
+                                'duration_days': streak_len, 'max_temp': streak_max})
+            streak_start, streak_max, streak_len = dates_arr[i], temps_arr[i], 1
+
+    if streak_len >= min_duration:
+        events.append({'start_date': streak_start, 'end_date': dates_arr[-1],
+                        'duration_days': streak_len, 'max_temp': streak_max})
+    return events
+
+
+def build_arpa_heatwave_events(threshold: float = 35.0, min_duration: int = 3) -> pd.DataFrame:
+    """Identifica le ondate di calore sui dati ARPA (verita' di terra) per i 51 comuni con stazione."""
+    query = """
+        SELECT a.municipality_id, m.name AS municipality_name, a.date, a.temp_max
+        FROM arpa_temperature a
+        JOIN municipalities m ON m.municipality_id = a.municipality_id
+        ORDER BY a.municipality_id, a.date
+    """
+    rows = db_manager.execute_query(query)
+    df = pd.DataFrame(rows, columns=['municipality_id', 'municipality_name', 'date', 'temp_max'])
+
+    events = []
+    for (municipality_id, name), group in df.groupby(['municipality_id', 'municipality_name']):
+        for event in identify_heatwaves_from_series(group['date'], group['temp_max'], threshold, min_duration):
+            events.append({'municipality_id': municipality_id, 'municipality_name': name, **event})
+    return pd.DataFrame(events)
+
+
+def load_om_heatwave_events(municipality_ids: list[int], threshold: float = 35.0) -> pd.DataFrame:
+    """Carica le ondate di calore gia' identificate su Open-Meteo (`heatwave_events`) per gli stessi comuni."""
+    from sqlalchemy import text as sql_text
+
+    query = sql_text("""
+        SELECT h.municipality_id, m.name AS municipality_name, h.start_date, h.end_date,
+               h.duration_days, h.max_temp
+        FROM heatwave_events h
+        JOIN municipalities m ON m.municipality_id = h.municipality_id
+        WHERE h.municipality_id = ANY(:municipality_ids) AND h.heat_threshold = :threshold
+        ORDER BY h.municipality_id, h.start_date
+    """)
+    with db_manager.engine.connect() as conn:
+        df = pd.read_sql(query, conn, params={'municipality_ids': municipality_ids, 'threshold': threshold})
+    return df
+
+
+def _events_overlap(a_start, a_end, b_start, b_end) -> bool:
+    # om_events arriva da Postgres come datetime.date, arpa_events come
+    # pd.Timestamp (via identify_heatwaves_from_series) - normalizzati
+    # entrambi prima di confrontare, altrimenti pandas solleva TypeError.
+    a_start, a_end, b_start, b_end = (pd.Timestamp(x) for x in (a_start, a_end, b_start, b_end))
+    return a_start <= b_end and b_start <= a_end
+
+
+def compare_heatwave_events(om_events: pd.DataFrame, arpa_events: pd.DataFrame) -> dict:
+    """
+    Confronta gli eventi Open-Meteo (predetti) con quelli ARPA (verita' di
+    terra) per sovrapposizione temporale nello stesso comune - non richiede
+    date identiche, solo che i due intervalli si intersechino.
+
+    Returns:
+        dict: conteggi e precision/recall (ARPA come ground truth).
+    """
+    om_confirmed = 0
+    for _, om in om_events.iterrows():
+        candidates = arpa_events[arpa_events['municipality_id'] == om['municipality_id']]
+        if any(_events_overlap(om['start_date'], om['end_date'], c['start_date'], c['end_date'])
+               for _, c in candidates.iterrows()):
+            om_confirmed += 1
+
+    arpa_confirmed = 0
+    for _, arpa in arpa_events.iterrows():
+        candidates = om_events[om_events['municipality_id'] == arpa['municipality_id']]
+        if any(_events_overlap(arpa['start_date'], arpa['end_date'], c['start_date'], c['end_date'])
+               for _, c in candidates.iterrows()):
+            arpa_confirmed += 1
+
+    n_om, n_arpa = len(om_events), len(arpa_events)
+    return {
+        'n_om_events': n_om,
+        'n_arpa_events': n_arpa,
+        'om_events_confirmed_by_arpa': om_confirmed,
+        'arpa_events_confirmed_by_om': arpa_confirmed,
+        'precision': om_confirmed / n_om if n_om else np.nan,  # delle ondate OM, quante sono reali
+        'recall': arpa_confirmed / n_arpa if n_arpa else np.nan,  # delle ondate reali, quante OM cattura
+    }
+
+
 def main():
     logger.info("=" * 70)
     logger.info("VALIDAZIONE OPEN-METEO vs ARPA PIEMONTE (dati di stazione reali)")
@@ -138,6 +269,31 @@ def main():
     logger.info(f"  MAE medio:   {results['temp_max_mae'].mean():.2f} °C")
     logger.info(f"  RMSE medio:  {results['temp_max_rmse'].mean():.2f} °C")
     logger.info(f"  r medio:     {results['temp_max_r'].mean():.3f}")
+
+    # Bias sui giorni davvero caldi (ARPA come verita' di terra) vs tutti i
+    # giorni - il progetto misura ondate di calore, non temperatura media.
+    hot_bias = hot_day_bias(paired)
+    save_results(hot_bias, filename='arpa_hot_day_bias.csv')
+    logger.info("\nBias su temp_max per condizione (tutti i comuni aggregati):")
+    for _, row in hot_bias.iterrows():
+        logger.info(
+            f"  {row['condition']:28s} n={row['n_days']:6.0f}  "
+            f"bias={row['bias']:+.2f}  mae={row['mae']:.2f}  rmse={row['rmse']:.2f}  r={row['r']:.3f}"
+        )
+
+    # Confronto a livello di evento: le stesse ondate di calore identificate
+    # su ARPA (verita' di terra) vs quelle gia' in heatwave_events (Open-Meteo).
+    matched_ids = paired['municipality_id'].unique().tolist()
+    arpa_events = build_arpa_heatwave_events()
+    om_events = load_om_heatwave_events(matched_ids)
+    save_results(arpa_events, filename='arpa_heatwave_events.csv')
+
+    comparison = compare_heatwave_events(om_events, arpa_events)
+    logger.info(f"\nConfronto a livello di evento (soglia 35°C/3gg, {len(matched_ids)} comuni con stazione ARPA):")
+    logger.info(f"  Ondate Open-Meteo: {comparison['n_om_events']}")
+    logger.info(f"  Ondate ARPA (verita' di terra): {comparison['n_arpa_events']}")
+    logger.info(f"  Precision (delle ondate OM, quante sono confermate da ARPA): {comparison['precision']:.1%}")
+    logger.info(f"  Recall (delle ondate ARPA reali, quante OM cattura): {comparison['recall']:.1%}")
 
     logger.info("✓ Validazione ARPA completata")
 
