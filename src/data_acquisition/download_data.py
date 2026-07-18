@@ -272,7 +272,18 @@ class CopernicusERA5Downloader:
 
 
 class ArpaPiemonteDownloader:
-    """Downloader ARPA Piemonte per dati climatici e meteo locali."""
+    """
+    Downloader ARPA Piemonte per dati climatici e meteo locali.
+
+    NOTA (2026-07-18): l'URL configurato in `config.yaml`
+    (`arpa_piemonte.url`) risponde 404 - non e' mai stato un endpoint dati
+    reale. Per la validazione ARPA (fase 1 del piano paper, vedi
+    wiki/pages/paper-scientifico.md) usare invece
+    `src/data_acquisition/download_arpa.py`, che usa la vera API REST
+    pubblica di ARPA Piemonte (`utility.arpa.piemonte.it/meteoidro/`).
+    Questa classe resta cosi' com'era, non funzionante, per riferimento
+    storico - vedi wiki/pages/data-sources.md.
+    """
 
     def __init__(self):
         self.raw_path = Path(config.get('paths.raw_data'))
