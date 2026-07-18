@@ -10,8 +10,9 @@ sottomissione reale (vedi target di pubblicazione in
 `wiki/pages/paper-scientifico.md`). Le sezioni marcate **[FATTO]** si basano
 su risultati reali già calcolati nel progetto; quelle marcate **[DA FARE]**
 dipendono da lavoro non ancora completato (estensione a 300 comuni, uso del
-suolo, popolazione, validazione ARPA — vedi lo stato dettagliato in
-`wiki/pages/paper-scientifico.md`). Non cancellare i marcatori finché il
+suolo, popolazione, modello a errore spaziale — vedi lo stato dettagliato in
+`wiki/pages/paper-scientifico.md`). La validazione ARPA (§2.1, §3.6, §4.3)
+è **[FATTO]** dal 2026-07-18. Non cancellare i marcatori finché il
 lavoro sottostante non è davvero concluso: servono a non perdere traccia di
 cosa è verificato e cosa no.
 
@@ -82,11 +83,16 @@ città).
   (ISTAT, shapefile confini amministrativi generalizzati).
 - Elevazione: Open-Meteo Elevation API, centroide comunale (solo per i
   comuni con temperatura).
-- **Limite dichiarato esplicitamente**: le temperature sono derivate da
-  reanalisi/modello (Open-Meteo), non da osservazioni dirette di stazione.
-  **[DA FARE]** validazione contro dati ARPA Piemonte (indagine 2026-07-16:
-  l'URL configurato nel progetto restituisce 404; i dati reali richiedono
-  o un'interfaccia a mappa o una richiesta manuale — non ancora ottenuti).
+- **Limite dichiarato esplicitamente, ora validato empiricamente — [FATTO]
+  il 2026-07-18**: le temperature sono derivate da reanalisi/modello
+  (Open-Meteo), non da osservazioni dirette di stazione. Validate contro
+  la rete di stazioni reali di ARPA Piemonte (API REST pubblica,
+  `utility.arpa.piemonte.it/meteoidro/`, trovata via ricerca web dopo che
+  l'URL originariamente configurato nel progetto si è rivelato un
+  placeholder mai funzionante) per i **51 comuni** (su 44 di questa
+  sezione, in estensione — vedi sopra) dove esiste una stazione ARPA
+  attiva con sensore di temperatura corrispondente. Risultati completi in
+  §3.6.
 
 ### 2.2 Definizione di ondata di calore **[FATTO]**
 
@@ -207,6 +213,55 @@ residua tra comuni si spiega con % superficie urbana o densità
 demografica? Questo è il cuore esplicativo del paper, non ancora
 disponibile.
 
+### 3.6 Validazione contro osservazioni di stazione (ARPA Piemonte) **[FATTO — 2026-07-18]**
+
+Confronto diretto, sullo stesso `(comune, data)`, tra le temperature
+Open-Meteo usate in tutto questo lavoro e le osservazioni reali della rete
+ARPA Piemonte, per i 51 comuni (su quelli con temperatura Open-Meteo) dove
+esiste una stazione ARPA attiva con sensore di temperatura corrispondente
+(inclusi tutti gli 8 capoluoghi di provincia). 451.502 coppie di
+osservazioni giornaliere, 2000–2026.
+
+**Accuratezza giornaliera**: correlazione di Pearson molto alta (r medio
+0.966 su temp_max), ma un bias sistematico negativo — Open-Meteo sottostima
+le temperature massime reali di -1.71°C in media (range per comune:
++3.27°C / -7.05°C). Il bias correla in modo statisticamente significativo
+con l'elevazione del comune (r=-0.348, p=0.012): più alto il comune, più
+Open-Meteo sottostima — coerente con un prodotto di rianalisi che
+rappresenta una cella di griglia, non un punto, e in rilievo alpino
+complesso media quote/esposizioni diverse.
+
+**Il problema si aggrava sui giorni estremi**: ristretto ai giorni con
+temperatura ARPA (verità di terra) sopra 35°C, il bias resta simile
+(-2.21°C) ma la correlazione crolla da 0.956 a 0.400 — Open-Meteo perde
+quasi del tutto la capacità di distinguere quali giorni estremi lo sono di
+più, proprio nella fascia che definisce un'ondata di calore.
+
+**Confronto a livello di evento (il test più diretto per questo lavoro)**:
+riapplicando la stessa definizione di ondata di calore (§2.2) ai dati ARPA
+per i 51 comuni e confrontando con le ondate già identificate su Open-Meteo
+per gli stessi comuni (sovrapposizione temporale, non richiede date
+identiche): **ARPA mostra 322 ondate di calore realmente accadute, contro
+le 150 rilevate su Open-Meteo per gli stessi comuni — recall 31.4%**
+(Open-Meteo cattura meno di un terzo delle ondate reali), **precision
+62.0%** (delle ondate rilevate da Open-Meteo, oltre un terzo non trova
+riscontro in un evento ARPA sovrapposto).
+
+**Il trend di riscaldamento, invece, è robusto alla fonte dati**:
+Mann-Kendall + regressione lineare ricalcolati sulla media annuale ARPA
+per gli stessi 51 comuni concordano in segno con Open-Meteo nell'88.2% dei
+casi (45/51); i 6 casi discordi sono tutti situazioni in cui almeno una
+delle due fonti non raggiunge la significatività statistica — nessun caso
+di due trend opposti *entrambi* significativi. Differenza media di
+pendenza piccola (-0.095 °C/decade) rispetto alla dispersione dei trend
+nel campione (+0.3/+1.4 °C/decade).
+
+**Sintesi**: il risultato descrittivo principale di questo lavoro (§3.1,
+riscaldamento diffuso e significativo) non è un artefatto della fonte
+dati. Il conteggio delle ondate di calore (§3.2) invece sì — è quasi
+certamente un sottoconteggio sostanziale del fenomeno reale, non un
+numero prudente. Discusso come limite quantificato in §4.3.
+
 ---
 
 ## 4. Discussione
@@ -230,11 +285,29 @@ suolo/popolazione, già disponibile dai dati attuali.
      piemontesi — dichiarare esplicitamente il criterio di selezione
      (farthest-point sampling) e le sue implicazioni per la
      rappresentatività.
-   - Dati da reanalisi, non da stazione (**[DA FARE]** validazione ARPA).
+   - **Dati da reanalisi, non da stazione — validato quantitativamente
+     (§3.6), non solo dichiarato**: contro le osservazioni reali ARPA
+     Piemonte, Open-Meteo mostra un bias di -1.71°C in media
+     (peggiore in quota) e, soprattutto, **rileva solo il 31.4% delle
+     ondate di calore effettivamente accadute** nei 51 comuni con
+     riscontro reale. Implicazione da scrivere esplicitamente: **i
+     conteggi di ondate di calore riportati in questo lavoro (§3.2) sono
+     con ogni probabilità un sottoconteggio sostanziale del fenomeno
+     reale**, non un dato prudente/conservativo — un revisore attento
+     individuerebbe questo limite comunque; meglio quantificarlo che
+     lasciarlo implicito. Il trend di riscaldamento (§3.1), invece, è
+     risultato robusto alla fonte dati (§3.6) e non condivide questo
+     limite.
+   - La stazione ARPA scelta per ciascun comune (§3.6) è la più vicina per
+     quota al centroide comunale, non necessariamente rappresentativa
+     dell'intero territorio — specie nei comuni alpini estesi, dove può
+     essere un rifugio a un'altitudine molto diversa dal fondovalle
+     abitato.
    - Definizione di ondata di calore a soglia fissa penalizza
      sistematicamente i comuni di montagna (discusso anche in dashboard,
      §2.2) — la soglia percentile come alternativa resta solo illustrativa
-     in questo lavoro.
+     in questo lavoro. Questo limite si somma, non si sostituisce, al
+     sottoconteggio dovuto alla fonte dati appena descritto.
 
 4.4. Implicazioni pratiche (pianificazione urbana, aree verdi, gestione del
 rischio) — da scrivere dopo aver completato §3.5, altrimenti il collegamento
@@ -291,3 +364,8 @@ una pagina wiki. Tabella da completare mano a mano che si scrive.*
 | Moran's I = 0.101, p=0.002 | `output/morans_i_summary.csv` | 2026-07-15 |
 | Cluster K-means (3.8/11.1/12.9°C) | `output/spatial_analysis.csv` | 2026-07-16 (rietichettatura) |
 | Ampiezza stagionale STL 27-34°C | `output/seasonal_trend_summary.csv` | 2026-07-15 |
+| Bias ARPA -1.71°C, r=0.966 (temp_max) | `output/arpa_validation.csv` | 2026-07-18 |
+| Bias vs elevazione r=-0.348, p=0.012 | `output/arpa_validation.csv` + `municipalities.elevation_m` | 2026-07-18 |
+| Bias su giorni caldi (r crolla a 0.400 sopra 35°C) | `output/arpa_hot_day_bias.csv` | 2026-07-18 |
+| 322 ondate ARPA vs 150 Open-Meteo (recall 31.4%, precision 62.0%) | `output/arpa_heatwave_events.csv`, `output/arpa_event_comparison_summary.csv` | 2026-07-18 |
+| Trend ARPA/Open-Meteo concordi nell'88.2% dei casi | `output/arpa_trend_comparison.csv` | 2026-07-18 |

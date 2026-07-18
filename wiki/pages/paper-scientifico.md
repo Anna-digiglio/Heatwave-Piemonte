@@ -93,6 +93,20 @@ presente in dashboard (`03_analisi_spaziale.py`) è dichiarato esplicitamente
    qualitativo) del disegno di studio, non minimizzato. Vedi
    [Analisi statistica](statistical-analysis.md#bias-sui-giorni-davvero-caldi-2026-07-18)
    per il dettaglio completo.
+
+   **Contro-bilanciamento importante, stesso giorno**: il **trend di
+   riscaldamento regge** alla fonte dati — Mann-Kendall/regressione
+   rieseguiti sulla media annuale ARPA per i 51 comuni concordano in
+   segno con Open-Meteo nell'88.2% dei casi, e i 6 casi discordi sono
+   tutti situazioni in cui almeno una delle due fonti non è
+   statisticamente significativa (nessun trend opposto significativo su
+   entrambe le fonti). Differenza media di pendenza piccola (-0.095
+   °C/decade) rispetto alla dispersione dei trend nel campione. Da
+   scrivere nel paper insieme al limite sopra, non al suo posto: il
+   risultato "il Piemonte si sta scaldando in modo diffuso e
+   significativo" è robusto; "abbiamo contato N ondate di calore" non lo
+   è altrettanto. Vedi
+   [Analisi statistica](statistical-analysis.md#il-trend-di-riscaldamento-regge-sui-dati-di-stazione-reali-2026-07-18).
 2. **Estendere il campione di comuni con temperatura** oltre gli attuali
    44/1180, per dare potenza statistica a una regressione multivariata **—
    in corso**: l'utente sta estendendo la copertura a 300 comuni tramite

@@ -2368,3 +2368,89 @@ Log cronologico append-only. Ogni riga: data, azione, pagine toccate.
   Pagine aggiornate: `statistical-analysis.md` (due nuove sottosezioni),
   `paper-scientifico.md` (fase 1, approfondimento aggiunto),
   `project-status.md` (voce di cronologia estesa).
+
+- **2026-07-18** — CONFRONTO TREND ARPA vs OPEN-METEO (SU RICHIESTA
+  ESPLICITA DELL'UTENTE: "procedi con tutti i punti"). Aggiunte
+  `load_arpa_annual_temperature()` e `compare_trends()` a
+  `validate_arpa.py`: media annuale di `temp_mean` ARPA per i 51 comuni,
+  Mann-Kendall + regressione lineare (stesse funzioni pure di
+  `trend_analysis.py`, importate non riscritte), confrontate con
+  `output/trend_analysis.csv` (Open-Meteo) gia' calcolato.
+
+  **Risultato, buona notizia rispetto alle sezioni precedenti**: il trend
+  di riscaldamento **regge** alla fonte dati — segno della pendenza
+  concorde nell'88.2% dei comuni (45/51), 43/51 comuni con trend ARPA
+  significativo (p<0.05) vs 40/51 Open-Meteo, differenza media di
+  pendenza piccola (-0.095°C/decade). Controllato nel dettaglio: i 6
+  comuni con segno discorde (Acceglio, Briga Alta, Castelmagno, Cuneo,
+  Limone Piemonte, Novi Ligure) sono **tutti casi in cui almeno una delle
+  due fonti non e' significativa** — nessun caso di due trend opposti
+  entrambi significativi. A differenza del conteggio delle ondate di
+  calore (sezione precedente, sottostimato di circa 2/3), il risultato
+  "il Piemonte si sta scaldando in modo diffuso e significativo" non e'
+  un artefatto della fonte dati.
+
+  Nuovo file: `output/arpa_trend_comparison.csv`.
+
+  Pagine aggiornate: `statistical-analysis.md` (nuova sottosezione),
+  `paper-scientifico.md` (fase 1, contro-bilanciamento aggiunto),
+  `project-status.md`.
+
+- **2026-07-18** — NUOVA PAGINA DASHBOARD "VALIDAZIONE DATI" +
+  AGGIORNAMENTO MANOSCRITTO (SU RICHIESTA ESPLICITA DELL'UTENTE: "procedi
+  con tutti i punti"). Ultimi due dei tre fronti proposti dopo la
+  validazione ARPA (il terzo, confronto trend, fatto nella voce di log
+  precedente).
+
+  **Dashboard**: nuova `dashboard/pages/06_validazione_dati.py` — non
+  aggiunta come tab a una pagina esistente (la validazione ARPA non
+  appartiene a nessun tema tra temporale/spaziale/ondate/download, è un
+  argomento a sé: la qualità del dato). Contenuto: 4 metriche di sintesi +
+  banner di avviso col risultato più importante (31.4% delle ondate reali
+  rilevate), tab Panoramica (mappa dei 51 comuni colorata per bias,
+  scatter bias/elevazione con retta OLS, istogramma distribuzione bias,
+  tabella completa) e tab Dettaglio tecnico (bias per condizione,
+  precision/recall evento, confronto trend, nota di metodologia). Nuove
+  funzioni in `components/queries.py` (`get_arpa_validation()`,
+  `get_arpa_hot_day_bias()`, `get_arpa_trend_comparison()`,
+  `get_arpa_event_comparison_summary()`), stesso pattern
+  `_output_path()`/`st.cache_data` delle altre.
+
+  **Bug in fase di scrittura, corretto prima di verificare**: una prima
+  bozza degli scatter nella tab Panoramica referenziava una colonna
+  `station_quota` mai esistita in `arpa_validation.csv` (confusa con un
+  campo visto solo nello script di download) e un dataframe placeholder
+  mai completato — riscritti entrambi gli scatter prima di eseguire
+  qualunque test: bias vs elevazione (join con `get_municipality_metadata()`
+  per `elevation_m`, non presente nel CSV di validazione) e istogramma
+  della distribuzione del bias.
+
+  Aggiunta anche una CSV di riepilogo mai salvata prima
+  (`output/arpa_event_comparison_summary.csv`, precision/recall/conteggi),
+  per non dover ricalcolare il confronto a livello di evento a ogni
+  caricamento della pagina.
+
+  **Verifica**: `py_compile`, poi `streamlit.testing.v1.AppTest` (nessuna
+  eccezione, metriche renderizzate coerenti con i CSV reali — 51, -1.71°C,
+  0.966, 31%, 322, 150, 62.0%, 31.4%), poi server live riavviato
+  (`taskkill` sul processo precedente + riavvio pulito, non un semplice
+  hot-reload, per essere sicuri che la nuova pagina comparisse nella
+  navigazione multipagina) e verificato `/_stcore/health` → 200 e
+  `/validazione_dati` → 200.
+
+  Pagine aggiornate: `dashboard.md` (struttura cartelle + nuova sezione
+  "Validazione Dati" in "Contenuto delle pagine"), `index.md` (voce
+  Dashboard: 5→6 pagine).
+
+  **Manoscritto** (`paper/manoscritto.md`): sezione ARPA aggiornata senza
+  toccare il resto del documento (che resta fermo a N=44 comuni — sync
+  completo esplicitamente rimandato, fuori scope di oggi). Cambi mirati:
+  §2.1 (bullet ARPA da **[DA FARE]** a **[FATTO]**, con metodo e numero di
+  comuni), nuova sottosezione **§3.6** "Validazione contro osservazioni di
+  stazione (ARPA Piemonte)" con tutti i risultati (bias, bias sui giorni
+  caldi, confronto a livello di evento, confronto trend), §4.3 Limiti
+  riscritto per riportare il sottoconteggio delle ondate come limite
+  **quantificato** (non più solo dichiarato a parole) con l'implicazione
+  esplicita per §3.2, nuova voce sul caveat di rappresentatività della
+  stazione, 5 righe aggiunte alla tabella di tracciabilità in Appendice A,
+  nota in cima al documento aggiornata (ARPA non è più tra i **[DA FARE]**).

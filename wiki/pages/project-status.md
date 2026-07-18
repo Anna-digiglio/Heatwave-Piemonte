@@ -338,6 +338,13 @@ rilevante di tutta la validazione, da riportare nel paper come limite
 quantificato. Vedi
 [Analisi statistica](statistical-analysis.md#confronto-a-livello-di-evento-quante-ondate-di-calore-vere-mancano-2026-07-18).
 
+**Contro-bilanciamento**: il trend di riscaldamento invece regge alla
+fonte dati (88.2% di concordanza di segno ARPA/Open-Meteo, nessun caso di
+trend opposti entrambi significativi) — il risultato "riscaldamento
+diffuso e significativo" del paper non è un artefatto, il conteggio delle
+ondate sì. Vedi
+[Analisi statistica](statistical-analysis.md#il-trend-di-riscaldamento-regge-sui-dati-di-stazione-reali-2026-07-18).
+
 ## Prossimi passi
 
 Tutti minori/non bloccanti — il nucleo pianificato del progetto è

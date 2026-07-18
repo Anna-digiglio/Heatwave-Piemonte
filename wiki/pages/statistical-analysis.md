@@ -93,6 +93,34 @@ quantificato, non solo qualitativo. Dettaglio per evento in
 `output/arpa_heatwave_events.csv`; bias per condizione in
 `output/arpa_hot_day_bias.csv`.
 
+### Il trend di riscaldamento regge sui dati di stazione reali (2026-07-18)
+
+Buona notizia in mezzo alle precedenti: a differenza dell'accuratezza
+giornaliera e del conteggio delle ondate (entrambi problematici, vedi
+sopra), **il trend di riscaldamento è robusto alla fonte dei dati**.
+Rieseguiti Mann-Kendall + regressione lineare (stesse funzioni pure di
+`trend_analysis.py`) sulla media annuale ARPA per i 51 comuni, confrontati
+con `output/trend_analysis.csv` (Open-Meteo) già calcolato:
+
+| Metrica | Valore |
+|---|---|
+| Segno della pendenza concorde ARPA/Open-Meteo | **88.2%** (45/51 comuni) |
+| Trend ARPA significativo (p<0.05) | 43/51 |
+| Trend Open-Meteo significativo (p<0.05) | 40/51 |
+| Entrambi significativi | 35/51 |
+| Differenza media di pendenza (OM − ARPA) | -0.095 °C/decade (sd=0.536) |
+
+I 6 comuni con segno discorde (Acceglio, Briga Alta, Castelmagno, Cuneo,
+Limone Piemonte, Novi Ligure) sono tutti casi in cui **almeno una delle
+due fonti non raggiunge la significatività statistica** — nessun caso di
+due trend opposti *entrambi* significativi. La differenza media di
+pendenza è piccola rispetto alla dispersione dei trend stessi
+(+0.3/+1.4°C/decade nel campione). **Implicazione per il paper**: il
+risultato principale ("riscaldamento diffuso e significativo") non è un
+artefatto della fonte dati Open-Meteo — a differenza del conteggio delle
+ondate di calore, che invece va corretto/qualificato esplicitamente.
+Dettaglio per comune in `output/arpa_trend_comparison.csv`.
+
 **Caveat**: la stazione ARPA scelta per ciascun comune è quella più vicina
 per *quota* al centroide comunale, non necessariamente rappresentativa
 dell'intero territorio comunale (specie nei comuni alpini estesi, dove la

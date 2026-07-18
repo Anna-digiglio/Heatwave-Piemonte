@@ -47,7 +47,8 @@ dashboard/
 │   ├── 02_analisi_temporale.py     # trend, anomalie, stagionalità, boxplot per quinquennio, STL
 │   ├── 03_analisi_spaziale.py      # coropletiche per provincia, trend per comune, fasce altitudinali, uso del suolo, popolazione, cluster, Moran's I
 │   ├── 04_ondate_di_calore.py      # frequenza/intensità/cumulato, mappa concentrazione, heatmap calendario
-│   └── 05_download_dati.py         # export CSV (dati puliti + risultati di analisi)
+│   ├── 05_download_dati.py         # export CSV (dati puliti + risultati di analisi)
+│   └── 06_validazione_dati.py      # confronto Open-Meteo vs stazioni ARPA reali — nuovo 2026-07-18
 └── components/
     ├── __init__.py                 # bootstrap sys.path (vedi bug sotto)
     ├── constants.py                # palette colori, soglie fasce altitudinali, capoluoghi, riferimenti letteratura, etichette Mann-Kendall (2026-07-15); token identità "calore" THEME_*/FONT_*/MAP_TILES (2026-07-17)
@@ -440,6 +441,38 @@ Sotto le tab, invariate: tabella statistiche per comune ed elenco ondate.
 Invariata: ogni file ha una descrizione in linguaggio semplice di cosa
 contiene, oltre al bottone di export per i CSV di `data/processed/`,
 `data/external/` e `output/`.
+
+### Validazione Dati (`06_validazione_dati.py`) — nuova il 2026-07-18
+
+Nuova pagina, su richiesta esplicita dell'utente dopo aver eseguito la
+validazione ARPA (vedi [Fonti dati](data-sources.md) e
+[Analisi statistica](statistical-analysis.md) per il dettaglio completo dei
+risultati). Non appartiene a nessuna delle 4 pagine tematiche esistenti
+(temporale/spaziale/ondate/download) — è un tema a sé, la qualità del dato
+stesso, quindi pagina dedicata invece di un tab dentro una pagina esistente.
+
+- 4 metriche in alto (comuni con stazione ARPA, bias medio, correlazione
+  media, % ondate di calore rilevate) + un `st.error` prominente col
+  risultato più importante: solo il 31.4% delle ondate di calore reali
+  (secondo ARPA) sono rilevate da Open-Meteo.
+- **Tab Panoramica**: mappa dei 51 comuni colorata per bias (stessa
+  colormap divergente/legenda a 5 fasce di `render_gradient_legend()` già
+  usata per la mappa trend di Analisi Spaziale), scatter bias vs elevazione
+  (con retta di regressione, `trendline='ols'`), istogramma della
+  distribuzione del bias, tabella completa per comune.
+- **Tab Dettaglio tecnico**: tabella bias per condizione (tutti i giorni /
+  giorni caldi >30°C / >35°C), metriche precision/recall del confronto a
+  livello di evento, tabella di confronto del trend ARPA/Open-Meteo per
+  comune, nota di metodologia (fonte, matching comune↔stazione, caveat
+  sulla rappresentatività della stazione).
+- Nuove funzioni in `components/queries.py`: `get_arpa_validation()`,
+  `get_arpa_hot_day_bias()`, `get_arpa_trend_comparison()`,
+  `get_arpa_event_comparison_summary()` — stesso pattern delle altre
+  (`_output_path()` + `st.cache_data`, leggono i CSV prodotti da
+  `src/analysis/validate_arpa.py`).
+- Verificata con `streamlit.testing.v1.AppTest` (nessuna eccezione, metriche
+  coerenti coi CSV reali), poi con il server live riavviato (health check
+  `/_stcore/health` → 200, routing `/validazione_dati` → 200).
 
 ## Baseline delle anomalie: da configurabile a fissa (2026-07-15)
 
