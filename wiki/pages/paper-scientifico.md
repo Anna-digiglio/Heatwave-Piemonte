@@ -114,8 +114,19 @@ presente in dashboard (`03_analisi_spaziale.py`) è dichiarato esplicitamente
    di tenere solo il risultato "piu' favorevole": con un campione ancora
    piccolo per la spatial econometrics, questo genere di risultato non
    robusto al variare di n va aspettato e discusso nel paper stesso, non
-   nascosto. Dettaglio completo, incluso il caveat sulla sensibilita'
-   alla matrice pesi spaziale, in
+   nascosto. **Rieseguito due volte in piu' il 2026-07-18** (n=155 poi
+   n=177, dopo un'altra collaborazione esterna piu' un download diretto):
+   a n=177 **anche NDVI smette di essere significativo** (p=0.58, era
+   p=0.007 a n=98) — nessuna delle due covariate (% urbano, NDVI) e'
+   risultata significativa in piu' di una versione su tre provate
+   (n=63/98/177), mai le stesse due insieme. Solo l'elevazione resta un
+   predittore robusto e stabile in tutte le versioni. Questo pattern
+   (coefficienti che appaiono/scompaiono al variare del campione, mai
+   nella stessa direzione due volte) e' di per se' un risultato da
+   riportare nel paper: allo stato attuale del campione, il progetto non
+   ha evidenza solida di un effetto urbano o di vegetazione sulla
+   temperatura, oltre alla quota. Dettaglio completo, incluso il caveat
+   sulla sensibilita' alla matrice pesi spaziale, in
    [Analisi statistica](statistical-analysis.md).
 5. **Percorso di pubblicazione realistico senza affiliazione accademica**:
    preprint (arXiv/EarthArXiv, gratuito e citabile subito) → conferenza SISC
@@ -211,12 +222,12 @@ Vedi [Stato del progetto](project-status.md) per lo stato operativo
 aggiornato di ETL/analisi. Con popolazione, uso del suolo e ora anche NDVI
 fatti (2026-07-16/17), e con una prima iterazione del modello statistico
 fatta il 2026-07-17 (vedi punto 4 sopra), restano aperti:
-(a) l'estensione del campione di comuni con temperatura (in corso lato
-utente, gradualmente — 44→63→98 al 2026-07-17, vedi
+(a) l'estensione del campione di comuni con temperatura (in corso,
+gradualmente — 44→63→98→155→177 al 2026-07-18, vedi
 [Fonti dati](data-sources.md)) — priorita' alta anche per la
-modellazione: n=98 resta piccolo per la spatial econometrics (e il
-risultato sull'% urbano non e' stato stabile passando da 63 a 98, vedi
-punto 4 sopra), il campione crescente andra' rilanciato attraverso
+modellazione: n=177 resta piccolo per la spatial econometrics, e nessun
+risultato su % urbano/NDVI e' stato stabile passando da 63 a 98 a 177
+(vedi punto 4 sopra) — il campione crescente andra' rilanciato attraverso
 `spatial_regression.py` via via che arrivano nuovi comuni;
 (b) la validazione ARPA (mai risolta, vedi fase 1 sopra) — resta la
 priorita' piu' alta in assoluto, dato che le temperature Open-Meteo sono

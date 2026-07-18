@@ -214,11 +214,12 @@ pianificata (verosimilmente basata su dati orari, non giornalieri).
 - `data/external/municipalities.csv` + tabella `municipalities` nel DB:
   1180 comuni piemontesi reali, geometrie tutte valide (`ST_IsValid`),
   nomi corretti (encoding fix del 2026-07-15). `elevation_m` popolato solo
-  per i comuni con dati di temperatura (Open-Meteo Elevation API, 98 dal
-  2026-07-17); `population` popolato per tutti i 1180 comuni il 2026-07-16
-  (vedi sotto).
-- Tabella `temperature`: **950.110 righe, 98 comuni** (8 capoluoghi + 90
-  extra), dal 2000 **fino a oggi** (non più fermo al 31/12/2025).
+  per i comuni con dati di temperatura (Open-Meteo Elevation API, 177 dal
+  2026-07-18 — oltre i 100 comuni l'API rifiuta una richiesta unica, vedi
+  [Pipeline ETL](etl-pipeline.md) per il fix a lotti); `population`
+  popolato per tutti i 1180 comuni il 2026-07-16 (vedi sotto).
+- Tabella `temperature`: **1.716.094 righe, 177 comuni** (8 capoluoghi +
+  169 extra), dal 2000 **fino a oggi** (non più fermo al 31/12/2025).
 
 ## `download_population.py` — popolazione residente reale per tutti i 1180 comuni (2026-07-16)
 
@@ -448,3 +449,65 @@ accesso al DB, poi **importati nel DB del titolare lo stesso giorno**
 [Pipeline ETL](etl-pipeline.md#import-dei-35-comuni-extra-dalla-seconda-macchina-2026-07-17)
 per il dettaglio dell'import (risoluzione `istat_code` → `municipality_id`,
 pulizia, ricalcolo a valle di ondate/viste KPI/analisi).
+
+## Seconda sessione collaborativa + download diretto — 98 → 177 comuni (2026-07-18)
+
+La stessa collaboratrice ha ripetuto l'esercizio il giorno dopo, ma
+**senza dover ricostruire nulla dai PNG QGIS**: nel frattempo il titolare
+aveva creato [Comuni già coperti](comuni-coperti.md), pensata proprio per
+questo — la collaboratrice ha fatto `git pull`, letto la pagina, e usato
+l'elenco esatto (nome + codice ISTAT) come input diretto per lo stesso
+campionamento "farthest-point" già collaudato. Risultato: **57 comuni**
+scaricati con successo prima del blocco giornaliero (bloccata su
+"Cannobio"), consegnati in `temperature_data_extra_helper_batch2.csv` —
+questa volta senza il bug `int`/`str` della sessione precedente
+(verificato: zero righe duplicate).
+
+**File stantio ricevuto per errore**: insieme a `batch2`, nella stessa
+consegna era presente anche `temperature_data_extra_helper_35comuni.csv`
+— identico byte per byte nelle dimensioni al file già importato ed
+eliminato il giorno prima (339.325 righe, stessi 35 codici ISTAT, stesso
+intervallo di date). La voce di log della collaboratrice per questa
+sessione cita solo `batch2` come file prodotto: quasi certamente una
+copia locale rimasta sul suo disco da prima del `git pull`, finita per
+errore nello stesso invio. **Scartato senza importarlo**, dopo aver
+verificato (non solo ipotizzato) che tutti e 35 quei comuni fossero già
+in `temperature` — un secondo import avrebbe duplicato silenziosamente
+339mila righe, dato che `temperature` non ha un vincolo di unicità su
+`(municipality_id, date)`. Lezione pratica: **verificare sempre il
+contenuto di un file consegnato contro lo stato attuale del DB prima di
+importarlo**, anche quando il nome del file sembra nuovo o la richiesta
+dell'utente lo dà per scontato.
+
+**Download diretto, stesso giorno**: dopo aver importato `batch2` (98 →
+155 comuni), lanciato `download_extra_municipalities.py --count 40`
+direttamente (non da una macchina esterna, ma dallo stesso ambiente con
+accesso al DB). La selezione già esclude per costruzione qualunque comune
+presente in `temperature` al momento della query — quindi nessuna
+sovrapposizione possibile né con i 155 preesistenti né con i 57 appena
+importati dalla collaboratrice, verificato comunque a posteriori (zero
+codici ISTAT in comune). Il rate limit giornaliero, già parzialmente
+consumato dalla collaboratrice nella stessa giornata, è scattato dopo
+**22 comuni riusciti** su 40 — ma con un sintomo diverso dai blocchi
+precedenti: nessun errore visibile, il processo Python è rimasto "vivo"
+ma **fermo per oltre 12 minuti** senza scrivere nuovi comuni nel CSV
+incrementale e con tempo CPU praticamente piatto, più coerente con un
+blocco silenzioso nei cicli di retry che con un fallimento pulito.
+Interrotto manualmente dopo aver verificato che i 22 comuni già ottenuti
+erano completi (9.696 righe ciascuno — il salvataggio incrementale scrive
+un comune alla volta, quindi l'interruzione a metà non ha corrotto nulla
+di già scritto). 155 → **177 comuni**.
+
+**Osservazione aggiornata sul limite giornaliero**: la soglia non sembra
+un numero fisso di richieste — 19-20 la prima volta (2026-07-17), 57 per
+la collaboratrice e solo 22 per il titolare **lo stesso giorno**. Ipotesi
+più plausibile (non confermata): la quota è legata al volume di dati
+scaricato o al momento della giornata in cui si preme, non a un contatore
+piatto di chiamate — coerente con l'osservazione già fatta il 2026-07-17
+che le richieste piccole (`update_recent_data.py`) non incontravano mai
+il limite mentre quelle da 26 anni sì.
+
+Vedi [Pipeline ETL](etl-pipeline.md#comuni-extra--57-dalla-collaboratrice--22-scaricati-direttamente-2026-07-18)
+per il dettaglio completo di import, ricalcolo a valle e consolidamento
+file, e [Comuni già coperti](comuni-coperti.md) per l'elenco aggiornato
+dei 177 comuni.

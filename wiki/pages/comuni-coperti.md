@@ -11,54 +11,86 @@ scaricare due volte lo stesso comune sprecando quota di rate limit
 giornaliero (vedi [Fonti Dati](data-sources.md) per il limite scoperto il
 2026-07-17).
 
-**Stato al 2026-07-18**: **98 comuni coperti su 1180** (8 capoluoghi di
-provincia + 90 extra), 2000-01-01 → oggi.
+**Stato al 2026-07-18 (aggiornato due volte in giornata)**: **177 comuni
+coperti su 1180** (8 capoluoghi di provincia + 169 extra), 2000-01-01 →
+oggi.
 
 ## Comuni già coperti (NON riscaricare questi)
 
-### Alessandria (13/187 comuni coperti)
+### Alessandria (28/187 comuni coperti)
 
 | Comune | Codice ISTAT |
 |---|---|
 | Alessandria | 006003 |
+| Alfiano Natta | 006004 |
 | Alice Bel Colle | 006005 |
+| Bassignana | 006013 |
+| Borgoratto Alessandrino | 006019 |
 | Bosio | 006022 |
+| Bozzole | 006023 |
 | Carrega Ligure | 006034 |
 | Casalnoceto | 006040 |
+| Casasco | 006041 |
+| Cereseto | 006057 |
+| Fraconalto | 006069 |
 | Fubine Monferrato | 006076 |
 | Gremiasco | 006083 |
 | Grondona | 006085 |
+| Isola Sant'Antonio | 006087 |
+| Malvicino | 006090 |
 | Merana | 006093 |
 | Molare | 006095 |
 | Moncestino | 006099 |
+| Montaldeo | 006103 |
+| Morsasco | 006112 |
 | Novi Ligure | 006114 |
+| Occimiano | 006115 |
+| Predosa | 006140 |
+| Sant'Agata Fossili | 006156 |
+| Tortona | 006174 |
 | Villanova Monferrato | 006185 |
 
-### Asti (9/117 comuni coperti)
+### Asti (19/117 comuni coperti)
 
 | Comune | Codice ISTAT |
 |---|---|
 | Asti | 005005 |
+| Cerro Tanaro | 005036 |
+| Cessole | 005037 |
 | Cisterna d'Asti | 005040 |
 | Coazzolo | 005041 |
+| Cortazzone | 005047 |
 | Maranzana | 005061 |
+| Moncalvo | 005069 |
 | Moncucco Torinese | 005070 |
+| Montegrosso d'Asti | 005076 |
+| Moransengo-Tonengo | 005122 |
 | Robella | 005092 |
+| San Martino Alfieri | 005099 |
 | Serole | 005104 |
+| Sessame | 005105 |
 | Viarigi | 005115 |
+| Villa San Secondo | 005119 |
+| Villanova d'Asti | 005118 |
 | Vinchio | 005120 |
 
-### Biella (5/74 comuni coperti)
+### Biella (11/74 comuni coperti)
 
 | Comune | Codice ISTAT |
 |---|---|
 | Biella | 096004 |
+| Camandona | 096009 |
 | Caprile | 096013 |
 | Cavaglià | 096016 |
+| Donato | 096024 |
 | Gifflenga | 096027 |
+| Magnano | 096030 |
+| Mezzana Mortigliengo | 096033 |
+| Piedicavallo | 096044 |
+| Valdengo | 096071 |
 | Villa del Bosco | 096078 |
 
-### Cuneo (22/247 comuni coperti)
+### Cuneo (41/247 comuni coperti)
 
 | Comune | Codice ISTAT |
 |---|---|
@@ -69,14 +101,30 @@ provincia + 90 extra), 2000-01-01 → oggi.
 | Bagnolo Piemonte | 004009 |
 | Bastia Mondovì | 004014 |
 | Briga Alta | 004031 |
+| Casalgrasso | 004045 |
+| Castelmagno | 004053 |
+| Cavallermaggiore | 004059 |
+| Cherasco | 004067 |
+| Chiusa di Pesio | 004068 |
+| Costigliole Saluzzo | 004075 |
+| Cravanzana | 004076 |
 | Cuneo | 004078 |
 | Entracque | 004084 |
+| Gaiola | 004093 |
 | Genola | 004096 |
+| Govone | 004099 |
 | Grinzane Cavour | 004100 |
+| Limone Piemonte | 004110 |
+| Mombasiglio | 004125 |
+| Monchiero | 004129 |
 | Montà | 004133 |
+| Monterosso Grana | 004139 |
+| Oncino | 004154 |
 | Pianfei | 004165 |
 | Pietraporzio | 004167 |
 | Pontechianale | 004172 |
+| Rifreddo | 004181 |
+| Robilante | 004185 |
 | Roburent | 004186 |
 | Roccabruna | 004187 |
 | Saliceto | 004201 |
@@ -84,46 +132,72 @@ provincia + 90 extra), 2000-01-01 → oggi.
 | Sommariva del Bosco | 004222 |
 | Stroppo | 004224 |
 | Torre San Giorgio | 004228 |
+| Torresina | 004229 |
+| Trinità | 004232 |
+| Vinadio | 004248 |
 
-### Novara (8/87 comuni coperti)
+### Novara (16/87 comuni coperti)
 
 | Comune | Codice ISTAT |
 |---|---|
 | Borgolavezzaro | 003023 |
+| Borgomanero | 003024 |
+| Casaleggio Novara | 003039 |
 | Castelletto sopra Ticino | 003043 |
 | Cerano | 003049 |
+| Colazza | 003051 |
+| Galliate | 003068 |
 | Ghemme | 003073 |
+| Grignasco | 003079 |
+| Lesa | 003084 |
 | Momo | 003100 |
 | Novara | 003106 |
+| Oleggio | 003108 |
 | Pettenasco | 003116 |
 | San Nazzaro Sesia | 003134 |
+| Vinzaglio | 003164 |
 
-### Torino (31/312 comuni coperti)
+### Torino (46/312 comuni coperti)
 
 | Comune | Codice ISTAT |
 |---|---|
+| Agliè | 001001 |
 | Bardonecchia | 001022 |
 | Barone Canavese | 001023 |
+| Bobbio Pellice | 001026 |
 | Bruino | 001038 |
+| Campiglione Fenile | 001049 |
+| Candiolo | 001051 |
 | Carema | 001057 |
 | Carignano | 001058 |
+| Caselle Torinese | 001063 |
 | Castelnuovo Nigra | 001067 |
 | Ceres | 001072 |
 | Ceresole Reale | 001073 |
 | Chiusa di San Michele | 001081 |
 | Claviere | 001087 |
+| Coassolo Torinese | 001088 |
 | Favria | 001101 |
 | Fiano | 001104 |
 | Gravere | 001117 |
+| Lemie | 001131 |
+| Locana | 001134 |
 | Marentino | 001144 |
+| Massello | 001145 |
+| Moncenisio | 001157 |
+| Noasca | 001165 |
+| Pianezza | 001189 |
+| Pino Torinese | 001192 |
 | Piverone | 001196 |
 | Pomaretto | 001198 |
 | Pralormo | 001203 |
+| Rocca Canavese | 001221 |
 | Roletto | 001222 |
 | Rorà | 001226 |
 | Salbertrand | 001232 |
 | Samone | 001235 |
 | San Giorio di Susa | 001245 |
+| Santena | 001257 |
 | Sauze di Cesana | 001258 |
 | Sparone | 001267 |
 | Torino | 001272 |
@@ -134,23 +208,29 @@ provincia + 90 extra), 2000-01-01 → oggi.
 | Vigone | 001299 |
 | Volpiano | 001314 |
 
-### Verbano-Cusio-Ossola (4/74 comuni coperti)
+### Verbano-Cusio-Ossola (6/74 comuni coperti)
 
 | Comune | Codice ISTAT |
 |---|---|
+| Craveggia | 103024 |
 | Formazza | 103031 |
 | Macugnaga | 103039 |
+| Madonna del Sasso | 103040 |
 | Verbania | 103072 |
 | Villadossola | 103075 |
 
-### Vercelli (6/82 comuni coperti)
+### Vercelli (10/82 comuni coperti)
 
 | Comune | Codice ISTAT |
 |---|---|
 | Alagna Valsesia | 002002 |
 | Carisio | 002032 |
+| Fontanetto Po | 002058 |
+| Ghislarengo | 002062 |
 | Moncrivello | 002079 |
+| Motta de' Conti | 002082 |
 | Rimella | 002113 |
+| Scopello | 002135 |
 | Valduggia | 002152 |
 | Vercelli | 002158 |
 
@@ -158,13 +238,20 @@ provincia + 90 extra), 2000-01-01 → oggi.
 
 **Fonte**: Open-Meteo Archive API (`https://archive-api.open-meteo.com/v1/archive`),
 nessuna chiave richiesta. **Limite scoperto sul campo**: oltre al rate
-limit "al minuto", esiste un **limite giornaliero** — con richieste
-"pesanti" (26 anni di storico in una volta) ci si blocca dopo circa
-19-20 comuni in una giornata (vedi [Fonti Dati](data-sources.md) per il
-racconto completo). Consiglio pratico: scaricare **a lotti piccoli** (10-20
-comuni), fermarsi appena arriva un errore `429`/messaggio di quota
-esaurita, e riprendere il giorno dopo — non serve a niente insistere,
-la quota si resetta il giorno successivo.
+limit "al minuto", esiste un **limite giornaliero**, ma la sua entità
+esatta resta poco chiara — **variabile da un giorno all'altro**, non un
+numero fisso: la prima volta (2026-07-17) ci si è bloccati dopo ~19-20
+comuni, mentre il 2026-07-18 una sessione ne ha ottenuti 57 e un'altra,
+in parallelo sullo stesso giorno, solo 22 prima di bloccarsi. Ipotesi non
+confermata: la quota potrebbe essere legata al volume di dati scaricato
+più che a un conteggio piatto di richieste (coerente con un'osservazione
+simile del 2026-07-17, vedi [Fonti Dati](data-sources.md)). Consiglio
+pratico: scaricare **a lotti piccoli** (10-20 comuni), fermarsi appena
+arriva un errore `429`/messaggio di quota esaurita **o appena i download
+smettono di progredire per diversi minuti senza errori espliciti**
+(osservato il 2026-07-18: il processo può restare "vivo" ma bloccato nei
+retry senza produrre output visibile), e riprendere il giorno dopo — non
+serve a niente insistere, la quota si resetta il giorno successivo.
 
 **Quali comuni scegliere**: qualunque comune **non presente** nelle
 tabelle sopra. Non serve seguire un criterio particolare — anche una

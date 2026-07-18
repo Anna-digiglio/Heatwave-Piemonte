@@ -165,10 +165,10 @@ CLI: `python -m src.database.load_to_db` → `DatabaseLoader`
 completa ed eseguita end-to-end su dati reali. Non esiste ancora un
 orchestratore unico `etl_pipeline.py` (si lanciano gli script separatamente,
 in ordine); i `models.py` menzionati in `PROJECT_SUMMARY.md` non esistono.
-Il "Load" reale oggi copre: schema + 8 province + 1180 comuni + 950.110
-righe di temperatura per **98 comuni** (8 capoluoghi + 90 extra selezionati
-per copertura spaziale), dal 2000 **fino a oggi** (non più fermo al
-31/12/2025).
+Il "Load" reale oggi copre: schema + 8 province + 1180 comuni + 1.716.094
+righe di temperatura per **177 comuni** (8 capoluoghi + 169 extra
+selezionati per copertura spaziale), dal 2000 **fino a oggi** (non più
+fermo al 31/12/2025).
 
 ### Estensione a 63 comuni + dati fino ad oggi (2026-07-17)
 
@@ -313,45 +313,103 @@ date)` nel file capoluoghi; **77.560 + 872.550 = 950.110**, combacia
 esattamente col totale in `temperature` nel DB. `data/processed/` ora
 contiene solo questi 2 file.
 
-## Comuni extra in attesa di import — 57 comuni (2026-07-18)
+## Comuni extra — 57 dalla collaboratrice + 22 scaricati direttamente (2026-07-18)
 
 Seconda sessione della stessa collaboratrice, stessa macchina esterna
 senza accesso al DB. A differenza della sessione del giorno prima, questa
 volta **non è servita nessuna ricostruzione dai PNG QGIS**: dopo il
 `git pull`, la nuova pagina [Comuni già coperti](comuni-coperti.md)
-(creata dal titolare dopo l'import dei 35 comuni) elencava i 98 comuni
-già in `temperature` con nome e codice ISTAT esatti — presa come fonte
-diretta per il campionamento "farthest-point" (stesso algoritmo di
+(creata dal titolare apposta dopo l'import dei 35 comuni) elencava i 98
+comuni già in `temperature` con nome e codice ISTAT esatti — presa come
+fonte diretta per il campionamento "farthest-point" (stesso algoritmo di
 `download_extra_municipalities.py`, rieseguito localmente sui 1082 comuni
 rimanenti).
 
-**Download**: `WeatherDataDownloader.download_for_coordinates()`, lotti
-da 20 con salvataggio incrementale, stesso pattern collaudato. Il rate
-limit giornaliero è scattato dopo **57 comuni riusciti** (bloccato su
-"Cannobio" dopo 5 tentativi con backoff fino a 80s) — nessun doppione
+**Download della collaboratrice**: `WeatherDataDownloader.download_for_coordinates()`,
+lotti da 20 con salvataggio incrementale, stesso pattern collaudato. Il
+rate limit giornaliero è scattato dopo **57 comuni riusciti** (bloccato
+su "Cannobio" dopo 5 tentativi con backoff fino a 80s) — nessun doppione
 stavolta (verificato: 552.672 righe = 57 comuni × 9.696 giorni esatti,
 zero righe duplicate su `(comune, data)`), a differenza della sessione
 precedente dove un bug di confronto `int`/`str` aveva causato download
 ripetuti.
 
 **File consegnati** (fuori da Git, `data/raw/` — stesso canale della
-volta precedente, non `git pull`/`git push`):
+volta precedente): `temperature_data_extra_helper_batch2.csv` (552.672
+righe, 57 comuni, stesse colonne del lotto precedente, `istat_code` già
+zero-paddato) e `riepilogo_57_comuni_batch2.csv`.
 
-- `data/raw/temperature_data_extra_helper_batch2.csv` — 552.672 righe, 57
-  comuni, 2000-01-01 → 2026-07-18. Stesse colonne del lotto precedente
-  (`date, temp_max, temp_min, temp_mean, precipitation, province,
-  data_source, istat_code, province_name`), `istat_code` già zero-paddato
-  a 6 cifre come stringa.
-- `data/raw/riepilogo_57_comuni_batch2.csv` — tabella di sintesi rapida.
+> **File stantio ricevuto per errore, scartato senza importarlo**:
+> insieme al lotto nuovo era presente anche
+> `temperature_data_extra_helper_35comuni.csv` — **stesso nome, stesso
+> numero di righe (339.325), stessi 35 codici ISTAT** del file già
+> importato ed eliminato il giorno prima. Verificato prima di toccarlo:
+> tutti e 35 quei comuni erano già in `temperature`, e la voce di log
+> della collaboratrice stessa (sopra) menziona solo `batch2` come file
+> prodotto in questa sessione — quasi certamente una copia locale non
+> aggiornata dopo il `git pull` precedente, ricomparsa per errore nella
+> stessa consegna. Cancellato senza importarlo: importarlo avrebbe
+> duplicato 339mila righe già presenti, corrompendo silenziosamente
+> ondate/KPI/analisi (nessun vincolo di unicità `(municipality_id,
+> date)` in `temperature`).
 
-**Non ancora importato**: stessi due passaggi già documentati per i 35
-comuni — pulizia via `DataCleaner.clean_data()`, poi risoluzione
-`istat_code` → `municipality_id` via join su `municipalities` prima di
-`insert_temperature_for_municipalities()`. Dopo l'import: **98 → 155
-comuni** in `temperature`, poi rieseguire a valle
-`identify_heatwaves()`/viste KPI/`src/analysis/`, e **aggiornare
-[Comuni già coperti](comuni-coperti.md)** con i 57 nuovi nomi/codici
-(istruzione già presente in quella pagina).
+**Import di `batch2`**: pulizia via `DataCleaner.clean_data()` (0 righe
+scartate), risoluzione `istat_code` → `municipality_id` via join su
+`municipalities` (57/57 trovati), caricamento con
+`insert_temperature_for_municipalities()`. **98 → 155 comuni**.
+
+**Download aggiuntivo, eseguito direttamente** (`--count 40`): la
+selezione automatica di `download_extra_municipalities.py` esclude per
+costruzione i comuni già in `temperature` (query live), quindi non poteva
+sovrapporsi né ai 155 già presenti né a quelli appena importati dalla
+collaboratrice. Il rate limit giornaliero (già in parte consumato dalla
+collaboratrice nella stessa giornata) è scattato dopo **22 comuni
+riusciti** su 40 richiesti. **Comportamento diverso dai blocchi
+precedenti**: nessun errore `429` esplicito osservato — il processo è
+rimasto "vivo" ma **fermo per oltre 12 minuti senza scrivere righe
+nuove** e con tempo CPU sostanzialmente piatto, un pattern più simile a
+un blocco nei retry silenzioso che a un fallimento pulito. Interrotto
+manualmente dopo aver verificato che i 22 comuni già scaricati erano
+completi (9.696 righe ciascuno, nessuna riga parziale — il salvataggio
+incrementale scrive un comune alla volta, quindi l'interruzione non ha
+corrotto nulla) e importati normalmente. **155 → 177 comuni**.
+
+**Bug reale trovato e corretto durante il ricalcolo a valle**:
+`fetch_elevation.py` interrogava l'Elevation API di Open-Meteo in
+un'unica richiesta con tutte le coordinate — funzionava fino a 100
+comuni, ma con 177 ha restituito `400 Bad Request`
+(`"Parameter 'latitude' and 'longitude' must not exceed 100
+coordinates"`, letto direttamente dal corpo della risposta). Fix:
+`fetch_elevations()` ora spezza le richieste in lotti da
+`MAX_COORDS_PER_REQUEST = 100`, unendo i risultati — nessun impatto sul
+resto della pipeline, il limite tornerà rilevante ogni volta che il
+campione di comuni supererà un multiplo di 100.
+
+**Ricalcolo a valle completo**: elevazione ri-scaricata per tutti i 177
+comuni (col fix sopra), `TRUNCATE heatwave_events` + `identify_heatwaves()`
+(**640 ondate**, da 331), `REFRESH MATERIALIZED VIEW` su entrambe le
+viste KPI (`kpi_annual_by_municipality` 4.779 righe, `kpi_annual_by_province`
+216), tutti e 5 i moduli di `src/analysis/` rieseguiti, mappe QGIS
+rigenerate.
+
+**Consolidamento file** (stesso pattern del giorno prima, richiesta
+esplicita dell'utente): in `data/raw/`, `batch2` unito in
+`temperature_data_extra.csv` (istat_code → municipality_id) ed eliminato
+insieme al file stantio dei 35 comuni e al riepilogo, ormai ridondanti —
+`data/raw/` torna a 4 file. In `data/processed/`, i due file puliti di
+oggi (`temperature_extra_batch2_clean.csv`,
+`temperature_extra_newbatch_clean.csv`) uniti in
+`temperature_clean_extra.csv` dopo aver verificato zero sovrapposizioni
+su `(municipality_id, date)` — `data/processed/` resta a 2 file.
+Verificato **77.560 + 1.638.534 = 1.716.094**, combacia esattamente col
+totale reale in `temperature`.
+
+**Pagina [Comuni già coperti](comuni-coperti.md) aggiornata** con
+l'elenco completo dei 177 comuni e una nota rivista sul limite
+giornaliero di Open-Meteo: non un numero fisso (19-20 la prima volta, 57
+per la collaboratrice e 22 per il titolare lo stesso giorno) — l'ipotesi
+di un limite legato al volume di dati più che al conteggio delle
+richieste resta non confermata ma coerente con le osservazioni.
 
 ## Passaggi pianificati ma non ancora scritti
 

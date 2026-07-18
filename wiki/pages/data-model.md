@@ -71,13 +71,17 @@ può divergere leggermente, in caso di conflitto fidati dello script SQL).
   dall'indice, non i `NaN` già presenti) — serviva un `.fillna(0.0)`
   esplicito dopo la divisione.
 - `elevation_m`: popolato il 2026-07-15, esteso ai 63 comuni il
-  2026-07-17 mattina e di nuovo agli **98 comuni** con dati di temperatura
-  reali lo stesso giorno pomeriggio, dopo l'import dei 35 comuni extra
-  dalla seconda macchina (resta `NULL` per gli altri 1082) — fonte:
-  Open-Meteo Elevation API sul centroide di ciascun comune (vedi
-  [Fonti Dati](data-sources.md), `src/data_acquisition/fetch_elevation.py`).
-  Usato dalla pagina "Analisi Spaziale" della dashboard per il confronto per
-  fascia altitudinale (pianura/collina/montagna).
+  2026-07-17 mattina, poi a 98 lo stesso pomeriggio, e infine a **177
+  comuni** il 2026-07-18 con dati di temperatura reali (resta `NULL` per
+  gli altri 1003) — fonte: Open-Meteo Elevation API sul centroide di
+  ciascun comune (vedi [Fonti Dati](data-sources.md),
+  `src/data_acquisition/fetch_elevation.py`). **Bug scoperto il
+  2026-07-18**: l'API rifiuta con `400` oltre 100 coordinate in
+  un'unica richiesta — non era mai emerso prima perché il campione non
+  aveva mai superato quota 100; fix: richieste a lotti da 100
+  (`MAX_COORDS_PER_REQUEST`). Usato dalla pagina "Analisi Spaziale" della
+  dashboard per il confronto per fascia altitudinale
+  (pianura/collina/montagna).
 
 ## `municipality_ndvi` (nuova tabella, `sql/04_ndvi.sql`, 2026-07-17)
 
@@ -113,12 +117,13 @@ può divergere leggermente, in caso di conflitto fidati dello script SQL).
   range fisico `-50..60 °C`
 - Indici: `date`, `(municipality_id, date)`, `(province_id, date)`,
   parziale su `temp_max > 30`, `data_source`
-- **Popolata il 2026-07-04, estesa il 2026-07-15 e due volte il
-  2026-07-17** (63 comuni al mattino, 98 nel pomeriggio dopo l'import dei
-  35 comuni extra da una seconda macchina): **950.110 righe reali — 98
-  comuni** (8 capoluoghi + 90 extra selezionati per copertura spaziale),
-  dal 2000 **fino a oggi** (non più fermo al 31/12/2025). Vedi
-  [ETL](etl-pipeline.md) per la nota sulla granularità (98 comuni, non
+- **Popolata il 2026-07-04, estesa il 2026-07-15, due volte il
+  2026-07-17 (63 poi 98 comuni) e due volte il 2026-07-18** (155 dopo
+  l'import di 57 comuni da una seconda collaboratrice, 177 dopo un
+  download diretto di 22 comuni aggiuntivi): **1.716.094 righe reali —
+  177 comuni** (8 capoluoghi + 169 extra selezionati per copertura
+  spaziale), dal 2000 **fino a oggi** (non più fermo al 31/12/2025). Vedi
+  [ETL](etl-pipeline.md) per la nota sulla granularità (177 comuni, non
   tutti i 1180).
 
 ### `heatwave_events` — ondate di calore identificate
@@ -145,8 +150,10 @@ può divergere leggermente, in caso di conflitto fidati dello script SQL).
   per il bug scoperto — queste 16 ondate venivano scartate in silenzio
   dal grafico della dashboard prima del fix del 2026-07-17). **Rieseguita
   una terza volta lo stesso giorno pomeriggio** dopo l'import dei 35
-  comuni extra da una seconda macchina (63 → 98 comuni): **331 ondate
-  totali**.
+  comuni extra da una seconda macchina (63 → 98 comuni): 331 ondate
+  totali. **Rieseguita due volte in più il 2026-07-18** (98 → 155 dopo i
+  57 comuni della collaboratrice, 155 → 177 dopo un download diretto di
+  22 comuni): **640 ondate totali**.
 
 ### `kpi` — aggregati annuali/mensili a 3 livelli
 - PK `kpi_id BIGSERIAL`, FK opzionali `municipality_id`/`province_id`
@@ -181,7 +188,9 @@ può divergere leggermente, in caso di conflitto fidati dello script SQL).
   **Rinfrescate ancora il 2026-07-17 mattina** dopo l'estensione a 63
   comuni e dati fino ad oggi: 1701 righe (63 comuni × 27 anni, 2000-2026).
   **Rinfrescate una terza volta lo stesso pomeriggio** dopo l'import dei
-  35 comuni extra: `kpi_annual_by_municipality` **2.646 righe** (98 × 27),
+  35 comuni extra: `kpi_annual_by_municipality` 2.646 righe (98 × 27).
+  **Rinfrescate due volte in più il 2026-07-18** (155 poi 177 comuni):
+  `kpi_annual_by_municipality` ora **4.779 righe** (177 × 27),
   `kpi_annual_by_province` **216 righe** (8 × 27, invariata nella forma dato
   che l'aggregazione provinciale non dipende dal numero di comuni con dati).
 

@@ -327,6 +327,21 @@ Verificato con `AppTest`: nessuna eccezione.
 > (`KeyError` scoperto subito con `AppTest`, non in produzione), risolto
 > escludendo la colonna duplicata da un lato del merge prima di unirle.
 
+**Aggiornamento 2026-07-18 — testo corretto di nuovo dopo l'estensione a
+177 comuni**: `spatial_regression.py` rieseguito due volte in più lo
+stesso giorno (98 → 155 → 177 comuni, vedi [ETL](etl-pipeline.md) e
+[Analisi statistica](statistical-analysis.md)). Il risultato del
+2026-07-17 pomeriggio (% urbano non significativo, NDVI ancora
+significativo) è cambiato ulteriormente: **a n=177 anche NDVI smette di
+essere significativo** (p=0.58, era p=0.007 a n=98). Caption in
+`03_analisi_spaziale.py` riscritta un'altra volta per riflettere lo stato
+reale — solo l'elevazione resta un predittore robusto in tutte le
+versioni provate (n=63/98/177); % urbano e NDVI sono risultati
+significativi ciascuno in una sola delle tre versioni, mai insieme,
+segno che il campione resta troppo piccolo per conclusioni stabili su
+queste due covariate. Verificato con `py_compile` (server live riavviato
+subito dopo per riflettere i nuovi dati, non solo il testo).
+
 **Tab Dettaglio tecnico**: cluster climatici K-means (k=3) e indice di
 Moran, nota di metodologia sui limiti delle sezioni sopra (fasce
 altitudinali semplificate, confronto UHI illustrativo, mappa trend non
