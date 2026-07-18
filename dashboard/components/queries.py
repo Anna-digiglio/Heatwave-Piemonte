@@ -431,16 +431,25 @@ def get_arpa_municipality_names_with_data() -> list:
 
 @st.cache_data(ttl=600)
 def get_arpa_municipality_metadata() -> pd.DataFrame:
-    """Provincia per ciascun comune con dati ARPA - usata dai filtri provincia lato ARPA."""
+    """
+    Provincia, elevazione e centroide per ciascun comune con dati ARPA -
+    equivalente ARPA di `get_municipality_metadata()`. `elevation_m` è
+    popolata per tutti i 218 comuni ARPA dal 2026-07-18 (vedi
+    `src/data_acquisition/fetch_elevation.py`, esteso lo stesso giorno per
+    includere anche i 167 comuni solo-ARPA).
+    """
     query = """
-        SELECT DISTINCT m.name AS municipality_name, p.name AS province_name
+        SELECT DISTINCT m.name AS municipality_name, p.name AS province_name,
+               m.elevation_m,
+               ST_Y(ST_Centroid(m.geometry)) AS lat,
+               ST_X(ST_Centroid(m.geometry)) AS lon
         FROM arpa_temperature a
         JOIN municipalities m ON a.municipality_id = m.municipality_id
         JOIN provinces p ON m.province_id = p.province_id
         ORDER BY m.name
     """
     rows = db_manager.execute_query(query)
-    return pd.DataFrame(rows, columns=['municipality_name', 'province_name'])
+    return pd.DataFrame(rows, columns=['municipality_name', 'province_name', 'elevation_m', 'lat', 'lon'])
 
 
 @st.cache_data(ttl=600)
@@ -592,6 +601,116 @@ def compute_stats_by_municipality(events: pd.DataFrame) -> pd.DataFrame:
         max_intensity=('intensity_index', 'max'),
         avg_max_temp=('max_temp', 'mean'),
     )
+
+
+@st.cache_data(ttl=600)
+def get_arpa_kpi_annual() -> pd.DataFrame:
+    """
+    Aggregati annuali per comune (stessa semantica di `kpi_annual_by_municipality`,
+    vedi `compute_annual_kpi_from_daily`) calcolati direttamente in SQL su
+    tutti i 218 comuni ARPA insieme - equivalente ARPA della vista
+    materializzata Open-Meteo, che non esiste per questa fonte.
+    """
+    query = """
+        SELECT m.name AS municipality_name,
+               EXTRACT(YEAR FROM a.date)::int AS year,
+               AVG(a.temp_mean)::float AS temp_mean_annual,
+               MAX(a.temp_max)::float AS temp_max_annual,
+               MIN(a.temp_min)::float AS temp_min_annual,
+               COUNT(*) FILTER (WHERE a.temp_max > 30)::int AS days_gt_30c,
+               COUNT(*) FILTER (WHERE a.temp_max > 35)::int AS days_gt_35c
+        FROM arpa_temperature a
+        JOIN municipalities m ON a.municipality_id = m.municipality_id
+        WHERE a.temp_max IS NOT NULL
+        GROUP BY m.name, EXTRACT(YEAR FROM a.date)
+        ORDER BY m.name, year
+    """
+    rows = db_manager.execute_query(query)
+    columns = ['municipality_name', 'year', 'temp_mean_annual', 'temp_max_annual',
+               'temp_min_annual', 'days_gt_30c', 'days_gt_35c']
+    return pd.DataFrame(rows, columns=columns)
+
+
+@st.cache_data(ttl=600)
+def get_arpa_trend_analysis() -> pd.DataFrame:
+    """
+    Mann-Kendall + regressione per ciascun comune ARPA - equivalente ARPA
+    di `trend_analysis.csv`, mai calcolato in batch su tutti i 218 comuni
+    (il confronto esistente in `validate_arpa.py` copre solo i 51 comuni
+    con anche Open-Meteo).
+    """
+    from src.analysis.trend_analysis import linear_trend, mann_kendall_trend
+
+    annual = get_arpa_kpi_annual()
+    results = []
+    for name, group in annual.groupby('municipality_name'):
+        group = group.sort_values('year')
+        if len(group) < 2:
+            continue
+        row = {'municipality_name': name}
+        row.update(mann_kendall_trend(group['temp_mean_annual']))
+        row.update(linear_trend(group['year'], group['temp_mean_annual']))
+        results.append(row)
+    return pd.DataFrame(results)
+
+
+@st.cache_data(ttl=600)
+def get_arpa_municipality_centroids() -> pd.DataFrame:
+    """Centroide (lon/lat) dei comuni con dati ARPA - per clustering/Moran's I calcolati al volo."""
+    query = """
+        SELECT DISTINCT m.name AS municipality_name,
+               ST_X(ST_Centroid(m.geometry)) AS lon,
+               ST_Y(ST_Centroid(m.geometry)) AS lat
+        FROM municipalities m
+        JOIN arpa_temperature a ON a.municipality_id = m.municipality_id
+    """
+    rows = db_manager.execute_query(query)
+    return pd.DataFrame(rows, columns=['municipality_name', 'lon', 'lat'])
+
+
+@st.cache_data(ttl=600)
+def get_arpa_municipality_features() -> pd.DataFrame:
+    """
+    Centroide + feature climatiche aggregate sull'intero periodo per
+    ciascun comune ARPA - stesse colonne di
+    `src/analysis/spatial_analysis.py::load_municipality_features()`
+    (municipality_name, lon, lat, temp_mean_avg, days_gt_30c_avg,
+    days_gt_35c_avg), drop-in per `climate_clustering()`/
+    `build_inverse_distance_weights()`/`morans_i_permutation_test()`.
+    """
+    annual = get_arpa_kpi_annual()
+    agg = annual.groupby('municipality_name', as_index=False).agg(
+        temp_mean_avg=('temp_mean_annual', 'mean'),
+        days_gt_30c_avg=('days_gt_30c', 'mean'),
+        days_gt_35c_avg=('days_gt_35c', 'mean'),
+    )
+    centroids = get_arpa_municipality_centroids()
+    return centroids.merge(agg, on='municipality_name')
+
+
+@st.cache_data(ttl=600)
+def get_arpa_spatial_clustering(k: int = 3) -> pd.DataFrame:
+    """Cluster climatici K-means calcolati al volo sui comuni ARPA (stesso metodo/k di `spatial_analysis.py`)."""
+    from src.analysis.spatial_analysis import climate_clustering
+
+    features = get_arpa_municipality_features()
+    if features.empty:
+        return features
+    features = features.copy()
+    features['climate_cluster'] = climate_clustering(features, k=k)
+    return features
+
+
+@st.cache_data(ttl=600)
+def get_arpa_morans_i() -> dict:
+    """Indice di Moran (permutazione) calcolato al volo sui comuni ARPA (stesso metodo di `spatial_analysis.py`)."""
+    from src.analysis.spatial_analysis import build_inverse_distance_weights, morans_i_permutation_test
+
+    features = get_arpa_municipality_features()
+    if len(features) < 3:
+        return {}
+    w = build_inverse_distance_weights(features)
+    return morans_i_permutation_test(features['temp_mean_avg'].to_numpy(), w)
 
 
 @st.cache_data(ttl=600)
