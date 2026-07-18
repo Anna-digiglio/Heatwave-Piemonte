@@ -109,16 +109,22 @@ può divergere leggermente, in caso di conflitto fidati dello script SQL).
   esplicito dopo la divisione.
 - `elevation_m`: popolato il 2026-07-15, esteso ai 63 comuni il
   2026-07-17 mattina, poi a 98 lo stesso pomeriggio, e infine a **177
-  comuni** il 2026-07-18 con dati di temperatura reali (resta `NULL` per
-  gli altri 1003) — fonte: Open-Meteo Elevation API sul centroide di
-  ciascun comune (vedi [Fonti Dati](data-sources.md),
-  `src/data_acquisition/fetch_elevation.py`). **Bug scoperto il
-  2026-07-18**: l'API rifiuta con `400` oltre 100 coordinate in
-  un'unica richiesta — non era mai emerso prima perché il campione non
-  aveva mai superato quota 100; fix: richieste a lotti da 100
+  comuni** il 2026-07-18 con dati di temperatura reali Open-Meteo — fonte:
+  Open-Meteo Elevation API sul centroide di ciascun comune (vedi
+  [Fonti Dati](data-sources.md), `src/data_acquisition/fetch_elevation.py`).
+  **Bug scoperto il 2026-07-18**: l'API rifiuta con `400` oltre 100
+  coordinate in un'unica richiesta — non era mai emerso prima perché il
+  campione non aveva mai superato quota 100; fix: richieste a lotti da 100
   (`MAX_COORDS_PER_REQUEST`). Usato dalla pagina "Analisi Spaziale" della
   dashboard per il confronto per fascia altitudinale
   (pianura/collina/montagna).
+  **Estesa lo stesso giorno (sera) ai comuni solo-ARPA**: la query di
+  `fetch_elevation.py` filtrava solo su `temperature` (Open-Meteo) — i 167
+  comuni con solo dati ARPA restavano `NULL`, rompendo il confronto per
+  fascia altitudinale in modalità "Solo ARPA" appena introdotta in
+  dashboard. Ampliata a `temperature OR arpa_temperature` (idempotente per
+  i comuni già popolati). **Ora 344 comuni con `elevation_m`** (177
+  Open-Meteo + 167 solo-ARPA, resta `NULL` per gli altri 836).
 
 ## `municipality_ndvi` (nuova tabella, `sql/04_ndvi.sql`, 2026-07-17)
 

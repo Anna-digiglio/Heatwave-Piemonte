@@ -47,17 +47,29 @@ dashboard/
 │   ├── 02_analisi_temporale.py     # trend, anomalie, stagionalità, boxplot per quinquennio, STL
 │   ├── 03_analisi_spaziale.py      # coropletiche per provincia, trend per comune, fasce altitudinali, uso del suolo, popolazione, cluster, Moran's I
 │   ├── 04_ondate_di_calore.py      # frequenza/intensità/cumulato, mappa concentrazione, heatmap calendario
-│   ├── 05_download_dati.py         # export CSV (dati puliti + risultati di analisi)
-│   └── 06_validazione_dati.py      # confronto Open-Meteo vs stazioni ARPA reali — nuovo 2026-07-18
+│   └── 05_download_dati.py         # export CSV (dati puliti + risultati di analisi)
 └── components/
     ├── __init__.py                 # bootstrap sys.path (vedi bug sotto)
     ├── constants.py                # palette colori, soglie fasce altitudinali, capoluoghi, riferimenti letteratura, etichette Mann-Kendall (2026-07-15); token identità "calore" THEME_*/FONT_*/MAP_TILES (2026-07-17)
+    ├── data_source.py              # selettore fonte Open-Meteo/ARPA/Confronto, riusabile tra pagine — nuovo 2026-07-18
     ├── filters.py                  # filtri anni/provincia, inline per pagina (non più sidebar dal 2026-07-15)
-    ├── heatwave_definitions.py     # definizione alternativa (percentile) di ondata di calore, solo per confronto metodologico (2026-07-15)
+    ├── heatwave_definitions.py     # definizione alternativa (percentile) di ondata di calore + identify_heatwaves_events() (equivalente Python multi-comune della soglia fissa, per ARPA) (2026-07-15, esteso 2026-07-18)
     ├── styling.py                  # CSS condiviso + componenti HTML (hero/card/numeri chiave), iniettato in ogni pagina (2026-07-15, ampliato 2026-07-17)
     ├── charts.py                   # tema condiviso per i grafici Plotly (sfondo trasparente) — nuovo 2026-07-17
     ├── queries.py                  # accesso dati (DB + CSV di output), cache_data
     └── maps.py                     # conversione WKT → GeoJSON per folium
+
+**`06_validazione_dati.py` — rimossa il 2026-07-18 (sera)**: esisteva come
+pagina dedicata dal mattino dello stesso giorno. Con l'introduzione del
+selettore fonte (vedi sotto), il suo contenuto è stato interamente
+redistribuito: mappa bias e confronto ondate/trend sintetico dentro
+Ondate di Calore/Analisi Temporale (modalità Confronto), il resto
+(scatter bias/elevazione, istogramma, tabelle, metodologia) dentro
+Analisi Spaziale → tab Dettaglio tecnico → sezione "Validazione ARPA —
+dettaglio" (solo in modalità Confronto). Nessun contenuto perso, nessuna
+pagina orfana: la cronologia di quando esisteva resta più sotto invariata
+(natura non-riscritta del log), solo l'albero della struttura reale sopra
+riflette lo stato attuale.
 
 .streamlit/
 └── config.toml                     # tema Streamlit nativo (colori, font, raggio angoli) — 2026-07-15
@@ -442,7 +454,14 @@ Invariata: ogni file ha una descrizione in linguaggio semplice di cosa
 contiene, oltre al bottone di export per i CSV di `data/processed/`,
 `data/external/` e `output/`.
 
-### Validazione Dati (`06_validazione_dati.py`) — nuova il 2026-07-18
+### Validazione Dati (`06_validazione_dati.py`) — nuova il 2026-07-18, **rimossa lo stesso giorno in serata**
+
+> **Superata**: questa pagina è stata rimossa il 2026-07-18 in serata,
+> contenuto redistribuito nel selettore fonte di Ondate di
+> Calore/Analisi Temporale/Analisi Spaziale — vedi "Selettore fonte dati"
+> più sotto per il dettaglio del perché e di dove è finito ogni pezzo.
+> Sezione lasciata intatta come cronologia di quando la pagina esisteva
+> davvero (coerente con la natura non-riscritta di questo log).
 
 Nuova pagina, su richiesta esplicita dell'utente dopo aver eseguito la
 validazione ARPA (vedi [Fonti dati](data-sources.md) e
@@ -473,6 +492,182 @@ stesso, quindi pagina dedicata invece di un tab dentro una pagina esistente.
 - Verificata con `streamlit.testing.v1.AppTest` (nessuna eccezione, metriche
   coerenti coi CSV reali), poi con il server live riavviato (health check
   `/_stcore/health` → 200, routing `/validazione_dati` → 200).
+
+## Selettore fonte dati (Open-Meteo / ARPA / Confronto) — 2026-07-18
+
+Su richiesta esplicita dell'utente durante una discussione sulla
+riorganizzazione del sito: invece di tenere ARPA confinata alla pagina
+"Validazione Dati", un **selettore riusabile** che permette di scegliere,
+pagina per pagina, se guardare Open-Meteo, solo ARPA (stazione reale) o un
+confronto diretto tra le due. Reso possibile dall'estensione della
+copertura ARPA a 218 comuni lo stesso giorno (vedi
+[Fonti dati](data-sources.md#estensione-a-218-comuni-2026-07-18)).
+
+**Nuovo componente** `components/data_source.py`
+(`render_source_selector(key, has_om, has_arpa)`): mostra il radio a 3
+opzioni solo se **entrambe** le fonti esistono per il comune/insieme di
+comuni correntemente selezionato; se ne esiste solo una, non mostra un
+radio con opzioni disabilitate ma restituisce direttamente l'unica fonte
+valida con una caption esplicativa — il chiamante non deve mai gestire il
+caso "fonte scelta ma dati assenti".
+
+**Nuove funzioni dati** in `components/queries.py` (equivalenti ARPA delle
+funzioni Open-Meteo già esistenti, dato che le viste/CSV precalcolati del
+progetto — `kpi_annual_by_municipality`, `heatwave_events`,
+`trend_analysis.csv`, `heatwave_stats_by_municipality.csv` — sono popolati
+solo da Open-Meteo): `get_arpa_municipality_names_with_data()`,
+`get_arpa_municipality_metadata()`, `get_arpa_daily_temperature()`,
+`get_arpa_daily_temperature_multi()`, `get_arpa_municipality_geometries_wkt()`,
+`get_arpa_seasonal_decomposition()` (STL calcolata al volo, come già
+succedeva per l'aggregato "Piemonte"), `get_arpa_heatwave_events()` (ondate
+calcolate al volo sulla soglia fissa canonica), più tre helper puri
+(`compute_annual_kpi_from_daily()`, `compute_frequency_by_year()`,
+`compute_stats_by_municipality()`) che replicano la semantica esatta delle
+viste/CSV Open-Meteo (es. `temp_max_annual` = MASSIMO dell'anno, non media
+dei massimi giornalieri — verificato contro la definizione SQL in
+`sql/01_init_database.sql`).
+
+**Nuova funzione** `identify_heatwaves_events()` in
+`components/heatwave_definitions.py`: versione Python multi-comune della
+definizione canonica a soglia fissa già implementata lato SQL in
+`identify_heatwaves()` — necessaria perché quella funzione scrive solo in
+`heatwave_events`, popolata solo da Open-Meteo. Non sostituisce la
+funzione SQL (resta l'unica fonte di verità per Open-Meteo), la affianca
+per i dati ARPA.
+
+**Pagine aggiornate**:
+- **Analisi Temporale** (`02_analisi_temporale.py`): il selettore comune
+  ora elenca l'**unione** dei comuni Open-Meteo e ARPA (non solo i 177
+  Open-Meteo), rendendo raggiungibili anche i 167 comuni solo-ARPA. In
+  modalità "Solo ARPA" l'intera pagina (serie annuale, anomalie, stagioni,
+  boxplot, trend Mann-Kendall/regressione, STL) è ricalcolata sulla serie
+  di stazione. In modalità "Confronto" le sezioni stagioni/boxplot/STL
+  restano su Open-Meteo (dichiarato esplicitamente in una caption, non
+  nascosto) mentre il grafico della serie annuale riceve una traccia
+  ARPA sovrapposta (tratteggiata) e compare un riquadro "Confronto
+  sintetico ARPA vs Open-Meteo" con le due pendenze e il bias medio
+  annuo. Il checkbox "🌍 Intero Piemonte" disattiva il selettore (resta
+  solo Open-Meteo, motivato in un `st.info`): mediare comuni ARPA-only
+  nell'aggregato regionale non è stato messo in scope questo giro.
+- **Ondate di Calore** (`04_ondate_di_calore.py`): il selettore è
+  globale (si applica a tutti i grafici/mappa/tabelle della pagina, non a
+  un singolo comune, perché la pagina aggrega sempre su un insieme di
+  comuni filtrati per anno/provincia). In modalità "Solo ARPA" frequenza
+  per anno, mappa di concentrazione, heatmap calendario, statistiche per
+  comune ed elenco ondate sono tutti ricalcolati dal vivo su
+  `get_arpa_heatwave_events()`. In modalità "Confronto" i grafici restano
+  su Open-Meteo e viene aggiunto un riquadro con le metriche già calcolate
+  da `validate_arpa.py` (recall 31.4%, precision 62%, conteggio ondate
+  ARPA vs Open-Meteo) — **stesso contenuto di cuore della pagina
+  Validazione Dati**, mostrato qui invece che solo in una pagina separata.
+
+**Scope deliberatamente lasciato fuori da questo giro** (comunicato
+all'utente, non un limite scoperto in corsa):
+- Pagina "Validazione Dati" **non rimossa**: la mappa/scatter bias vs
+  elevazione e la tabella completa per comune non hanno una casa naturale
+  in Analisi Temporale o Ondate di Calore (sono sulla qualità del dato in
+  sé, non su un trend o un evento) — l'utente non ha chiesto esplicitamente
+  di eliminarla, solo di non *aggiungerne* di nuove.
+- Analisi Spaziale e Download Dati non hanno ricevuto il selettore: ARPA
+  non ha elevazione/uso del suolo/NDVI/CSV export propri, un selettore lì
+  sarebbe stato solo rumore (già discusso con l'utente prima di procedere).
+- Modalità "Confronto" non duplica ogni grafico per entrambe le fonti (solo
+  metriche di sintesi + una traccia sovrapposta dove sensato) — una
+  duplicazione completa avrebbe raddoppiato la lunghezza di entrambe le
+  pagine per un beneficio marginale rispetto ai numeri di confronto già
+  disponibili.
+
+**Verifica**: `py_compile` su tutti i file toccati; `streamlit.testing.v1.AppTest`
+su entrambe le pagine con tutte e 3 le combinazioni di fonte (incluso un
+comune solo-ARPA come Domodossola, che attiva il percorso "selettore
+nascosto, fonte forzata"), nessuna eccezione.
+
+**Aggiornamento stesso giorno (sera) — server riavviato e selettore esteso
+ad Analisi Spaziale**: l'utente ha chiesto di riavviare il server per un
+controllo visivo — trovati **3 processi Streamlit duplicati** in ascolto
+sulla stessa porta (stesso bug già documentato il 2026-07-15), terminati
+tutti e riavviato un solo processo pulito (verificato con
+`Get-NetTCPConnection`, health check `/_stcore/health` → 200).
+
+Nella stessa conversazione, l'utente ha fatto notare che Analisi Spaziale
+era stata esclusa dal selettore senza una giustificazione solida: la
+motivazione iniziale ("uso del suolo/NDVI/popolazione non dipendono dalla
+fonte") era corretta solo per una parte della pagina — le mappe
+coropletica per provincia, del trend per comune, il confronto per fascia
+altitudinale, il clustering K-means e l'indice di Moran sono invece
+**tutti calcolati sulla temperatura Open-Meteo**, quindi hanno un
+equivalente ARPA legittimo (e la fascia altitudinale è proprio dove il
+bias di Open-Meteo è più marcato). Selettore esteso di conseguenza:
+
+- **Bloccante scoperto prima di procedere**: `elevation_m` era popolata
+  solo per i 177 comuni Open-Meteo (`fetch_elevation.py` filtrava su
+  `temperature`), quindi il confronto per fascia altitudinale sarebbe
+  stato vuoto per tutti i 167 comuni solo-ARPA. Risolto ampliando la
+  query a `temperature OR arpa_temperature` e rieseguendo lo script (vedi
+  [Modello dati](data-model.md)) prima di scrivere il codice della
+  pagina — non dopo aver scoperto il bug in dashboard.
+- **Nuove funzioni** in `queries.py`: `get_arpa_kpi_annual()` (equivalente
+  ARPA di `kpi_annual_by_municipality`, calcolato in SQL con `GROUP BY`
+  invece che con una vista), `get_arpa_trend_analysis()` (Mann-Kendall +
+  regressione per tutti i 218 comuni ARPA, mai calcolato in batch prima
+  d'ora), `get_arpa_municipality_features()`/`get_arpa_spatial_clustering()`/
+  `get_arpa_morans_i()` (riusano le funzioni pure già esistenti in
+  `src/analysis/spatial_analysis.py` — `climate_clustering()`,
+  `build_inverse_distance_weights()`, `morans_i_permutation_test()` — con
+  dati aggregati da `arpa_temperature` invece che dalla vista Open-Meteo).
+  `get_arpa_municipality_metadata()` estesa con `elevation_m`/`lat`/`lon`
+  (prima aveva solo provincia).
+- **Cosa risponde al selettore**: mappa coropletica per provincia, mappa
+  del trend, confronto per fascia altitudinale, cluster K-means, indice di
+  Moran, e le 4 metriche in alto (provincia più calda/trend più
+  rapido/comune più in quota/comuni con dati).
+- **Cosa resta sempre su Open-Meteo** (dichiarato in una caption fissa
+  sotto il selettore, non un limite silenzioso): le mappe di uso del
+  suolo/popolazione/NDVI (dati indipendenti dalla fonte di temperatura,
+  coprono comunque tutti i 1180 comuni) e lo scatter
+  temperatura/uso-del-suolo (legato al modello di regressione spaziale già
+  discusso in Metodologia, calcolato solo su Open-Meteo).
+- **Modalità "Confronto"**: mappe/cluster/Moran restano su Open-Meteo
+  (stessa convenzione delle altre due pagine — niente duplicazione
+  completa dei grafici); la fascia altitudinale riceve invece un vero
+  confronto numerico (tabella con temperatura media per fascia su
+  entrambe le fonti + colonna di bias), perché è il punto in cui la
+  differenza tra le due fonti è più interessante da mostrare.
+- **Verifica**: `py_compile`, poi `AppTest` su tutte e 3 le combinazioni di
+  fonte — nessuna eccezione, ma **pagina lenta** (70-80s in modalità
+  ARPA/Confronto contro pochi secondi delle altre pagine, dovuto alle
+  mappe con centinaia di poligoni per uso del suolo/popolazione/NDVI su
+  tutti i 1180 comuni — costo preesistente della pagina, non introdotto da
+  questa modifica) e server live riavviato (vedi sopra) per la verifica
+  visiva finale, richiesta esplicitamente dall'utente.
+
+**Mappa del trend in "Confronto" — corretta dopo una domanda diretta
+dell'utente**: la prima versione (sopra) mostrava, in modalità Confronto,
+la mappa del trend calcolata **solo su Open-Meteo** (stessa convenzione
+usata per cluster/Moran), col confronto vero relegato solo alla tabella
+per fascia altitudinale. L'utente ha chiesto esplicitamente "la mappa che
+vedo ha i colori di entrambi i dati?" — la risposta onesta era no, e la
+scelta di scope non reggeva bene proprio per questa mappa (è il punto in
+cui vorresti vedere a colpo d'occhio se le due fonti raccontano zone
+diverse). Chiesto all'utente come preferiva risolvere (`AskUserQuestion`:
+due mappe affiancate / mappa del bias sostitutiva / lasciare com'era) —
+scelta: **due mappe affiancate**, stessa scala colore (`vmin`/`vmax`
+condivisi = massimo assoluto tra le due fonti, altrimenti lo stesso rosso
+potrebbe rappresentare velocità diverse da una mappa all'altra), una
+colonna Open-Meteo e una ARPA, un'unica legenda condivisa sotto entrambe.
+Codice di disegno mappa estratto in `render_trend_map()` (funzione locale
+nella pagina) per non duplicarlo tra il ramo Confronto e quello a fonte
+singola. Ri-verificato con `AppTest` (OM default + Confronto), nessuna
+eccezione.
+
+**Spiegata all'utente, non implementata in questo giro**: la differenza
+concettuale tra questa mappa del trend (ogni fonte calcola la propria
+pendenza in autonomia, quindi funziona anche per comuni con una sola
+fonte) e la mappa del **bias** già esistente nella pagina "Validazione
+Dati" (differenza diretta OM−ARPA sullo stesso comune/giorno — richiede
+**entrambe** le fonti per lo stesso comune, quindi strutturalmente
+limitata ai 51 comuni con copertura doppia, non estendibile ai 167
+solo-ARPA finché non ci sarà più sovrapposizione tra le due fonti).
 
 ## Baseline delle anomalie: da configurabile a fissa (2026-07-15)
 

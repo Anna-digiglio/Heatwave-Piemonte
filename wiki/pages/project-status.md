@@ -362,9 +362,50 @@ Open-Meteo) — vedi
 dettaglio tecnico completo. **Copertura ARPA ora: 218 comuni, 1.965.138
 righe** (era 51 comuni, 451.502 righe).
 
-**Non ancora fatto**: il selettore di fonte per pagina discusso con
-l'utente non è ancora implementato in dashboard — resta il prossimo passo
-concreto (vedi sotto).
+**Aggiornamento stesso giorno — selettore implementato**: il selettore
+Open-Meteo/Solo ARPA/Confronto discusso con l'utente è stato scritto ed
+è live in **Analisi Temporale** e **Ondate di Calore** (nuovo componente
+`components/data_source.py` + funzioni ARPA live in `queries.py` +
+`identify_heatwaves_events()` in `heatwave_definitions.py` — vedi
+[Dashboard](dashboard.md#selettore-fonte-dati-open-meteo--arpa--confronto--2026-07-18)
+per il dettaglio completo). Verificato con `AppTest` su tutte e 3 le
+combinazioni di fonte in entrambe le pagine, nessuna eccezione. La pagina
+"Validazione Dati" dedicata **non è stata rimossa** (scelta deliberata,
+non un limite tecnico — contenuto che non ha una casa naturale nelle altre
+due pagine). Download Dati non ha ricevuto il selettore (CSV export non
+dipende dalla fonte).
+
+**Aggiornamento stesso giorno (sera) — esteso anche ad Analisi Spaziale**:
+l'utente ha fatto notare che la giustificazione iniziale per escludere
+questa pagina era incompleta — solo le mappe uso del suolo/popolazione/
+NDVI sono davvero indipendenti dalla fonte, ma mappa coropletica, mappa
+del trend, fascia altitudinale, cluster K-means e Moran's I sono tutti
+temperatura-dipendenti. Esteso il selettore anche lì (vedi
+[Dashboard](dashboard.md#selettore-fonte-dati-open-meteo--arpa--confronto--2026-07-18)
+per il dettaglio, incluso il bug bloccante trovato e risolto prima di
+scrivere il codice: `elevation_m` mancante per i 167 comuni solo-ARPA).
+Server live riavviato su richiesta dell'utente per la verifica visiva
+(trovati e terminati 3 processi Streamlit duplicati sulla stessa porta —
+bug già noto, vedi sezione dashboard).
+
+**Aggiornamento stesso giorno (sera, seguito) — mappa trend corretta,
+pagina "Validazione Dati" eliminata**: l'utente ha chiesto se, in
+modalità Confronto, la mappa del trend mostrasse davvero i colori di
+entrambe le fonti — non era vero, mostrava solo Open-Meteo. Corretta con
+due mappe affiancate (stessa scala colore). Chiesto poi di portare anche
+la mappa del **bias** (già esistente solo nella pagina dedicata
+"Validazione Dati") dentro Analisi Spaziale — fatto, e a quel punto
+l'utente ha messo in dubbio il senso di tenere ancora quella pagina a
+parte, dato che gran parte del suo contenuto era ormai duplicato altrove
+(recall/precision in Ondate di Calore, confronto trend in Analisi
+Temporale). Scelta confermata con l'utente (`AskUserQuestion`): **pagina
+eliminata**, tutto il contenuto residuo (scatter bias/elevazione,
+istogramma, bias per condizione, tabella completa 51 comuni, tabella
+trend comparativa, metodologia) spostato in Analisi Spaziale → tab
+Dettaglio tecnico → sezione "Validazione ARPA — dettaglio" (visibile solo
+in modalità Confronto). **5 pagine dashboard**, non più 6. Nessun
+contenuto perso. Verificato con `AppTest` su tutte e 3 le combinazioni di
+fonte, incluso `Home.py`, nessuna eccezione.
 
 ## Prossimi passi
 
@@ -413,14 +454,11 @@ completo:
 11. ~~Importare i 57 comuni extra del 2026-07-18~~ — **fatto lo stesso
     giorno**, insieme a un download diretto di altri 22 comuni (98 → 155
     → 177) e al ricalcolo completo a valle (vedi cronologia sopra).
-12. **Selettore fonte per pagina in dashboard** (ARPA+Open-Meteo / solo
-    ARPA / solo Open-Meteo) — discusso con l'utente il 2026-07-18, dati
-    ARPA già estesi a 218 comuni per supportarlo (vedi sopra), ma il
-    componente UI non è ancora scritto. Pagine target: Ondate di Calore
-    (già esiste `get_arpa_event_comparison_summary()`) e Analisi Temporale
-    (già esiste `get_arpa_trend_comparison()`); da decidere cosa fare
-    della pagina "Validazione Dati" dedicata una volta introdotto il
-    selettore.
+12. ~~Selettore fonte per pagina in dashboard~~ — **fatto lo stesso giorno
+    (2026-07-18)**: componente `render_source_selector()`, integrato in
+    Ondate di Calore e Analisi Temporale, dati ARPA estesi a 218 comuni per
+    supportarlo. Pagina "Validazione Dati" tenuta com'era (scelta
+    deliberata). Vedi [Dashboard](dashboard.md#selettore-fonte-dati-open-meteo--arpa--confronto--2026-07-18).
 
 ## Discrepanze da tenere a mente quando si presenta il progetto
 

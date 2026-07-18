@@ -2584,3 +2584,68 @@ Log cronologico append-only. Ogni riga: data, azione, pagine toccate.
   ancora da implementare (prossimo passo).
 
   Pagine aggiornate: `data-sources.md`, `data-model.md`, `project-status.md`.
+
+- **2026-07-18 (sera)** — INGEST: selettore fonte dati (Open-Meteo / Solo
+  ARPA / Confronto) implementato in Analisi Temporale e Ondate di Calore.
+  Nuovo componente `dashboard/components/data_source.py`; nuove funzioni
+  ARPA live in `dashboard/components/queries.py` (equivalenti ARPA delle
+  funzioni/CSV Open-Meteo esistenti, verificate contro la semantica esatta
+  delle viste SQL); nuova `identify_heatwaves_events()` in
+  `heatwave_definitions.py` (versione Python multi-comune della soglia
+  fissa canonica, per calcolare ondate su ARPA al volo). Pagina
+  "Validazione Dati" tenuta invariata (scelta deliberata). Verificato con
+  `AppTest` su tutte e 3 le combinazioni di fonte in entrambe le pagine,
+  nessuna eccezione; verifica visiva in browser non eseguita (server
+  Streamlit di una sessione precedente già in ascolto sulla porta 8501,
+  non riavviato).
+
+  Pagine aggiornate: `dashboard.md`, `project-status.md`, `index.md`.
+
+- **2026-07-18 (sera, seconda parte)** — INGEST: server Streamlit
+  riavviato su richiesta dell'utente (trovati e terminati 3 processi
+  duplicati sulla stessa porta, riavviato uno pulito, health check 200).
+  Selettore fonte esteso anche ad **Analisi Spaziale** dopo che l'utente
+  ha fatto notare che l'esclusione iniziale era ingiustificata per metà
+  della pagina (mappa coropletica, mappa trend, fascia altitudinale,
+  cluster K-means, Moran's I sono temperatura-dipendenti, non solo le
+  mappe uso del suolo/popolazione/NDVI). Bug bloccante trovato e risolto
+  prima di scrivere il codice dashboard: `fetch_elevation.py` filtrava
+  solo su Open-Meteo, lasciando `elevation_m` NULL per i 167 comuni
+  solo-ARPA — ampliato a `temperature OR arpa_temperature` e rieseguito
+  (344 comuni ora con elevazione). Nuove funzioni ARPA live in
+  `queries.py` (`get_arpa_kpi_annual`, `get_arpa_trend_analysis`,
+  `get_arpa_municipality_features`, `get_arpa_spatial_clustering`,
+  `get_arpa_morans_i`), riusando le funzioni pure già esistenti in
+  `src/analysis/spatial_analysis.py`. Verificato con `AppTest` su tutte e
+  3 le combinazioni di fonte, nessuna eccezione (pagina lenta - 70-80s in
+  ARPA/Confronto - per via delle mappe con centinaia di poligoni, costo
+  preesistente non introdotto da questa modifica).
+
+  Pagine aggiornate: `dashboard.md`, `data-model.md`, `project-status.md`.
+
+- **2026-07-18 (sera, terza parte)** — INGEST: mappa "Velocità di
+  riscaldamento per comune" in Analisi Spaziale corretta dopo che l'utente
+  ha chiesto esplicitamente se, in modalità Confronto, la mappa mostrasse
+  i colori di entrambe le fonti — non era vero (mostrava solo Open-Meteo).
+  Chiesto con `AskUserQuestion` come preferire risolvere; scelta: due
+  mappe affiancate (stessa scala colore condivisa). Spiegata la differenza
+  con la mappa del bias già esistente in "Validazione Dati" (limitata
+  strutturalmente ai 51 comuni con doppia copertura). Ri-verificato con
+  `AppTest`, nessuna eccezione.
+
+  Pagine aggiornate: `dashboard.md`.
+
+- **2026-07-18 (sera, quarta parte)** — INGEST: portata la mappa bias
+  Open-Meteo/ARPA (prima solo nella pagina dedicata) dentro Analisi
+  Spaziale, modalità Confronto. L'utente ha quindi messo in dubbio il
+  senso di tenere ancora "Validazione Dati" come pagina a sé, con gran
+  parte del contenuto ormai duplicato altrove. Confermato con
+  `AskUserQuestion`: **pagina `06_validazione_dati.py` eliminata**
+  (`git rm`), contenuto residuo (scatter bias/elevazione, istogramma,
+  bias per condizione, tabella completa, tabella trend comparativa,
+  metodologia) spostato in Analisi Spaziale → Dettaglio tecnico →
+  "Validazione ARPA — dettaglio" (solo in Confronto). Dashboard passa da
+  6 a **5 pagine**. Verificato con `AppTest` su tutte e 3 le fonti +
+  `Home.py`, nessuna eccezione.
+
+  Pagine aggiornate: `dashboard.md`, `index.md`, `project-status.md`.
