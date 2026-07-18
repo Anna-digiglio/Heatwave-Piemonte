@@ -6,6 +6,7 @@
 pandas==3.0.3
 numpy==2.4.6
 scipy==1.17.1
+pyarrow==24.0.0  # export_dashboard_data.py (dashboard senza DB live, vedi wiki/pages/dashboard.md)
 
 # --- Database ---
 sqlalchemy==2.0.50
