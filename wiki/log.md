@@ -2687,3 +2687,23 @@ Log cronologico append-only. Ogni riga: data, azione, pagine toccate.
   eccezione.
 
   Pagine aggiornate: `dashboard.md`.
+
+- **2026-07-18 (ottava parte)** — INGEST: tema chiaro nativo di
+  hero/card di navigazione/striscia numeri chiave reso adattivo, su
+  segnalazione dell'utente ("cambia solo lo sfondo in bianco ed è brutto")
+  dopo il restyling 2026-07-17 che li aveva fissati su un'identità scura
+  ignara del toggle chiaro/scuro. `components/constants.py::THEME_TOKENS`
+  ora è `{"dark": {...}, "light": {...}}` invece di costanti fisse;
+  `components/styling.py::inject_custom_css()` sceglie la coppia in base a
+  `st.context.theme.type`. Stesso principio del tema scuro validato il
+  2026-07-17: il pannello si fonde con lo sfondo nativo dello stesso modo
+  invece di essere un blocco di colore a sé. Verificato **visivamente**
+  (non solo `AppTest`): server live avviato, screenshot con Playwright +
+  Chrome di sistema (`channel="chrome"`, nessun download di browser) prima
+  e dopo lo switch tema dal menu Streamlit — chiaro coerente, scuro
+  invariato dopo un reload (nessuna regressione). Limite noto e documentato
+  in codice: il cambio tema dal menu è lato-client puro e non forza un
+  rerun, quindi c'è uno sfasamento transitorio finché non arriva la
+  prossima esecuzione dello script (si autocorregge da solo).
+
+  Pagine aggiornate: `dashboard.md`, `index.md`.

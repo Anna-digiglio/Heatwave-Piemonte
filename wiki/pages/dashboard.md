@@ -899,6 +899,12 @@ sono invece componenti **nuovi** (non widget nativi Streamlit) con
 un'identità scura **fissa**, scelta deliberata come il mockup approvato,
 non un tentativo di inseguire il toggle chiaro/scuro.
 
+> **Claim superato il 2026-07-18**: "identità scura fissa" non è più vero.
+> Con il tema chiaro nativo attivato, l'identità fissa produceva pannelli
+> neri fuori posto su una pagina bianca (feedback utente: "cambia solo lo
+> sfondo in bianco ed è brutto") — vedi "Tema chiaro adattivo per
+> hero/card/stats" più sotto per il fix.
+
 **Cosa è cambiato**:
 - `components/constants.py`: nuovi token `THEME_INK/SURFACE/BORDER/TEXT/...`,
   `FONT_DISPLAY` (Fraunces), `FONT_BODY` (Manrope), `FONT_MONO` (JetBrains
@@ -955,6 +961,55 @@ correttamente (un solo processo, verificato con `netstat` prima di
 `taskkill`). La verifica visiva effettiva (hover/gradiente/font
 renderizzati davvero) resta da fare in un browser reale — non è stata
 affermata come completata.
+
+## Tema chiaro adattivo per hero/card/stats (2026-07-18)
+
+Feedback esplicito dell'utente dopo aver provato il toggle chiaro/scuro
+nativo di Streamlit: "cambia solo lo sfondo in bianco ed è brutto". Causa:
+l'identità scura **fissa** di hero/card di navigazione/striscia numeri
+chiave (scelta deliberata del restyling 2026-07-17, vedi sopra) non seguiva
+il toggle — passando a chiaro, lo sfondo nativo diventava bianco ma questi
+pannelli restavano sul grigio ardesia scuro, un contrasto sbagliato e non
+un vero tema chiaro disegnato.
+
+**Fix**: `components/constants.py::THEME_TOKENS` ora è un dizionario
+`{"dark": {...}, "light": {...}}` invece di costanti fisse (`THEME_INK`,
+`THEME_SURFACE`, `THEME_BORDER`, `THEME_TEXT*` diventano chiavi del dict,
+una coppia per modo); i colori "brand" indipendenti dal modo
+(`THEME_COLD`/`THEME_MID`/`THEME_HOT`) restano costanti invariate.
+`components/styling.py::inject_custom_css()` legge `st.context.theme.type`
+(introdotto in Streamlit per questo scopo, vedi
+`references/theme.md` dello skill Streamlit installato) e sceglie la coppia
+di token corrispondente prima di costruire il CSS. Stesso principio di
+design del tema scuro (validato 2026-07-17): lo sfondo del pannello si
+**fonde** con lo sfondo nativo dello stesso modo (`ink` = `backgroundColor`
+del tema Streamlit attivo) invece di essere un blocco di colore a sé — la
+distinzione visiva viene da bordo/glow/gradiente del titolo, non da un
+riquadro scuro su pagina chiara. Il gradiente del titolo hero (`hero_title_gradient`)
+ha due varianti: bianco→crema→corallo su sfondo scuro (invariato), ardesia
+scuro→ambra→rosso ember su sfondo chiaro (nuovo, altrimenti un testo chiaro
+trasparente sarebbe illeggibile su bianco); le sfumature radiali di sfondo
+(`glow_opacity`) sono più tenui in chiaro (altrimenti "sporche" sul bianco).
+
+**Limite noto, non risolto in questo giro** (documentato esplicitamente nel
+docstring di `st.context.theme.type` di Streamlit stesso): il cambio tema
+dal menu Impostazioni è puro lato-client e non forza un rerun dello script,
+quindi subito dopo il click i colori di questi pannelli restano quelli del
+rerun precedente finché non arriva una vera esecuzione (navigazione tra
+pagine, refresh, interazione con un widget). Non risolvibile senza un
+componente custom che ascolti l'evento di cambio tema e forzi
+`st.rerun()` — fuori scope per un fix di stile.
+
+**Verifica visiva reale** (non solo `AppTest`/`py_compile`): server live
+avviato, screenshot con Playwright + Chrome di sistema (nessun browser
+Playwright scaricato, `channel="chrome"` punta a
+`C:\Program Files\Google\Chrome`) prima e dopo lo switch tema dal menu
+Streamlit (`data-testid="stMainMenuItem-theme-Dark"`/`-Light`). Confermato:
+tema chiaro ora coerente (hero bianco fuso con la pagina, titolo in
+gradiente scuro→ember, card con bordo colorato), tema scuro **invariato**
+rispetto al restyling 2026-07-17 dopo un reload (nessuna regressione), e il
+limite di sincronizzazione sopra riprodotto e poi verificato che si
+autocorregge dopo un reload/rerun.
 
 ## Come verificare senza aprire un browser
 
