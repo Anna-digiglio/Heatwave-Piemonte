@@ -8,6 +8,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 import numpy as np
+import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
 import streamlit as st
@@ -18,8 +19,13 @@ from components.charts import apply_chart_theme
 from components.constants import (
     NATIONAL_GLOBAL_REFERENCE, SEASON_BY_MONTH, SEASON_COLORS, SEASON_ORDER, format_mk_trend,
 )
+from components.data_source import SOURCE_ARPA, SOURCE_BOTH, SOURCE_OPENMETEO, render_source_selector
 from components.filters import render_year_range_filter
 from components.queries import (
+    compute_annual_kpi_from_daily,
+    get_arpa_daily_temperature,
+    get_arpa_municipality_names_with_data,
+    get_arpa_seasonal_decomposition,
     get_daily_temperature,
     get_daily_temperature_aggregate,
     get_kpi_annual,
@@ -37,26 +43,39 @@ st.title("📈 Analisi Temporale")
 st.caption("La temperatura di ogni comune sta davvero cambiando nel tempo, o è solo variazione normale?")
 
 names = get_municipality_names_with_data()
+names_arpa = get_arpa_municipality_names_with_data()
+names_union = sorted(set(names) | set(names_arpa))
 
 col_check, col_select = st.columns([1, 2])
 with col_check:
     is_aggregate = st.checkbox(
         "🌍 Intero Piemonte",
-        help=f"Calcola tutta la pagina sulla media dei {len(names)} comuni con dati, invece che su un singolo comune.",
+        help=f"Calcola tutta la pagina sulla media dei {len(names)} comuni con dati Open-Meteo, invece che su un singolo comune.",
     )
 with col_select:
-    default_index = names.index('Torino') if 'Torino' in names else 0
-    municipality = st.selectbox("Comune", names, index=default_index, disabled=is_aggregate)
+    default_index = names_union.index('Torino') if 'Torino' in names_union else 0
+    municipality = st.selectbox("Comune", names_union, index=default_index, disabled=is_aggregate)
 
 subject_label = f"Piemonte (media di {len(names)} comuni)" if is_aggregate else municipality
 
 if is_aggregate:
     st.info(
         f"Stai guardando la **media aritmetica** (non pesata per popolazione o "
-        f"superficie) dei {len(names)} comuni con dati reali — non una stima "
-        "ufficiale della temperatura media del Piemonte, che richiederebbe "
-        "pesare per area/popolazione e includere tutti i 1180 comuni."
+        f"superficie) dei {len(names)} comuni con dati Open-Meteo reali — non una "
+        "stima ufficiale della temperatura media del Piemonte, che richiederebbe "
+        "pesare per area/popolazione e includere tutti i 1180 comuni. Il "
+        "selettore fonte dati sotto è disattivato per l'aggregato: il confronto "
+        "con ARPA resta disponibile solo per un singolo comune."
     )
+    source = SOURCE_OPENMETEO
+else:
+    has_om = municipality in names
+    has_arpa = municipality in names_arpa
+    source = render_source_selector(key='temporale_source', has_om=has_om, has_arpa=has_arpa)
+    if source == SOURCE_ARPA:
+        subject_label = f"{municipality} (ARPA, stazione reale)"
+    elif source == SOURCE_BOTH:
+        subject_label = f"{municipality} (confronto ARPA + Open-Meteo)"
 
 year_start, year_end = render_year_range_filter(key='temporale_year_range')
 st.caption(
@@ -83,6 +102,10 @@ with st.expander("ℹ️ Come si legge questa pagina"):
     )
 
 annual = get_kpi_annual()
+# annual_arpa: solo popolata quando serve (fonte ARPA o confronto) - usata
+# sia per l'aggregato annuale sia, in modalità "confronto", come traccia di
+# sovrapposizione sul grafico principale e per la tabella di confronto.
+annual_arpa = pd.DataFrame()
 if is_aggregate:
     annual_m = (
         annual[annual['municipality_name'].isin(names)]
@@ -94,16 +117,27 @@ if is_aggregate:
         )
         .sort_values('year')
     )
+elif source == SOURCE_ARPA:
+    annual_m = compute_annual_kpi_from_daily(get_arpa_daily_temperature(municipality)).sort_values('year')
 else:
     annual_m = annual[annual['municipality_name'] == municipality].sort_values('year')
+    if source == SOURCE_BOTH:
+        annual_arpa = compute_annual_kpi_from_daily(get_arpa_daily_temperature(municipality)).sort_values('year')
 annual_range = annual_m[(annual_m['year'] >= year_start) & (annual_m['year'] <= year_end)]
+annual_arpa_range = annual_arpa[(annual_arpa['year'] >= year_start) & (annual_arpa['year'] <= year_end)] if not annual_arpa.empty else annual_arpa
 
 # trend_info: risultato canonico di Mann-Kendall + regressione sull'intero
-# periodo disponibile (non sul filtro anni). Per un singolo comune viene dal
-# CSV precalcolato (`trend_analysis.csv`); per l'aggregato "Piemonte" non
-# esiste un precalcolato, quindi si ricalcola al volo con le stesse funzioni
-# pure usate da `src/analysis/trend_analysis.py`, per coerenza metodologica.
+# periodo disponibile (non sul filtro anni). Per un singolo comune Open-Meteo
+# viene dal CSV precalcolato (`trend_analysis.csv`); per l'aggregato
+# "Piemonte" e per la fonte ARPA (mai precalcolata) si ricalcola al volo con
+# le stesse funzioni pure usate da `src/analysis/trend_analysis.py`, per
+# coerenza metodologica.
 if is_aggregate:
+    trend_info = {'municipality_name': subject_label}
+    trend_info.update(mann_kendall_trend(annual_m['temp_mean_annual']))
+    trend_info.update(linear_trend(annual_m['year'], annual_m['temp_mean_annual']))
+    has_trend_info = True
+elif source == SOURCE_ARPA:
     trend_info = {'municipality_name': subject_label}
     trend_info.update(mann_kendall_trend(annual_m['temp_mean_annual']))
     trend_info.update(linear_trend(annual_m['year'], annual_m['temp_mean_annual']))
@@ -113,6 +147,12 @@ else:
     trend_row = trend_df[trend_df['municipality_name'] == municipality]
     has_trend_info = not trend_row.empty
     trend_info = trend_row.iloc[0].to_dict() if has_trend_info else None
+
+trend_info_arpa = None
+if source == SOURCE_BOTH and not annual_arpa.empty:
+    trend_info_arpa = {}
+    trend_info_arpa.update(mann_kendall_trend(annual_arpa['temp_mean_annual']))
+    trend_info_arpa.update(linear_trend(annual_arpa['year'], annual_arpa['temp_mean_annual']))
 
 # Regressione lineare ricalcolata sul periodo selezionato (non il CSV
 # precalcolato, che copre sempre 2000-2025) — così il coefficiente in
@@ -176,8 +216,44 @@ with tab_overview:
                 x=annual_range['year'], y=trend_line, name='Trend (regressione)',
                 line=dict(color='#2c3e50', dash='dash', width=2),
             ))
+        if source == SOURCE_BOTH and not annual_arpa_range.empty:
+            fig.add_trace(go.Scatter(
+                x=annual_arpa_range['year'], y=annual_arpa_range['temp_mean_annual'],
+                name='Media annuale (ARPA)', line=dict(color='#16a085', dash='dot', width=2),
+            ))
         fig.update_layout(height=380, margin=dict(t=10, b=10), yaxis_title='°C', legend=dict(orientation='h'))
         st.plotly_chart(apply_chart_theme(fig), width='stretch')
+
+    if source == SOURCE_ARPA:
+        st.caption(
+            "Serie da **stazione ARPA reale** (osservazione), non dal modello di "
+            "rianalisi Open-Meteo usato nel resto del sito — i due possono "
+            "differire, soprattutto in quota (vedi bias medio -1.71°C trovato "
+            "nella validazione)."
+        )
+    elif source == SOURCE_BOTH:
+        st.subheader("Confronto sintetico ARPA vs Open-Meteo")
+        if trend_info_arpa is None:
+            st.info("Dati ARPA insufficienti per calcolare un trend di confronto su questo comune.")
+        else:
+            c1, c2, c3 = st.columns(3)
+            c1.metric(
+                "Pendenza Open-Meteo (intero periodo)",
+                f"{trend_info.get('lr_slope_per_decade', float('nan')):+.2f} °C/decade" if has_trend_info else "n/d",
+            )
+            c2.metric("Pendenza ARPA (intero periodo)", f"{trend_info_arpa['lr_slope_per_decade']:+.2f} °C/decade")
+            temp_diff = annual_m.set_index('year')['temp_mean_annual'] - annual_arpa.set_index('year')['temp_mean_annual']
+            temp_diff = temp_diff.dropna()
+            c3.metric(
+                "Bias medio Open-Meteo − ARPA",
+                f"{temp_diff.mean():+.2f} °C" if not temp_diff.empty else "n/d",
+                help="Media della differenza anno per anno tra temperatura media annuale Open-Meteo e ARPA.",
+            )
+            st.caption(
+                "Le sezioni sotto (stagioni, variabilità, scomposizione STL) restano "
+                "calcolate su Open-Meteo — passa a \"Solo ARPA\" per vederle sulla "
+                "fonte osservativa."
+            )
 
     st.subheader("Anomalie termiche rispetto a una baseline")
     baseline_end = min(baseline_years_available + 9, last_year)
@@ -227,7 +303,12 @@ with tab_overview:
         "ripida delle altre, quella stagione si sta scaldando più velocemente "
         "delle altre — non è scontato che sia l'estate."
     )
-    daily = get_daily_temperature_aggregate(tuple(names)) if is_aggregate else get_daily_temperature(municipality)
+    if is_aggregate:
+        daily = get_daily_temperature_aggregate(tuple(names))
+    elif source == SOURCE_ARPA:
+        daily = get_arpa_daily_temperature(municipality)
+    else:
+        daily = get_daily_temperature(municipality)
     daily['year'] = daily['date'].dt.year
     daily['season'] = daily['date'].dt.month.map(SEASON_BY_MONTH)
     daily_range = daily[(daily['year'] >= year_start) & (daily['year'] <= year_end)]
@@ -352,6 +433,9 @@ with tab_detail:
             + (" Per l'aggregato \"Piemonte\" tutti e 4 questi numeri sono "
                "ricalcolati sulla media dei comuni filtrati con lo stesso "
                "metodo, non letti da un file già pronto." if is_aggregate else "")
+            + (" Per la fonte ARPA questi numeri sono ricalcolati al volo sulla "
+               "serie di stazione (nessun file precalcolato per ARPA, a "
+               "differenza di Open-Meteo)." if source == SOURCE_ARPA else "")
         )
 
     st.subheader(f"Scomposizione STL (trend / stagionalità / residuo) — {subject_label}")
@@ -367,7 +451,12 @@ with tab_detail:
         "veloci (stagionali e giornaliere). La scomposizione qui sotto separa "
         "questi tre livelli, uno per grafico:"
     )
-    stl = get_seasonal_decomposition_aggregate(tuple(names)) if is_aggregate else get_seasonal_decomposition(municipality)
+    if is_aggregate:
+        stl = get_seasonal_decomposition_aggregate(tuple(names))
+    elif source == SOURCE_ARPA:
+        stl = get_arpa_seasonal_decomposition(municipality)
+    else:
+        stl = get_seasonal_decomposition(municipality)
     if stl.empty:
         st.info("Nessuna decomposizione disponibile per questo comune.")
     else:
