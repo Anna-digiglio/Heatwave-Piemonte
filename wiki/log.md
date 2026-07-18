@@ -2185,3 +2185,28 @@ Log cronologico append-only. Ogni riga: data, azione, pagine toccate.
   l'elenco vada fuori sincrono con lo stato reale.
 
   Pagina aggiunta a `index.md` sotto "Dati".
+
+- **2026-07-18** — INGEST. Seconda sessione della stessa collaboratrice
+  (seconda macchina, senza accesso al DB del titolare). `git pull`
+  eseguito prima di tutto: ha portato il repo alla versione a 98 comuni
+  (import del lotto precedente già fatto dal titolare) e introdotto
+  `comuni-coperti.md`, la pagina scritta apposta per evitare che chi
+  scarica da fuori debba ricostruire la copertura dai PNG QGIS come nella
+  sessione precedente. Usata direttamente come fonte per il campionamento
+  "farthest-point" sui 1082 comuni ancora scoperti — nessuna inferenza
+  necessaria stavolta. Download Open-Meteo bloccato dal rate limit
+  giornaliero dopo **57 comuni** riusciti, verificato riga per riga senza
+  doppioni (il bug di confronto `int`/`str` della sessione precedente non
+  si è ripresentato: questa volta la lista "già coperti" veniva da un'unica
+  fonte, non da un confronto tra due CSV con dtype diversi).
+
+  File prodotti (fuori Git, `data/raw/`, da consegnare al titolare fuori
+  canale): `temperature_data_extra_helper_batch2.csv`,
+  `riepilogo_57_comuni_batch2.csv`.
+
+  Pagine aggiornate: `etl-pipeline.md` (nuova sezione "Comuni extra in
+  attesa di import — 57 comuni"), `project-status.md` (nuova voce di
+  cronologia + punto 11 nei prossimi passi). `comuni-coperti.md`
+  deliberatamente **non** toccata in questa sessione: la sua stessa
+  istruzione dice di aggiornarla solo dopo l'import, che non è di
+  competenza di questa macchina (nessun accesso al DB).

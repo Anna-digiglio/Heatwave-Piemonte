@@ -313,6 +313,46 @@ date)` nel file capoluoghi; **77.560 + 872.550 = 950.110**, combacia
 esattamente col totale in `temperature` nel DB. `data/processed/` ora
 contiene solo questi 2 file.
 
+## Comuni extra in attesa di import — 57 comuni (2026-07-18)
+
+Seconda sessione della stessa collaboratrice, stessa macchina esterna
+senza accesso al DB. A differenza della sessione del giorno prima, questa
+volta **non è servita nessuna ricostruzione dai PNG QGIS**: dopo il
+`git pull`, la nuova pagina [Comuni già coperti](comuni-coperti.md)
+(creata dal titolare dopo l'import dei 35 comuni) elencava i 98 comuni
+già in `temperature` con nome e codice ISTAT esatti — presa come fonte
+diretta per il campionamento "farthest-point" (stesso algoritmo di
+`download_extra_municipalities.py`, rieseguito localmente sui 1082 comuni
+rimanenti).
+
+**Download**: `WeatherDataDownloader.download_for_coordinates()`, lotti
+da 20 con salvataggio incrementale, stesso pattern collaudato. Il rate
+limit giornaliero è scattato dopo **57 comuni riusciti** (bloccato su
+"Cannobio" dopo 5 tentativi con backoff fino a 80s) — nessun doppione
+stavolta (verificato: 552.672 righe = 57 comuni × 9.696 giorni esatti,
+zero righe duplicate su `(comune, data)`), a differenza della sessione
+precedente dove un bug di confronto `int`/`str` aveva causato download
+ripetuti.
+
+**File consegnati** (fuori da Git, `data/raw/` — stesso canale della
+volta precedente, non `git pull`/`git push`):
+
+- `data/raw/temperature_data_extra_helper_batch2.csv` — 552.672 righe, 57
+  comuni, 2000-01-01 → 2026-07-18. Stesse colonne del lotto precedente
+  (`date, temp_max, temp_min, temp_mean, precipitation, province,
+  data_source, istat_code, province_name`), `istat_code` già zero-paddato
+  a 6 cifre come stringa.
+- `data/raw/riepilogo_57_comuni_batch2.csv` — tabella di sintesi rapida.
+
+**Non ancora importato**: stessi due passaggi già documentati per i 35
+comuni — pulizia via `DataCleaner.clean_data()`, poi risoluzione
+`istat_code` → `municipality_id` via join su `municipalities` prima di
+`insert_temperature_for_municipalities()`. Dopo l'import: **98 → 155
+comuni** in `temperature`, poi rieseguire a valle
+`identify_heatwaves()`/viste KPI/`src/analysis/`, e **aggiornare
+[Comuni già coperti](comuni-coperti.md)** con i 57 nuovi nomi/codici
+(istruzione già presente in quella pagina).
+
 ## Passaggi pianificati ma non ancora scritti
 
 - Calcolo KPI giornalieri/annuali lato Python (oggi solo le viste

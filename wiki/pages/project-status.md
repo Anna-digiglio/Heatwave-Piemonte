@@ -237,6 +237,24 @@ n=63, p=0.011) — registrato onestamente in
 risultato precedente. Testo della dashboard corretto di conseguenza (vedi
 [Dashboard](dashboard.md)).
 
+### 2026-07-18 — 57 comuni extra, scaricati con la nuova pagina di riferimento
+
+Stessa collaboratrice della sessione precedente, stessa macchina esterna.
+Dopo `git pull` (che ha portato il repo alla versione a 98 comuni e
+importato la nuova pagina [Comuni già coperti](comuni-coperti.md), scritta
+dal titolare proprio per evitare di dover ripetere la ricostruzione dai
+PNG QGIS della volta precedente), campionamento "farthest-point" rieseguito
+sui 1082 comuni ancora scoperti usando questa lista come fonte diretta e
+affidabile. Download bloccato dal rate limit giornaliero dopo **57 comuni**
+riusciti (su "Cannobio", stesso pattern di backoff crescente già visto) —
+questa volta **senza il bug di doppioni** della sessione precedente,
+verificato riga per riga. Vedi
+[Pipeline ETL](etl-pipeline.md#comuni-extra-in-attesa-di-import--57-comuni-2026-07-18)
+per il dettaglio completo e il formato dei file consegnati. **Il file non è
+ancora nel database**: stessi due passaggi mancanti della volta precedente
+(pulizia + risoluzione `municipality_id`). Se importati per intero: 98 →
+**155 comuni** in `temperature`.
+
 ## Prossimi passi
 
 Tutti minori/non bloccanti — il nucleo pianificato del progetto è
@@ -280,6 +298,9 @@ completo:
     **fatto lo stesso giorno (2026-07-17)**: pulizia + risoluzione
     `municipality_id`, poi rilancio di `identify_heatwaves()`/viste
     KPI/`src/analysis/`/mappe QGIS a valle (vedi cronologia sopra).
+11. Importare i 57 comuni extra del 2026-07-18 (vedi cronologia sopra) —
+    stessi passaggi del punto 10, poi aggiornare
+    [Comuni già coperti](comuni-coperti.md) con i nuovi nomi/codici.
 
 ## Discrepanze da tenere a mente quando si presenta il progetto
 
