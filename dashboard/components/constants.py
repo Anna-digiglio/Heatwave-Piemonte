@@ -103,15 +103,56 @@ THEME_HOT_DEEP = "#c0392b"
 
 # Grigio ardesia (non nero puro): scelta dopo un giro di feedback sul mockup
 # della Home ("sfondo troppo nero"), vedi wiki/log.md 2026-07-17.
-THEME_INK = "#1c2130"
-THEME_INK_SIDEBAR = "#161a26"  # leggermente più scuro dell'ink principale, per distinguere il pannello laterale dal contenuto
-THEME_SURFACE = "#262c3d"
-THEME_SURFACE_RAISED = "#2d3448"
-THEME_BORDER = "rgba(255,255,255,0.10)"
-THEME_BORDER_STRONG = "rgba(255,255,255,0.18)"
-THEME_TEXT = "#f1f3f8"
-THEME_TEXT_MUTED = "#a3adc2"
-THEME_TEXT_FAINT = "#737e97"
+# THEME_INK_SIDEBAR non è consumato da nessun modulo Python: esiste solo come
+# riferimento per chi tocca `.streamlit/config.toml` (deve restare allineato a
+# [theme.dark.sidebar].backgroundColor).
+THEME_INK_SIDEBAR = "#161a26"
+
+# Token mode-dipendenti per l'identità "calore" (hero, card di navigazione,
+# striscia numeri chiave). Lo sfondo `ink` è pensato per FONDERSI con lo
+# sfondo nativo di Streamlit dello stesso modo (vedi backgroundColor in
+# .streamlit/config.toml [theme]/[theme.dark]), non per contrastarci: il
+# pannello si distingue via bordo/glow/gradiente del titolo, non via un
+# blocco di colore diverso dalla pagina. Per questo ogni modo ha la sua
+# variante invece di un unico set fisso — prima del 2026-07-18 il tema
+# chiaro nativo di Streamlit veniva applicato ma questi pannelli restavano
+# sempre scuri, risultando in un tema "chiaro" fatto solo di sfondo bianco +
+# blocchi neri fuori posto (segnalato dall'utente, vedi wiki/log.md
+# 2026-07-18). Selezionati a runtime in `styling.py` via
+# `st.context.theme.type`.
+THEME_TOKENS = {
+    "dark": {
+        "ink": "#1c2130",
+        "surface": "#262c3d",
+        "surface_raised": "#2d3448",
+        "border": "rgba(255,255,255,0.10)",
+        "border_strong": "rgba(255,255,255,0.18)",
+        "text": "#f1f3f8",
+        "text_muted": "#a3adc2",
+        "text_faint": "#737e97",
+        # Titolo hero "che si accende" sullo sfondo quasi nero: da bianco a
+        # crema/corallo caldo.
+        "hero_title_gradient": "linear-gradient(100deg, #fff 30%, #ffe9c7 55%, #ffb199 78%)",
+        "glow_opacity": (0.30, 0.20, 0.26),
+    },
+    "light": {
+        "ink": "#ffffff",
+        "surface": "#f8fafc",
+        "surface_raised": "#eef2f7",
+        "border": "rgba(15,23,42,0.10)",
+        "border_strong": "rgba(15,23,42,0.18)",
+        "text": "#1a202c",
+        "text_muted": "#5a6472",
+        "text_faint": "#8a93a3",
+        # Stesso concetto del gradiente scuro (base neutra -> accento caldo),
+        # speculare: da ardesia scuro a rosso ember (THEME_HOT_DEEP), invece
+        # di bianco-su-nero che sul bianco sarebbe illeggibile.
+        "hero_title_gradient": "linear-gradient(100deg, #1a202c 25%, #c2703d 55%, #c0392b 80%)",
+        # Sfumature radiali più tenui: sullo sfondo bianco la stessa opacità
+        # del tema scuro risulterebbe "sporca" invece che un bagliore sottile.
+        "glow_opacity": (0.16, 0.12, 0.14),
+    },
+}
 
 FONT_DISPLAY = "'Fraunces', 'Iowan Old Style', 'Palatino Linotype', Georgia, serif"
 FONT_BODY = "'Manrope', -apple-system, 'Segoe UI', system-ui, sans-serif"
