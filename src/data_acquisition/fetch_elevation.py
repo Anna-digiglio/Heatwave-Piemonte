@@ -30,13 +30,20 @@ MAX_COORDS_PER_REQUEST = 100
 
 
 def get_municipalities_with_data() -> list:
-    """Comuni con dati di temperatura reali, con centroide della geometria."""
+    """
+    Comuni con dati di temperatura reali (Open-Meteo *o* ARPA), con
+    centroide della geometria. Estesa il 2026-07-18 per includere anche i
+    167 comuni solo-ARPA (prima restava solo su Open-Meteo, lasciando
+    `elevation_m` NULL per loro e rompendo il confronto per fascia
+    altitudinale in modalità "Solo ARPA" della dashboard).
+    """
     query = """
         SELECT DISTINCT m.municipality_id, m.name,
                ST_Y(ST_Centroid(m.geometry)) AS lat,
                ST_X(ST_Centroid(m.geometry)) AS lon
         FROM municipalities m
-        JOIN temperature t ON t.municipality_id = m.municipality_id
+        WHERE m.municipality_id IN (SELECT DISTINCT municipality_id FROM temperature)
+           OR m.municipality_id IN (SELECT DISTINCT municipality_id FROM arpa_temperature)
         ORDER BY m.municipality_id
     """
     rows = db_manager.execute_query(query)
