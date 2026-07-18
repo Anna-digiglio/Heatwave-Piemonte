@@ -165,7 +165,7 @@ if trend_df.empty:
             style_function=lambda _: {'fillColor': '#e74c3c', 'color': '#c0392b', 'fillOpacity': 0.5},
         ).add_to(m)
     st_folium(m, width=None, height=420, returned_objects=[])
-    st.info("Esegui `python -m src.analysis.trend_analysis` per colorare la mappa per trend.")
+    st.info("Dati di trend non ancora disponibili per colorare la mappa.")
 else:
     merged = geo_df.merge(trend_df[['municipality_name', 'lr_slope_per_decade', 'source']], on='municipality_name')
     max_abs_slope = merged['lr_slope_per_decade'].abs().max() or 1
@@ -189,7 +189,7 @@ else:
 st.subheader(f"Trend di riscaldamento ({stats['date_start'].year}-{stats['date_end'].year})")
 st.caption("La temperatura media di ogni comune sta salendo, scendendo, o restando stabile?")
 if trend_df.empty:
-    st.info("Esegui `python -m src.analysis.trend_analysis` per generare questi risultati.")
+    st.info("Dati di trend non ancora disponibili.")
 else:
     display_df = trend_df[['municipality_name', 'source', 'mk_trend', 'lr_slope_per_decade', 'lr_p_value']].copy()
     display_df['mk_trend'] = display_df['mk_trend'].apply(format_mk_trend)
@@ -204,7 +204,4 @@ else:
     )
 
 st.divider()
-st.caption(
-    "Progetto portfolio Data Engineering/GIS — vedi la wiki del repository "
-    "(`wiki/index.md`) per lo stato dettagliato pianificato-vs-implementato."
-)
+st.caption("Progetto portfolio di analisi dati climatici — Data Engineering / Data Science / GIS.")
