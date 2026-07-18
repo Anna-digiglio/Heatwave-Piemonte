@@ -136,22 +136,38 @@ def fetch_daily_data(station_code: str, date_min: str = '2000-01-01') -> pd.Data
     return pd.DataFrame(records)
 
 
-def main(date_min: str = '2000-01-01', dry_run: bool = False) -> pd.DataFrame:
+def main(
+    date_min: str = '2000-01-01',
+    dry_run: bool = False,
+    only_uncovered: bool = False,
+    output_name: str = 'arpa_temperature.csv',
+) -> pd.DataFrame:
     raw_path = Path(config.get('paths.raw_data'))
     raw_path.mkdir(parents=True, exist_ok=True)
-    output_file = raw_path / 'arpa_temperature.csv'
+    output_file = raw_path / output_name
 
+    # `only_uncovered=True` limita ai comuni senza dati Open-Meteo *e* senza
+    # dati ARPA gia' scaricati - usato per estendere la copertura reale del
+    # progetto oltre i comuni Open-Meteo, senza ri-scaricare stazioni gia'
+    # presenti (prudente: l'API ARPA non ha un limite noto, ma non e' stato
+    # verificato che sia assente - vedi wiki/pages/data-sources.md).
+    municipality_filter = """
+        WHERE m.municipality_id NOT IN (SELECT DISTINCT municipality_id FROM arpa_temperature)
+    """ if only_uncovered else """
+        JOIN temperature t ON t.municipality_id = m.municipality_id
+    """
     with db_manager.engine.connect() as conn:
-        municipalities = pd.read_sql(text("""
+        municipalities = pd.read_sql(text(f"""
             SELECT DISTINCT m.municipality_id, m.istat_code, m.name, m.elevation_m
             FROM municipalities m
-            JOIN temperature t ON t.municipality_id = m.municipality_id
+            {municipality_filter}
         """), conn)
 
     stations = fetch_station_registry()
     matched = select_stations_for_municipalities(stations, municipalities)
     logger.info(
-        f"{len(matched)}/{len(municipalities)} comuni con temperatura Open-Meteo "
+        f"{len(matched)}/{len(municipalities)} comuni "
+        f"{'senza copertura ARPA/Open-Meteo esistente' if only_uncovered else 'con temperatura Open-Meteo'} "
         "hanno una stazione ARPA attiva con sensore di temperatura"
     )
 
@@ -161,12 +177,20 @@ def main(date_min: str = '2000-01-01', dry_run: bool = False) -> pd.DataFrame:
     # Salvataggio incrementale (una stazione alla volta, subito su disco):
     # lezione imparata con Open-Meteo (vedi wiki/pages/data-sources.md) -
     # un'interruzione a meta' non deve far perdere le stazioni gia' scaricate.
+    # A differenza della versione originale, NON si cancella un file
+    # preesistente: se lo script viene rilanciato dopo un blocco a meta',
+    # riprende saltando le stazioni gia' presenti nel CSV, invece di
+    # ripartire da zero e sprecare quota su stazioni gia' scaricate.
+    already_done: set[int] = set()
     if output_file.exists():
-        output_file.unlink()
+        existing = pd.read_csv(output_file, usecols=['municipality_id'])
+        already_done = set(existing['municipality_id'].unique())
+        logger.info(f"Ripresa: {len(already_done)} comuni gia' presenti in {output_file}, verranno saltati")
 
     total_rows = 0
-    for i, row in enumerate(matched.itertuples(), 1):
-        logger.info(f"[{i}/{len(matched)}] {row.municipality_name} <- {row.station_name} ({row.station_code})")
+    to_fetch = [row for row in matched.itertuples() if row.municipality_id not in already_done]
+    for i, row in enumerate(to_fetch, 1):
+        logger.info(f"[{i}/{len(to_fetch)}] {row.municipality_name} <- {row.station_name} ({row.station_code})")
         try:
             df = fetch_daily_data(row.station_code, date_min=date_min)
         except requests.RequestException as exc:
@@ -181,11 +205,12 @@ def main(date_min: str = '2000-01-01', dry_run: bool = False) -> pd.DataFrame:
         df = df[['municipality_id', 'station_code', 'station_name', 'data', 'tmax', 'tmin', 'tmedia']].rename(
             columns={'data': 'date', 'tmax': 'temp_max', 'tmin': 'temp_min', 'tmedia': 'temp_mean'}
         )
-        df.to_csv(output_file, mode='a', header=(total_rows == 0), index=False)
+        write_header = not output_file.exists() or (total_rows == 0 and not already_done)
+        df.to_csv(output_file, mode='a', header=write_header, index=False)
         total_rows += len(df)
         time.sleep(REQUEST_DELAY_S)
 
-    logger.success(f"Scaricate {total_rows} righe ARPA per {len(matched)} comuni -> {output_file}")
+    logger.success(f"Scaricate {total_rows} righe ARPA nuove ({len(to_fetch)} comuni) -> {output_file}")
     return matched
 
 
@@ -193,5 +218,13 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--dry-run', action='store_true', help='Solo matching comuni<->stazioni, nessun download')
     parser.add_argument('--date-min', default='2000-01-01', help='Data minima da scaricare (default 2000-01-01)')
+    parser.add_argument(
+        '--only-uncovered', action='store_true',
+        help='Limita ai comuni senza dati Open-Meteo e senza ARPA gia scaricato (estende la copertura reale)'
+    )
+    parser.add_argument(
+        '--output-name', default='arpa_temperature.csv',
+        help='Nome del CSV di output in data/raw/ (usare un nome diverso per non mischiare batch)'
+    )
     args = parser.parse_args()
-    main(date_min=args.date_min, dry_run=args.dry_run)
+    main(date_min=args.date_min, dry_run=args.dry_run, only_uncovered=args.only_uncovered, output_name=args.output_name)
