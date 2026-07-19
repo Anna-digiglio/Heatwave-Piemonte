@@ -106,6 +106,20 @@ div[data-testid="stMetricLabel"] {{
     box-shadow: inset 3px 0 0 0 {THEME_HOT};
 }}
 
+/* st.warning: il giallo acceso di default di Streamlit ("giallino vomito" -
+   feedback utente, 2026-07-19) stona con la palette calda del resto della
+   pagina. Qui lo sostituiamo con l'ambra del tema (THEME_MID), alla stessa
+   opacità bassa usata per gli altri overlay adattivi chiaro/scuro; anche il
+   testo passa da marrone/ocra di default a un arancione dedicato
+   (`warning_text`, diverso tra chiaro/scuro per restare leggibile). */
+[data-testid="stAlertContainer"]:has([data-testid="stAlertContentWarning"]) {{
+    background: rgba(243, 156, 18, 0.10) !important;
+    border: 1px solid rgba(243, 156, 18, 0.30) !important;
+}}
+[data-testid="stAlertContainer"]:has([data-testid="stAlertContentWarning"]) * {{
+    color: {tokens["warning_text"]} !important;
+}}
+
 /* ================== Componenti custom (adattivi chiaro/scuro) =========== */
 
 .hw-hero {{
@@ -217,8 +231,18 @@ div[data-testid="stMetricLabel"] {{
     gap: 10px;
     margin-bottom: 6px;
 }}
+/* min/max-height espliciti: un elemento flex ha di default
+   `min-height: auto`, che sul contenuto (l'emoji) può vincere sull'
+   `height: 34px` se il line-box dell'emoji è più alto di 34px nel font di
+   sistema dell'utente - la card si "stirava" più delle altre due,
+   spingendo giù tutto il testo sotto (icona 📈, segnalato dall'utente,
+   2026-07-19: non riproducibile in locale, ma coerente con questo bug
+   flexbox noto). overflow:hidden rifila il glifo invece di farlo
+   traboccare quando viene forzato nel riquadro. */
 [class*="st-key-navcard-"] .hw-card-icon {{
     width: 34px; height: 34px;
+    min-height: 34px; max-height: 34px;
+    overflow: hidden;
     flex: none;
     border-radius: 10px;
     display: flex; align-items: center; justify-content: center;
@@ -281,9 +305,20 @@ div[data-testid="stMetricLabel"] {{
     color: {tokens["text"]};
     display: flex;
     align-items: baseline;
+    flex-wrap: wrap;
     gap: 6px;
 }}
 .hw-stat-value .hw-unit {{ font-size: 0.8rem; color: {tokens["text_muted"]}; font-weight: 500; }}
+/* Unità lunghe ("Open-Meteo + ARPA", "27 anni") vanno a capo sotto il
+   valore invece di stargli affiancate: in riga, senza spazio a
+   sufficienza, l'affiancamento in flex le spezzava a metà parola
+   (feedback utente, 2026-07-19). `flex-basis: 100%` in un flex-wrap forza
+   l'a-capo a prescindere dallo spazio residuo, senza toccare le unità
+   corte ("/ 1180", "eventi") che restano affiancate al valore. */
+.hw-stat-value .hw-unit--wrap {{
+    flex-basis: 100%;
+    margin-top: 2px;
+}}
 .hw-stat-spark {{ margin-top: 10px; display: block; }}
 .hw-stat-spark path.hw-fill {{ opacity: 0.18; }}
 </style>
@@ -352,7 +387,7 @@ def render_stats_row(stats: list[dict]) -> None:
     st.markdown(f'<div class="hw-stats">{tiles}</div>', unsafe_allow_html=True)
 
 
-def _stat_tile_html(label: str, value: str, unit: str, color: str, spark: list) -> str:
+def _stat_tile_html(label: str, value: str, unit: str, color: str, spark: list, unit_wrap: bool = False) -> str:
     width, height = 160, 22
     n = len(spark)
     xs = [round(i * width / (n - 1), 1) for i in range(n)] if n > 1 else [0.0, float(width)]
@@ -360,11 +395,12 @@ def _stat_tile_html(label: str, value: str, unit: str, color: str, spark: list) 
     points = list(zip(xs, ys))
     line_points = " ".join(f"{x},{y}" for x, y in points)
     fill_path = f"M0,{height} L" + " ".join(f"{x},{y}" for x, y in points) + f" L{width},{height} Z"
+    unit_class = "hw-unit hw-unit--wrap" if unit_wrap else "hw-unit"
     # Single-line: vedi commento in render_hero sul bug indentazione = code block.
     return (
         f'<div class="hw-stat">'
         f'<div class="hw-stat-label">{label}</div>'
-        f'<div class="hw-stat-value">{value}<span class="hw-unit">{unit}</span></div>'
+        f'<div class="hw-stat-value">{value}<span class="{unit_class}">{unit}</span></div>'
         f'<svg class="hw-stat-spark" width="100%" height="{height}" viewBox="0 0 {width} {height}" preserveAspectRatio="none">'
         f'<path class="hw-fill" d="{fill_path}" fill="{color}"></path>'
         f'<polyline points="{line_points}" fill="none" stroke="{color}" stroke-width="1.5"></polyline>'
