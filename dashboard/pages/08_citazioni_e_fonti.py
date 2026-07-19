@@ -25,7 +25,7 @@ with st.expander("ℹ️ Come si legge questa pagina"):
         "- **Fonti dati**: da dove arrivano davvero i numeri (temperature, confini "
         "comunali, popolazione, uso del suolo, vegetazione) — con link diretto a ciascuna "
         "fonte. Per il dettaglio tecnico di ogni fonte vedi anche la pagina "
-        "[Download Dati](06_download_dati.py).\n"
+        "[Download Dati](07_download_dati.py).\n"
         "- **Bibliografia scientifica**: gli studi usati per definire le ondate di calore, "
         "confrontare i risultati con la letteratura su Torino/Piemonte e impostare il "
         "confronto uso del suolo → temperatura. Alcune voci sono ancora titoli/riferimenti "
