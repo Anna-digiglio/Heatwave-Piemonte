@@ -371,6 +371,62 @@ with tab_overview:
     for i, (label, value) in enumerate(NATIONAL_GLOBAL_REFERENCE.items(), start=1):
         ref_cols[i].metric(label, f"+{value:.2f} °C/decade")
 
+    if slope_decade is not None:
+        global_ref = NATIONAL_GLOBAL_REFERENCE.get("Riscaldamento medio globale (terre emerse)")
+        italy_ref = NATIONAL_GLOBAL_REFERENCE.get("Riscaldamento medio Italia (ISPRA)")
+        ratio_global = slope_decade / global_ref if global_ref else None
+        ratio_italy = slope_decade / italy_ref if italy_ref else None
+        st.markdown(
+            "**Come leggere questo confronto:**\n\n"
+            "I tre numeri qui sopra non sono calcolati con lo stesso metodo né "
+            "sullo stesso periodo, quindi vanno letti come un **ordine di "
+            "grandezza**, non come un confronto scientificamente rigoroso "
+            "punto-per-punto. Il valore globale (+0.20 °C/decade) e quello "
+            "italiano (+0.40 °C/decade) sono medie di lunghissimo periodo "
+            "(spesso calcolate su 50-150 anni di osservazioni, con metodologie "
+            "e reti di stazioni standardizzate a livello internazionale), "
+            "mentre il valore locale mostrato a sinistra è una regressione "
+            "lineare sul periodo effettivamente selezionato in questa pagina, "
+            "che può essere anche solo di 20-25 anni. Serie più corte sono "
+            "fisiologicamente più sensibili alla scelta degli anni di inizio e "
+            "fine e più esposte alla variabilità naturale da un anno all'altro "
+            "(un'estate eccezionale può spostare sensibilmente la pendenza), "
+            "quindi differenze anche marcate rispetto ai riferimenti globali "
+            "non vanno automaticamente interpretate come un segnale climatico "
+            "più forte o più debole.\n\n"
+            "Detto questo, il numero non è privo di significato: **non è raro "
+            "che il Nord Italia e in particolare l'arco alpino e prealpino "
+            "mostrino un riscaldamento superiore alla media sia globale sia "
+            "italiana.** È un pattern documentato in letteratura (es. IPCC AR6, "
+            "rapporti ISPRA) e attribuito a più fattori concomitanti: le aree "
+            "montane e submontane tendono a scaldarsi più rapidamente delle "
+            "pianure e degli oceani per effetto della minore capacità termica "
+            "e della riduzione della copertura nevosa (che riflette meno "
+            "radiazione solare quando si scioglie prima e per meno giorni "
+            "l'anno); il bacino del Mediterraneo è considerato un \"hotspot\" "
+            "climatico che si scalda più velocemente della media globale delle "
+            "terre emerse; e, a scala locale, stazioni meteo vicine a centri "
+            "urbani o in fondovalle possono risentire anche di **effetti non "
+            "puramente climatici** come l'isola di calore urbana o cambi "
+            "nell'uso del suolo circostante, che questo progetto non isola "
+            "dal segnale climatico di fondo.\n\n"
+            + (
+                f"Nel periodo selezionato, {subject_label} si scalda a un ritmo "
+                f"pari a circa **{ratio_global:.1f}× il riferimento globale** e "
+                f"**{ratio_italy:.1f}× il riferimento medio italiano**: un "
+                "rapporto superiore a 1 è coerente con il pattern di "
+                "riscaldamento più marcato tipico delle aree alpine/prealpine, "
+                "ma — per i motivi sopra — va considerato un'indicazione di "
+                "massima e non una misura precisa di quanto il territorio "
+                "analizzato si discosti dalla media."
+                if ratio_global is not None and ratio_italy is not None
+                else "Il rapporto tra il trend locale e i riferimenti globale/"
+                "italiano va considerato un'indicazione di massima, non una "
+                "misura precisa di quanto il territorio analizzato si discosti "
+                "dalla media."
+            )
+        )
+
 with tab_detail:
     st.subheader("Test statistici sull'intero periodo disponibile")
     if not has_trend_info:
