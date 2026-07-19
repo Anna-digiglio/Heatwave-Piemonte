@@ -2899,3 +2899,27 @@ Log cronologico append-only. Ogni riga: data, azione, pagine toccate.
   reale, il metodo, e il risultato). `comuni-coperti.md` non toccata
   (aggiornamento post-import di competenza del titolare, come da
   istruzione già presente nella pagina).
+
+- **2026-07-19** — INGEST (sessione frontend in parallelo, sola lettura
+  DB via file già esportati — nessuna scrittura, nessun conflitto con la
+  pipeline `refresh_dashboard.py` in corso su un'altra macchina/sessione
+  in quel momento, confermato dall'utente). Su richiesta esplicita
+  dell'utente ("le sezioni uso del suolo/densità popolazione/NDVI dentro
+  Analisi Spaziale forse dovrebbero stare in un'altra pagina, la pagina è
+  lunga e fa fatica a caricare tutto"), spostate mappa uso del suolo,
+  mappa densità di popolazione, mappa NDVI e scatter
+  temperatura/uso-del-suolo/popolazione da `03_analisi_spaziale.py` a una
+  nuova pagina `05_contesto_territoriale.py` — contenuto spostato di peso,
+  non riscritto. Posizionata **dopo** `04_ondate_di_calore.py` su
+  richiesta esplicita (non in coda dopo Download Dati):
+  `05_download_dati.py` rinumerata a `06_download_dati.py`. Link
+  incrociati `st.page_link` aggiunti in entrambe le direzioni. Nessuna
+  query nuova (stesse funzioni `st.cache_data` di `components/queries.py`
+  richiamate da entrambe le pagine).
+
+  Pagine aggiornate: `dashboard.md` (albero file, nuova voce cronologia
+  2026-07-19, nuova sottosezione "Contesto Territoriale", nota nella
+  sottosezione "Analisi Spaziale" che rimanda alla nuova pagina, nota di
+  disambiguazione sul numero `06` già usato in passato dalla pagina
+  "Validazione Dati" rimossa il 2026-07-18), `index.md` (5 → 6 pagine),
+  `Home.py` (commento in testa con l'elenco pagine aggiornato).

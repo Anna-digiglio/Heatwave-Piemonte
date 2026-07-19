@@ -23,6 +23,18 @@
   del limite giornaliero di Open-Meteo. Due bug reali corretti grazie
   all'arrivo di dati 2026 (vedi sotto). Restyling completo dell'identità
   visiva (vedi sotto).
+- **2026-07-19** — `03_analisi_spaziale.py` era diventata troppo lunga da
+  caricare (7 mappe Folium + 1 scatter in un'unica pagina, su richiesta
+  esplicita dell'utente: "la pagina è lunga e fa fatica a caricare
+  tutto"). Le 3 mappe di **uso del suolo, densità di popolazione e NDVI**
+  (tutti i 1180 comuni, indipendenti dal filtro anno/fonte) più lo
+  **scatter uso del suolo/popolazione vs temperatura** sono state spostate
+  in una pagina nuova, `05_contesto_territoriale.py`, inserita **dopo**
+  `04_ondate_di_calore.py` (su richiesta esplicita: non in coda dopo
+  Download Dati) — `05_download_dati.py` rinumerata a
+  `06_download_dati.py`. Link incrociati (`st.page_link`) aggiunti in
+  entrambe le direzioni. Vedi sezione "Contesto Territoriale" sotto per il
+  dettaglio.
 
 Tutti i riferimenti a "44 comuni" nel resto di questa pagina descrivono lo
 stato al 2026-07-15 e sono stati aggiornati dove riguardano il
@@ -45,9 +57,10 @@ dashboard/
 ├── Home.py                         # entry point = pagina Home (overview, KPI, card di navigazione)
 ├── pages/
 │   ├── 02_analisi_temporale.py     # trend, anomalie, stagionalità, boxplot per quinquennio, STL
-│   ├── 03_analisi_spaziale.py      # coropletiche per provincia, trend per comune, fasce altitudinali, uso del suolo, popolazione, cluster, Moran's I
+│   ├── 03_analisi_spaziale.py      # coropletiche per provincia, trend per comune, fasce altitudinali, cluster, Moran's I
 │   ├── 04_ondate_di_calore.py      # frequenza/intensità/cumulato, mappa concentrazione, heatmap calendario
-│   └── 05_download_dati.py         # export CSV (dati puliti + risultati di analisi)
+│   ├── 05_contesto_territoriale.py # uso del suolo, popolazione, NDVI (tutti i 1180 comuni) e scatter vs temperatura — spostata da 03_analisi_spaziale.py il 2026-07-19
+│   └── 06_download_dati.py         # export CSV (dati puliti + risultati di analisi) — rinumerata da 05 il 2026-07-19
 └── components/
     ├── __init__.py                 # bootstrap sys.path (vedi bug sotto)
     ├── constants.py                # palette colori, soglie fasce altitudinali, capoluoghi, riferimenti letteratura, etichette Mann-Kendall (2026-07-15); token identità "calore" THEME_*/FONT_*/MAP_TILES (2026-07-17)
@@ -429,6 +442,43 @@ ricalcolata sul filtro anni).
   casuali) invece che da una formula diretta. **Metodologia** riscritta
   in domande e risposte, come per Analisi Temporale.
 
+> **Nota 2026-07-19**: le sezioni "Uso del suolo, popolazione e
+> temperatura" e "NDVI in dashboard" descritte sopra (mappe uso del
+> suolo/popolazione/NDVI + scatter) sono state **spostate** nella nuova
+> pagina [Contesto Territoriale](#contesto-territoriale-05_contesto_territorialepy--nuova-il-2026-07-19)
+> qui sotto, per alleggerire il caricamento di questa pagina (7 mappe
+> Folium + 1 scatter erano troppe in un'unica pagina). La cronologia sopra
+> resta invariata perché descrive correttamente cosa è stato costruito e
+> quando; solo la posizione nel codice è cambiata.
+
+### Contesto Territoriale (`05_contesto_territoriale.py`) — nuova il 2026-07-19
+
+Nuova pagina, su richiesta esplicita dell'utente ("penso che le sezioni
+dentro analisi spaziale — uso del suolo, densità popolazione, NDVI, uso
+del suolo e popolazione — forse dovrebbero stare in un'altra pagina").
+Contenuto **spostato di peso** da `03_analisi_spaziale.py` (non
+riscritto): mappa uso del suolo dominante, mappa densità di popolazione
+(scala log), mappa NDVI, scatter temperatura vs uso del
+suolo/popolazione/NDVI con selettore `st.radio` e nota di metodologia sul
+modello di regressione spaziale — vedi il dettaglio storico di ciascuna
+sezione nella voce "Analisi Spaziale" sopra, scritto quando quel contenuto
+è stato costruito la prima volta.
+
+- Filtro provincia proprio (`territoriale_province`); **niente filtro
+  anni per le 3 mappe** (uso del suolo/popolazione/NDVI sono uno scatto
+  recente, non una serie temporale) — solo lo scatter finale ha un proprio
+  filtro anni (`territoriale_year_range`), perché è l'unica sezione che
+  incrocia con la temperatura.
+- Link incrociati `st.page_link` verso/da `03_analisi_spaziale.py` in
+  entrambe le direzioni (nessuna delle due pagine "sa" a memoria dov'è
+  finito il resto — click esplicito).
+- `05_download_dati.py` rinumerata a `06_download_dati.py` per lasciare
+  spazio a questa pagina subito dopo Ondate di Calore (posizione scelta
+  esplicitamente dall'utente, non in coda dopo Download Dati).
+- Nessun impatto sul database: solo riorganizzazione di codice
+  dashboard/wiki, nessuna query nuova (le stesse funzioni cache-ate di
+  `components/queries.py` sono richiamate da entrambe le pagine).
+
 ### Ondate di Calore (`04_ondate_di_calore.py`) — ampliata il 2026-07-15
 
 4 metriche in alto (n. ondate nel filtro attuale, n. ondate nell'ultimo
@@ -486,7 +536,10 @@ contiene, oltre al bottone di export per i CSV di `data/processed/`,
 > Calore/Analisi Temporale/Analisi Spaziale — vedi "Selettore fonte dati"
 > più sotto per il dettaglio del perché e di dove è finito ogni pezzo.
 > Sezione lasciata intatta come cronologia di quando la pagina esisteva
-> davvero (coerente con la natura non-riscritta di questo log).
+> davvero (coerente con la natura non-riscritta di questo log). **Nota
+> 2026-07-19**: il numero `06` è stato riassegnato — `06_download_dati.py`
+> (ex `05_`, rinumerata per far posto alla nuova `05_contesto_territoriale.py`)
+> non ha alcuna relazione con la pagina di validazione descritta qui sotto.
 
 Nuova pagina, su richiesta esplicita dell'utente dopo aver eseguito la
 validazione ARPA (vedi [Fonti dati](data-sources.md) e
