@@ -46,7 +46,7 @@ DATA_SOURCES = [
     (
         "Open-Meteo — Historical Weather API",
         "Temperatura giornaliera (minima/media/massima) e precipitazione, 2000–oggi, "
-        "per 177 comuni. Dati di rianalisi/modello (non osservazioni dirette di stazione) — "
+        "per 234 comuni. Dati di rianalisi/modello (non osservazioni dirette di stazione) — "
         "validati contro le stazioni reali ARPA Piemonte, vedi pagina Analisi Temporale.",
         "https://open-meteo.com/en/docs/historical-weather-api",
     ),
