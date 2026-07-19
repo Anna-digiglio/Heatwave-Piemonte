@@ -289,7 +289,7 @@ with tab_overview:
             "A differenza delle due mappe sopra (ciascuna fonte calcola il proprio trend in "
             "autonomia), questa mappa mostra la differenza **diretta** giorno per giorno tra le "
             "due fonti sullo stesso comune (Open-Meteo − ARPA su temp. massima) — per questo "
-            "esiste solo per i 51 comuni con **entrambe** le fonti, non per i 167 solo-ARPA. "
+            "esiste solo per i 108 comuni con **entrambe** le fonti, non per i 110 solo-ARPA. "
             "Blu = Open-Meteo sottostima la temperatura reale (la maggioranza dei casi)."
         )
         validation = get_arpa_validation()
