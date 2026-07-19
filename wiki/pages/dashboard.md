@@ -1115,6 +1115,44 @@ e fa commit/push dei Parquet aggiornati — nessun refresh automatico. Push su
 GitHub e collegamento a Streamlit Community Cloud non ancora fatti (azione
 visibile su servizio esterno, da fare solo su richiesta esplicita).
 
+### Un solo comando per rilanciare analisi + export (2026-07-19)
+
+Su richiesta dell'utente, nuovo `src/data_processing/refresh_dashboard.py`:
+concatena i 6 script di `src/analysis/*.py` (`trend_analysis`,
+`heatwave_stats`, `seasonal_analysis`, `spatial_analysis`,
+`spatial_regression`, `validate_arpa`) e infine `export_dashboard_data.py`,
+tutti richiamati via `import_module(...).main()` (nessuno richiede
+argomenti). Ogni passo gira anche se uno precedente fallisce (es. ARPA vuota
+non deve bloccare le analisi Open-Meteo); riepilogo finale + exit code
+diverso da zero se qualcosa è fallito.
+
+**Deliberatamente escluso**: `TRUNCATE`/`identify_heatwaves()` e `REFRESH
+MATERIALIZED VIEW` sul database. Discusso esplicitamente con l'utente (che
+non capiva la differenza, spiegata così): il `TRUNCATE` cancella e ricrea
+dati, va lanciato solo quando si è sicuri che i nuovi dati siano pronti
+(finora sempre valutato caso per caso, a volte anche due volte nello stesso
+giorno) — automatizzarlo in uno script che gira sempre rischierebbe di
+svuotare la tabella nel momento sbagliato. L'export invece è sola lettura:
+nel peggiore dei casi produce uno snapshot vecchio, mai un danno. Restano
+quindi manuali (da lanciare **prima** di `refresh_dashboard.py`, quando i
+dati nel DB sono già pronti).
+
+**Verificato per intero, non solo per lettura del codice**: eseguito
+davvero contro il DB reale (177 comuni, 218 stazioni ARPA) invece di
+assumere che i `main()` funzionassero solo perché non richiedono argomenti.
+Il passo più lento è la STL (`seasonal_analysis`, ~25s/comune × 177 comuni,
+oltre un'ora) — durante l'esecuzione osservati **due salti di ore nei
+timestamp dei log senza che il processo si fermasse o fallisse** (18:54 →
+23:31 e 23:42 → 00:05), quasi certamente il PC andato in sospensione/idle
+per un periodo prolungato: il processo Python è sopravvissuto e ha ripreso
+da solo al ritmo normale, prova indiretta ma concreta che lo script non
+dipende da uno stato che si perde tra un'esecuzione e l'altra. Esito finale:
+**7/7 passi completati, nessun fallimento**, `data/dashboard_export/`
+rigenerata (69 MB, invariata nelle dimensioni). Due file sono cambiati
+rispetto al commit precedente (`arpa_event_comparison_summary.parquet`,
+`arpa_trend_comparison.parquet` — normale, `validate_arpa.py` è stato
+rieseguito su dati che nel frattempo sono leggermente cambiati).
+
 ## Bug trovati eseguendo la dashboard per la prima volta (2026-07-15)
 
 - **`ModuleNotFoundError: No module named 'components'`**: Streamlit

@@ -2755,3 +2755,28 @@ Log cronologico append-only. Ogni riga: data, azione, pagine toccate.
   esterno): push su GitHub e collegamento a Streamlit Community Cloud.
 
   Pagine aggiornate: `dashboard.md`, `project-status.md`.
+
+- **2026-07-19** — INGEST: nuovo `src/data_processing/refresh_dashboard.py`,
+  su richiesta esplicita dell'utente ("automatizzalo") dopo aver spiegato
+  che il refresh della dashboard richiede due tipi di passi diversi. Lo
+  script concatena i 6 moduli di `src/analysis/*.py` +
+  `export_dashboard_data.py` in un solo comando; **esclude
+  deliberatamente** `TRUNCATE`/`identify_heatwaves()`/`REFRESH MATERIALIZED
+  VIEW` (operazioni sul DB, la prima distruttiva, finora sempre lanciate a
+  mano caso per caso) — la scelta è stata chiesta esplicitamente
+  all'utente con `AskUserQuestion`, che non ne coglieva la differenza:
+  spiegata in termini semplici (TRUNCATE cancella e ricrea, l'export legge
+  soltanto) e proceduto con l'opzione più sicura.
+
+  Verificato per intero contro il DB reale (non solo lettura del codice):
+  7/7 passi completati, nessun fallimento. Durante l'esecuzione osservati
+  due salti di ore nei timestamp dei log (18:54→23:31 e 23:42→00:05),
+  quasi certamente il PC in sospensione/idle nel frattempo — il processo
+  Python è sopravvissuto e ripreso da solo, senza intervento. Il passo più
+  lento è la STL (`seasonal_analysis`, ~25s/comune × 177 comuni). Notato a
+  fine esecuzione che gran parte di `data/dashboard_export/` era già stata
+  committata (in commit separati, non da questa sessione) nel frattempo;
+  solo 2 file risultavano cambiati dopo il rerun di `validate_arpa.py`
+  (`arpa_event_comparison_summary.parquet`, `arpa_trend_comparison.parquet`).
+
+  Pagine aggiornate: `dashboard.md`.
