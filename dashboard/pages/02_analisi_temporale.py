@@ -251,7 +251,7 @@ with tab_overview:
             )
             st.caption(
                 "Le sezioni sotto (stagioni, variabilità, scomposizione STL) restano "
-                "calcolate su Open-Meteo — passa a \"Solo ARPA\" per vederle sulla "
+                "calcolate su Open-Meteo — passa a \"ARPA\" per vederle sulla "
                 "fonte osservativa."
             )
 
