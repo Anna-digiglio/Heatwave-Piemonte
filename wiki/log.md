@@ -2866,3 +2866,36 @@ Log cronologico append-only. Ogni riga: data, azione, pagine toccate.
   completare la mappa Bias Open-Meteo↔ARPA" con la lista completa dei 167
   comuni per provincia, marcati i 9 già scaricati; correzione del
   paragrafo Torino con nota sul fraintendimento).
+
+- **2026-07-19** — INGEST. Terza sessione della stessa collaboratrice
+  (seconda macchina). `git pull` eseguito prima di tutto: ha portato il
+  repo alla versione a 177 comuni e all'intera pipeline di validazione
+  ARPA costruita dal titolare nel frattempo (`download_arpa.py`,
+  `validate_arpa.py`, tabella `arpa_temperature`, export dashboard in
+  Parquet). L'utente ha corretto esplicitamente l'obiettivo dei prossimi
+  download, chiedendo di annotarlo in wiki: **l'obiettivo reale non è
+  "estendere la copertura spaziale genericamente", ma scaricare Open-Meteo
+  per i comuni che hanno già una stazione ARPA attiva ma non ancora dati
+  Open-Meteo, per completare la mappa Bias Open-Meteo↔ARPA per comune** —
+  nota aggiunta verbatim in `etl-pipeline.md`.
+
+  Target preso direttamente dalla lista di 158 comuni già scritta dal
+  titolare in `comuni-coperti.md` (167 con ARPA senza Open-Meteo, meno 9
+  già scaricati per errore in una sessione precedente) — parsata dalla
+  tabella markdown via script, non ritrascritta a mano. Download
+  interlacciato per provincia (round-robin) invece che nell'ordine della
+  tabella, per garantire copertura distribuita anche in caso di blocco
+  quota a metà. Bloccato dalla quota giornaliera dopo **57/158 comuni**
+  (su "Candia Canavese", stesso pattern di backoff crescente delle sessioni
+  precedenti), zero doppioni verificati. Restano 101 comuni per le
+  prossime sessioni.
+
+  File prodotti (fuori Git, `data/raw/`, da consegnare al titolare fuori
+  canale): `temperature_data_extra_helper_arpa_target.csv`,
+  `riepilogo_57_comuni_arpa_target.csv`.
+
+  Pagine aggiornate: `etl-pipeline.md` (nuova sezione "Comuni extra mirati
+  alla validazione ARPA — 158 comuni target", con la nota sull'obiettivo
+  reale, il metodo, e il risultato). `comuni-coperti.md` non toccata
+  (aggiornamento post-import di competenza del titolare, come da
+  istruzione già presente nella pagina).

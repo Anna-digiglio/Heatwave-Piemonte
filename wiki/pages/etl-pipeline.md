@@ -449,6 +449,77 @@ sovrapposizione di codice):
    `temp_mean`. Risultati in `output/arpa_validation.csv` — vedi
    [Analisi statistica](statistical-analysis.md) per i numeri reali.
 
+## Comuni extra mirati alla validazione ARPA — 158 comuni target (2026-07-19)
+
+> **Nota importante sull'obiettivo reale di questi download** (vedi anche
+> [Comuni già coperti](comuni-coperti.md#correzione-stessa-giornata)):
+> **l'obiettivo reale della richiesta dell'utente non era "estendere la
+> copertura spaziale genericamente", ma scaricare Open-Meteo per i comuni
+> che hanno già una stazione ARPA attiva ma non hanno ancora dati
+> Open-Meteo, per completare la mappa Bias Open-Meteo↔ARPA per comune**
+> (vedi [Validazione ARPA](#validazione-arpa--nuova-pipeline-parallela-2026-07-18)
+> sopra). Un primo tentativo del 2026-07-19, partito da un fraintendimento,
+> aveva scaricato 18 comuni della sola provincia di Torino con un
+> campionamento spaziale generico (`farthest_point_sample`, lo stesso
+> criterio delle sessioni precedenti) — corretto in giornata dal titolare
+> non appena chiarito l'obiettivo reale (9 di quei 18 comuni si sono
+> rivelati utili per puro caso, avendo anche una stazione ARPA attiva).
+> Questa sessione riparte **da qui**: target esplicito, non un
+> campionamento.
+
+**Fonte del target**: la sezione
+["I 167 comuni ARPA senza Open-Meteo"](comuni-coperti.md#obiettivo-reale-completare-la-mappa-bias-open-meteoarpa)
+di `comuni-coperti.md`, scritta dal titolare — lista esatta con nome e
+codice ISTAT, non un criterio geometrico da ricalcolare. Di questi 167,
+9 erano già stati scaricati (per caso) nel tentativo mal indirizzato
+della mattina, non ancora importati: **158 comuni restanti**, presi come
+target diretto di questa sessione (parsing della tabella markdown, non
+trascrizione a mano, per evitare errori su 158 righe).
+
+**Ordine di download**: interlacciato per provincia (round-robin, un
+comune a testa per provincia a turno) invece che nell'ordine della
+tabella — se la quota giornaliera si esaurisce a metà, questo garantisce
+comunque un contributo distribuito su tutte le 8 province invece di
+finire, ad esempio, tutta la provincia di Cuneo (47 comuni, la più
+numerosa nella lista) e nessun altro.
+
+**Download**: stesso `WeatherDataDownloader.download_for_coordinates()`,
+storico completo 2000-01-01 → oggi (non un delta: il confronto di bias
+richiede serie storiche complete, non un giorno), salvataggio incrementale
+comune per comune, ripresa automatica dei comuni già scaricati se il
+CSV di output esiste già da un run precedente interrotto.
+
+**Risultato reale**: bloccato dalla quota giornaliera dopo **57/158 comuni**
+riusciti (su "Candia Canavese", stesso pattern di backoff crescente già
+visto — 5s→10s→20s→40s→80s), 1 solo fallimento. Verificato senza
+doppioni: 552.729 righe = 57 comuni × 9.697 giorni esatti, zero righe
+duplicate su `(comune, data)`. Distribuzione ottenuta grazie
+all'interlacciamento per provincia: tutte e 8 le province rappresentate
+(Alessandria 8, Asti 8, Biella 7, Cuneo 8, Novara 5, Torino 7,
+Verbano-Cusio-Ossola 7, Vercelli 7) invece di esaurire prima le più
+numerose. **Restano 101 dei 158 comuni target** per le prossime sessioni
+(dopo il reset quota).
+
+**File consegnato** (fuori Git, `data/raw/`, stesso canale delle sessioni
+precedenti):
+
+- `data/raw/temperature_data_extra_helper_arpa_target.csv` — 552.729
+  righe, 57 comuni, 2000-01-01 → 2026-07-19. Colonne identiche ai lotti
+  precedenti (`date, temp_max, temp_min, temp_mean, precipitation,
+  province, data_source, istat_code, province_name`).
+- `data/raw/riepilogo_57_comuni_arpa_target.csv` — tabella di sintesi.
+
+**Non ancora importato**: stessi passaggi delle sessioni precedenti —
+pulizia + risoluzione `istat_code` → `municipality_id`, poi
+`insert_temperature_for_municipalities()`. **Passaggio aggiuntivo
+specifico a questo lotto**: dopo l'import in `temperature`, rilanciare
+anche `download_arpa.py --only-uncovered` (o senza il flag, dato che
+questi comuni ora avranno Open-Meteo) per far crescere di conseguenza
+anche `arpa_temperature` e quindi il numero di comuni utilizzabili nel
+confronto di bias — l'obiettivo reale di questo lotto non è il numero di
+comuni in `temperature` di per sé, ma il numero di comuni con **entrambe**
+le fonti.
+
 ## Passaggi pianificati ma non ancora scritti
 
 - Calcolo KPI giornalieri/annuali lato Python (oggi solo le viste
