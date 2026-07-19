@@ -1,0 +1,49 @@
+# ============================================================================
+# HEATWAVE PIEMONTE - Dipendenze per il deploy della sola dashboard
+# ============================================================================
+#
+# Copia di /requirements-dashboard.txt (root del repo). Duplicato qui perche'
+# Streamlit Community Cloud cerca requirements.txt nella stessa cartella
+# dell'entry point dell'app (dashboard/Home.py) prima che nella root del
+# repo - senza questo file userebbe /requirements.txt, molto piu' pesante
+# (Postgres/GDAL/rasterio/netCDF4, mai usati dal codice della dashboard) e
+# a rischio di installazione lenta o fallita su un ambiente cloud minimale.
+#
+# Tenere sincronizzato manualmente con /requirements-dashboard.txt - vedi
+# quel file per il dettaglio di cosa include/esclude e perche'.
+#
+# `sqlalchemy` resta necessaria anche qui: `dashboard/components/queries.py`
+# non parla piu' con il DB, ma importa a runtime alcune funzioni pure di
+# `src/analysis/trend_analysis.py`/`seasonal_analysis.py`/`spatial_analysis.py`,
+# che a livello di modulo fanno `from sqlalchemy import text` e
+# `from src.utils.database import db_manager` (mai una connessione vera,
+# solo l'istanza lazy di `DatabaseManager` - l'engine si crea solo alla prima
+# query, mai eseguita da questi percorsi). `psycopg2-binary`/`geoalchemy2`
+# invece non servono: nessun codice raggiungibile dalla dashboard crea
+# davvero un engine Postgres.
+
+# --- Dashboard ---
+streamlit==1.58.0
+streamlit-folium==0.27.2
+folium==0.20.0
+plotly==6.7.0
+
+# --- Dati ---
+pandas==3.0.3
+numpy==2.4.6
+pyarrow==24.0.0
+
+# --- Geometrie (WKT -> GeoJSON per le mappe, vedi components/maps.py) ---
+shapely==2.1.2
+
+# --- Analisi statistica (funzioni pure, richiamate al volo su ARPA/aggregati) ---
+scipy==1.17.1
+statsmodels==0.14.6
+scikit-learn==1.9.0
+pymannkendall==1.4.3
+sqlalchemy==2.0.50
+
+# --- Config/utils condivisi (src/utils/config.py, src/utils/logger.py) ---
+pyyaml==6.0.3
+python-dotenv==1.2.2
+loguru==0.7.3
