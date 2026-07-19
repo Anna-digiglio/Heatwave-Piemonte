@@ -3,7 +3,8 @@ Home.py - Heatwave Piemonte Dashboard (pagina principale)
 
 Entry point Streamlit. Le altre pagine sono in `pages/` (convenzione
 multipage di Streamlit): 02_analisi_temporale, 03_analisi_spaziale,
-04_ondate_di_calore, 05_contesto_territoriale, 06_download_dati.
+04_ondate_di_calore, 05_contesto_territoriale, 06_sintesi_della_ricerca,
+07_download_dati, 08_citazioni_e_fonti.
 
 Usage:
     streamlit run dashboard/Home.py
