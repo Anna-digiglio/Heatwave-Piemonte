@@ -2780,3 +2780,89 @@ Log cronologico append-only. Ogni riga: data, azione, pagine toccate.
   (`arpa_event_comparison_summary.parquet`, `arpa_trend_comparison.parquet`).
 
   Pagine aggiornate: `dashboard.md`.
+
+- **2026-07-19** — INGEST: aggiornamento delta giornaliero Open-Meteo
+  (`src/data_acquisition/update_recent_data.py`), su richiesta esplicita
+  dell'utente. Prima del download, valutata e implementata su richiesta
+  dell'utente una modifica all'ordine di scaricamento: i comuni con
+  copertura ARPA (i 51 usati per il confronto/validazione) vengono ora
+  scaricati **per primi** (`load_municipalities_with_data()` ordinata
+  `has_arpa DESC, nome`), per garantire il delta utile al confronto anche
+  se la quota giornaliera Open-Meteo blocca il run a metà. Archiviato un
+  CSV incrementale residuo del 2026-07-17 (`temperature_data_recent.csv`)
+  prima del run, per evitare che il nuovo run vi appendesse sopra dati già
+  importati in `temperature` (rischio duplicati, la tabella non ha vincolo
+  di unicità su `(municipality_id, date)`).
+
+  Esecuzione completata senza blocco da quota (nessun 429, nessuno stallo):
+  167/177 comuni aggiornati fino al 2026-07-19, 10 falliti per
+  `ConnectionResetError` transitorio, di cui 2 (Marentino, Usseglio) tra i
+  51 comuni ARPA. Dati scaricati ma **non importati** in `temperature` in
+  questa sessione (esplicitamente richiesto dall'utente di fermarsi prima
+  di questo passo, in attesa del file con i nuovi comuni dalla collega —
+  workflow separato, vedi sezione "Come scaricare nuovi comuni" della
+  stessa pagina).
+
+  Pagine aggiornate: `comuni-coperti.md` (stato delta 2026-07-19, nuova
+  sezione "Comuni prioritari per l'aggiornamento giornaliero" con i 51
+  comuni ARPA e relativo esito).
+
+- **2026-07-19** (poco dopo) — INGEST: due azioni su richiesta esplicita
+  dell'utente. (1) Retry mirato dei 10 comuni falliti nel delta di prima
+  (stesso giorno, `2026-07-19`) — riusciti 10/10, incluse le 2 priorità
+  ARPA (Marentino, Usseglio). (2) Tentativo di scaricare comuni **nuovi**
+  (mai coperti) partendo dalla provincia di Torino, storico completo
+  2000→oggi, stesso criterio spaziale di
+  `download_extra_municipalities.py` (farthest-point sampling) ma filtrato
+  su una sola provincia — script scritto ad hoc nello scratchpad, riusa le
+  funzioni esistenti del modulo (nessuna modifica al modulo stesso).
+
+  Lanciato in background con un `Monitor` dedicato che intercetta i
+  segnali di blocco quota, per poter interrompere il processo appena
+  arriva un errore definitivo invece di lasciarlo bruciare ore nei retry
+  di ogni comune successivo (rischio già documentato in questa stessa
+  pagina per il tentativo del 2026-07-16). **Bloccato dalla quota dopo
+  soli 18 comuni** (contro i 57+ dei run di delta) — prima conferma
+  empirica diretta che la quota è legata al **volume** di dati scaricato
+  (storico completo, ~9.700 righe/comune) più che al numero di richieste:
+  osservazione coerente con l'ipotesi già scritta in questa pagina ma mai
+  verificata con un confronto diretto nella stessa giornata. Fermato
+  manualmente il processo non appena confermato il blocco (comune
+  `Vestignè` fallito dopo 5 tentativi, comune successivo `Montanaro` già
+  in blocco).
+
+  Deliberatamente **non importato** nulla in `temperature` in questa
+  sessione (né il delta né i comuni extra di Torino) — richiesta esplicita
+  dell'utente di fermarsi prima di questo passo, in attesa del file della
+  collega.
+
+  Pagine aggiornate: `comuni-coperti.md` (esito retry, nuova sezione
+  "Download comuni extra — provincia di Torino" con elenco scaricati,
+  falliti, e indicazioni per la ripresa nella prossima sessione).
+
+- **2026-07-19** (correzione, stessa giornata) — CORREZIONE su
+  fraintendimento: l'utente ha chiarito che la richiesta di stamattina
+  ("scarica le API di oggi... per fare un paragone con ARPA") non
+  significava far girare il delta di aggiornamento né estendere la
+  copertura spaziale a caso (le due azioni della voce di log precedente),
+  ma **scaricare Open-Meteo (storico completo) per i comuni che hanno
+  ARPA ma non ancora Open-Meteo**, per completare la mappa Bias
+  Open-Meteo↔ARPA (oggi solo 51/218 comuni ARPA hanno anche Open-Meteo).
+  L'utente si è giustamente lamentato di non essere stato consultato prima
+  di agire su una richiesta ambigua — feedback salvato in memoria
+  (`feedback_ask_before_data_downloads.md`, fuori da questo repo) per le
+  prossime sessioni.
+
+  Verificato via query diretta sul DB: 167 comuni hanno ARPA senza
+  Open-Meteo (218 - 51). Per coincidenza 9 dei 18 comuni scaricati stamane
+  a Torino hanno anche ARPA, quindi contano comunque per l'obiettivo reale
+  (Ala di Stura, Angrogna, Carmagnola, Castagneto Po, Groscavallo,
+  Moncalieri, Oulx, Prali, Viù) — restano **158** da scaricare. Nessun
+  nuovo download lanciato in questa sessione (quota già bloccata da
+  prima, l'utente ha scelto esplicitamente di aspettare il reset del
+  giorno dopo invece di tentare comunque).
+
+  Pagine aggiornate: `comuni-coperti.md` (nuova sezione "Obiettivo reale:
+  completare la mappa Bias Open-Meteo↔ARPA" con la lista completa dei 167
+  comuni per provincia, marcati i 9 già scaricati; correzione del
+  paragrafo Torino con nota sul fraintendimento).

@@ -15,6 +15,272 @@ giornaliero (vedi [Fonti Dati](data-sources.md) per il limite scoperto il
 coperti su 1180** (8 capoluoghi di provincia + 169 extra), 2000-01-01 →
 oggi.
 
+**Aggiornamento delta del 2026-07-19**: serie estesa fino al 2026-07-19 per
+**177/177 comuni** via `update_recent_data.py` (nessun comune nuovo, solo
+delta sui comuni già coperti — nessun blocco da quota Open-Meteo su questo
+run, solo `ConnectionResetError` transitori). Primo passaggio: 167/177
+riusciti, 10 falliti per connessione (Borgoratto Alessandrino, Cessole,
+Fubine Monferrato, Marentino, Pietraporzio, Robella, Roletto, Usseglio,
+Vigone, Vinchio); **retry mirato sugli stessi 10 riuscito 10/10**. Dati
+scaricati ma **non ancora importati** in `temperature`, fermi in
+`data/raw/temperature_data_recent.csv` in attesa di import manuale (pulizia
++ join + `insert_temperature_for_municipalities` + ricalcolo a valle, vedi
+["Nota per chi importa"](#nota-per-chi-importa-di-solito-il-titolare-o-lia)
+sotto).
+
+**Download comuni extra — provincia di Torino (2026-07-19)**: su richiesta
+esplicita dell'utente, oltre al delta si è provato a scaricare comuni
+**nuovi** (non ancora in `temperature`) partendo dalla provincia di Torino
+(266 mancanti su 312), storico completo 2000-01-01 → oggi, selezionati con
+lo stesso criterio spaziale di
+[`download_extra_municipalities.py`](#nota-per-chi-importa-di-solito-il-titolare-o-lia)
+(farthest-point sampling dagli anchor già coperti). **Bloccato dalla quota
+giornaliera Open-Meteo dopo soli 18 comuni** (contro i 57+ osservati nei
+run di delta da 1-2 giorni): conferma empirica che la quota è legata al
+**volume di dati** scaricato, non al numero di richieste — uno storico
+completo (~9.700 righe/comune) consuma la quota molto più in fretta di un
+delta giornaliero (1-2 righe/comune). Segnale di blocco: dopo alcuni
+throttle "al minuto" recuperabili (backoff crescente, si risolvono da
+soli), su `Vestignè` i 5 tentativi sono tutti falliti
+(`RuntimeError: Rate limit persistente`) e il comune successivo
+(`Montanaro`) ha iniziato subito a fallire allo stesso modo — a quel punto
+il run è stato interrotto manualmente per non bruciare ore sui retry dei
+~246 comuni restanti (ogni comune bloccato costa fino a ~155s di backoff
+prima di passare al successivo).
+
+Esito: **18 comuni scaricati con successo** (storico completo, non ancora
+importati), 2 falliti per `ConnectionResetError` (Pragelato, Roure — da
+riprovare, non è quota), 1 bloccato da quota (Vestignè), 1 interrotto a
+metà retry quando il processo è stato fermato (Montanaro, esito
+sconosciuto — da riprovare). Output in
+`data/raw/temperature_data_extra_torino_2026-07-19.csv` (nome scelto per
+non mischiarsi con il precedente `temperature_data_extra.csv` del
+2026-07-18, già importato). Comuni scaricati in questa sessione:
+Ala di Stura, Angrogna, Burolo, Carmagnola, Castagneto Po, Cuorgnè,
+Groscavallo, Ingria, Maglione, Moncalieri, Oulx, Pancalieri, Piscina,
+Prali, Prarostino, Riva presso Chieri, Val della Torre, Viù.
+
+**Correzione (stessa giornata)**: il download di Torino sopra era partito
+da un fraintendimento — l'obiettivo reale della richiesta dell'utente non
+era "estendere la copertura spaziale genericamente", ma **scaricare
+Open-Meteo per i comuni che hanno già una stazione ARPA attiva ma non
+hanno ancora dati Open-Meteo**, per completare la mappa **Bias
+Open-Meteo↔ARPA per comune** (oggi disponibile solo sui 51 comuni che
+hanno entrambe le fonti, su 218 comuni ARPA totali). Vedi la sezione
+dedicata subito sotto per la lista esatta e lo stato.
+
+Per puro caso **9 dei 18 comuni di Torino scaricati sopra hanno anche
+ARPA** (Ala di Stura, Angrogna, Carmagnola, Castagneto Po, Groscavallo,
+Moncalieri, Oulx, Prali, Viù) e contano comunque per l'obiettivo reale,
+anche se non erano stati scelti per quello. Gli altri 9 (Burolo, Cuorgnè,
+Ingria, Maglione, Pancalieri, Piscina, Prarostino, Riva presso Chieri, Val
+della Torre) restano utili per la copertura spaziale generale ma non
+contribuiscono al confronto ARPA.
+
+## Obiettivo reale: completare la mappa Bias Open-Meteo↔ARPA
+
+**A cosa serve questa sezione**: dei **218 comuni con stazione ARPA
+attiva**, solo **51** hanno anche dati Open-Meteo (vedi sezione sopra) —
+gli altri **167** hanno ARPA ma **non** Open-Meteo, quindi non compaiono
+nella mappa di confronto/bias. Per completarla serve scaricare Open-Meteo
+(**storico completo 2000-01-01 → oggi**, non un delta — il bias si calcola
+su serie storiche, non su un giorno) per questi 167 comuni.
+
+**Stato al 2026-07-19**: di questi 167, **9 sono già stati scaricati per
+caso** durante il tentativo (mal indirizzato) di stamattina su Torino,
+vedi sopra — ma **non ancora importati** in `temperature`. Restano
+**158 comuni** da scaricare ancora. Quota Open-Meteo di oggi già bloccata
+(vedi sopra) — **da riprendere il giorno dopo il reset**, non lo stesso
+giorno.
+
+<details>
+<summary>I 167 comuni ARPA senza Open-Meteo, per provincia (✅ = già scaricato oggi via Torino, non ancora importato)</summary>
+
+| Provincia | Comune | Codice ISTAT | Scaricato oggi |
+|---|---|---|---|
+| Alessandria | Acqui Terme | 006001 |  |
+| Alessandria | Arquata Scrivia | 006009 |  |
+| Alessandria | Basaluzzo | 006012 |  |
+| Alessandria | Brignano-Frascata | 006024 |  |
+| Alessandria | Cabella Ligure | 006025 |  |
+| Alessandria | Casale Monferrato | 006039 |  |
+| Alessandria | Casaleggio Boiro | 006038 |  |
+| Alessandria | Fabbrica Curone | 006067 |  |
+| Alessandria | Garbagna | 006079 |  |
+| Alessandria | Gavi | 006081 |  |
+| Alessandria | Ovada | 006121 |  |
+| Alessandria | Ponzone | 006136 |  |
+| Alessandria | Roccaforte Ligure | 006146 |  |
+| Alessandria | San Salvatore Monferrato | 006154 |  |
+| Alessandria | Sardigliano | 006157 |  |
+| Alessandria | Serralunga di Crea | 006159 |  |
+| Alessandria | Sezzadio | 006161 |  |
+| Alessandria | Vignale Monferrato | 006179 |  |
+| Asti | Buttigliera d'Asti | 005012 |  |
+| Asti | Castagnole delle Lanze | 005022 |  |
+| Asti | Castell'Alfero | 005025 |  |
+| Asti | Loazzolo | 005060 |  |
+| Asti | Mombaldone | 005064 |  |
+| Asti | Montaldo Scarampi | 005074 |  |
+| Asti | Montechiaro d'Asti | 005075 |  |
+| Asti | Nizza Monferrato | 005080 |  |
+| Asti | Roccaverano | 005094 |  |
+| Asti | San Damiano d'Asti | 005097 |  |
+| Biella | Graglia | 096028 |  |
+| Biella | Masserano | 096032 |  |
+| Biella | Pettinengo | 096042 |  |
+| Biella | Piatto | 096043 |  |
+| Biella | Pray | 096050 |  |
+| Biella | Salussola | 096058 |  |
+| Biella | Valdilana | 096088 |  |
+| Cuneo | Alba | 004003 |  |
+| Cuneo | Argentera | 004006 |  |
+| Cuneo | Baldissero d'Alba | 004010 |  |
+| Cuneo | Barge | 004012 |  |
+| Cuneo | Bellino | 004017 |  |
+| Cuneo | Belvedere Langhe | 004018 |  |
+| Cuneo | Boves | 004028 |  |
+| Cuneo | Bra | 004029 |  |
+| Cuneo | Brossasco | 004033 |  |
+| Cuneo | Canosio | 004038 |  |
+| Cuneo | Carrù | 004043 |  |
+| Cuneo | Castelletto Uzzone | 004050 |  |
+| Cuneo | Castellinaldo d'Alba | 004051 |  |
+| Cuneo | Ceva | 004066 |  |
+| Cuneo | Crissolo | 004077 |  |
+| Cuneo | Demonte | 004079 |  |
+| Cuneo | Dronero | 004082 |  |
+| Cuneo | Elva | 004083 |  |
+| Cuneo | Feisoglio | 004088 |  |
+| Cuneo | Fossano | 004089 |  |
+| Cuneo | Frabosa Soprana | 004090 |  |
+| Cuneo | Garessio | 004095 |  |
+| Cuneo | Marene | 004117 |  |
+| Cuneo | Mombarcaro | 004124 |  |
+| Cuneo | Mondovì | 004130 |  |
+| Cuneo | Morozzo | 004144 |  |
+| Cuneo | Neive | 004148 |  |
+| Cuneo | Ormea | 004155 |  |
+| Cuneo | Paesana | 004157 |  |
+| Cuneo | Pamparato | 004159 |  |
+| Cuneo | Paroldo | 004160 |  |
+| Cuneo | Perlo | 004162 |  |
+| Cuneo | Peveragno | 004163 |  |
+| Cuneo | Priero | 004175 |  |
+| Cuneo | Prunetto | 004178 |  |
+| Cuneo | Roccaforte Mondovì | 004190 |  |
+| Cuneo | Roddino | 004195 |  |
+| Cuneo | Rodello | 004196 |  |
+| Cuneo | Saluzzo | 004203 |  |
+| Cuneo | Sampeyre | 004205 |  |
+| Cuneo | San Damiano Macra | 004207 |  |
+| Cuneo | Somano | 004221 |  |
+| Cuneo | Treiso | 004230 |  |
+| Cuneo | Valdieri | 004233 |  |
+| Cuneo | Vernante | 004239 |  |
+| Cuneo | Villanova Solaro | 004246 |  |
+| Cuneo | Viola | 004249 |  |
+| Novara | Ameno | 003002 |  |
+| Novara | Armeno | 003006 |  |
+| Novara | Cameri | 003032 |  |
+| Novara | Paruzzaro | 003114 |  |
+| Novara | Varallo Pombia | 003154 |  |
+| Torino | Ala di Stura | 001003 | ✅ |
+| Torino | Andrate | 001010 |  |
+| Torino | Angrogna | 001011 | ✅ |
+| Torino | Avigliana | 001013 |  |
+| Torino | Balme | 001019 |  |
+| Torino | Borgofranco d'Ivrea | 001030 |  |
+| Torino | Borgone Susa | 001032 |  |
+| Torino | Brosso | 001036 |  |
+| Torino | Caluso | 001047 |  |
+| Torino | Candia Canavese | 001050 |  |
+| Torino | Carmagnola | 001059 | ✅ |
+| Torino | Castagneto Po | 001064 | ✅ |
+| Torino | Cesana Torinese | 001074 |  |
+| Torino | Chiomonte | 001080 |  |
+| Torino | Chivasso | 001082 |  |
+| Torino | Coazze | 001089 |  |
+| Torino | Colleretto Castelnuovo | 001091 |  |
+| Torino | Condove | 001093 |  |
+| Torino | Cumiana | 001097 |  |
+| Torino | Druento | 001099 |  |
+| Torino | Fenestrelle | 001103 |  |
+| Torino | Front | 001109 |  |
+| Torino | Giaglione | 001114 |  |
+| Torino | Groscavallo | 001118 | ✅ |
+| Torino | Lanzo Torinese | 001128 |  |
+| Torino | Luserna San Giovanni | 001139 |  |
+| Torino | Monastero di Lanzo | 001155 |  |
+| Torino | Moncalieri | 001156 | ✅ |
+| Torino | Oulx | 001175 | ✅ |
+| Torino | Parella | 001179 |  |
+| Torino | Perrero | 001186 |  |
+| Torino | Pinerolo | 001191 |  |
+| Torino | Pragelato | 001201 |  |
+| Torino | Prali | 001202 | ✅ |
+| Torino | Rivoli | 001219 |  |
+| Torino | Ronco Canavese | 001224 |  |
+| Torino | Sauze d'Oulx | 001259 |  |
+| Torino | Sestriere | 001263 |  |
+| Torino | Susa | 001270 |  |
+| Torino | Trana | 001276 |  |
+| Torino | Traversella | 001278 |  |
+| Torino | Valchiusa | 001318 |  |
+| Torino | Varisella | 001289 |  |
+| Torino | Venaria Reale | 001292 |  |
+| Torino | Venaus | 001291 |  |
+| Torino | Verolengo | 001293 |  |
+| Torino | Vialfrè | 001296 |  |
+| Torino | Villafranca Piemonte | 001300 |  |
+| Torino | Viù | 001313 | ✅ |
+| Verbano-Cusio-Ossola | Antrona Schieranco | 103001 |  |
+| Verbano-Cusio-Ossola | Baceno | 103006 |  |
+| Verbano-Cusio-Ossola | Bannio Anzino | 103007 |  |
+| Verbano-Cusio-Ossola | Bognanco | 103012 |  |
+| Verbano-Cusio-Ossola | Cannobio | 103017 |  |
+| Verbano-Cusio-Ossola | Ceppo Morelli | 103021 |  |
+| Verbano-Cusio-Ossola | Cesara | 103022 |  |
+| Verbano-Cusio-Ossola | Cossogno | 103023 |  |
+| Verbano-Cusio-Ossola | Crodo | 103026 |  |
+| Verbano-Cusio-Ossola | Domodossola | 103028 |  |
+| Verbano-Cusio-Ossola | Druogno | 103029 |  |
+| Verbano-Cusio-Ossola | Mergozzo | 103044 |  |
+| Verbano-Cusio-Ossola | Montecrestese | 103046 |  |
+| Verbano-Cusio-Ossola | Omegna | 103050 |  |
+| Verbano-Cusio-Ossola | Pieve Vergonte | 103054 |  |
+| Verbano-Cusio-Ossola | Premia | 103056 |  |
+| Verbano-Cusio-Ossola | Stresa | 103064 |  |
+| Verbano-Cusio-Ossola | Toceno | 103065 |  |
+| Verbano-Cusio-Ossola | Trasquera | 103067 |  |
+| Verbano-Cusio-Ossola | Trontano | 103068 |  |
+| Verbano-Cusio-Ossola | Valle Cannobina | 103079 |  |
+| Verbano-Cusio-Ossola | Varzo | 103071 |  |
+| Vercelli | Albano Vercellese | 002003 |  |
+| Vercelli | Alto Sermenza | 002170 |  |
+| Vercelli | Boccioleto | 002014 |  |
+| Vercelli | Carcoforo | 002029 |  |
+| Vercelli | Cellio con Breia | 002171 |  |
+| Vercelli | Lozzolo | 002072 |  |
+| Vercelli | Rassa | 002110 |  |
+| Vercelli | Tricerro | 002147 |  |
+| Vercelli | Varallo | 002156 |  |
+
+</details>
+
+**Per la prossima sessione**: aspettare il reset della quota (il giorno
+dopo, non lo stesso giorno) e scaricare storico completo 2000→oggi per i
+158 comuni sopra non ancora marcati ✅ (usando lo stesso approccio di
+`download_extra_municipalities.py`, ma filtrando esplicitamente su questa
+lista invece che su un campionamento spaziale generico — qui serve
+**tutta** la lista, non un sottoinsieme rappresentativo). Dato il limite
+osservato oggi (~18-20 comuni a storico completo prima del blocco), serviranno
+**8-9 sessioni giornaliere** per completarla tutta, salvo che la quota si
+riveli più permissiva in altri giorni. **Attenzione a non sovrapporsi con
+il file che arriverà dalla collega** (vedi sezione sotto): se anche lei
+sta scaricando comuni extra in questi giorni, controllare i nomi prima di
+importare per evitare doppioni.
+
 ## Comuni già coperti (NON riscaricare questi)
 
 ### Alessandria (28/187 comuni coperti)
@@ -234,6 +500,80 @@ oggi.
 | Valduggia | 002152 |
 | Vercelli | 002158 |
 
+## Comuni prioritari per l'aggiornamento giornaliero (copertura ARPA)
+
+**A cosa serve questa sezione**: dei 177 comuni coperti, **51 hanno anche
+una stazione ARPA attiva** con sensore di temperatura (vedi [Fonti
+Dati](data-sources.md#arpa-piemonte--integrata-e-scaricata-2026-07-18)) e
+sono quindi gli unici utilizzabili per il confronto/validazione
+Open-Meteo↔ARPA (bias, trend, eventi — vedi [Analisi
+statistica](statistical-analysis.md#validazione-contro-arpa-piemonte-2026-07-18)).
+Dal 2026-07-19 `update_recent_data.py` (funzione
+`load_municipalities_with_data()`) li scarica **per primi** (query ordinata
+`has_arpa DESC, nome`), perché la quota giornaliera Open-Meteo è
+imprevedibile (vedi sotto) e un run interrotto a metà deve comunque aver
+già garantito il delta utile al confronto, prima del resto dei comuni in
+ordine alfabetico.
+
+Se una sessione di aggiornamento si interrompe prima di coprire tutti i
+177 comuni, **controllare per primi questi 51** (via log o query su
+`temperature` per la data massima per comune) prima di considerare il
+delta del giorno completo.
+
+| Comune | Codice ISTAT | Esito delta 2026-07-19 |
+|---|---|---|---|
+| Acceglio | 004001 | ✅ |
+| Alagna Valsesia | 002002 | ✅ |
+| Alessandria | 006003 | ✅ |
+| Asti | 005005 | ✅ |
+| Bardonecchia | 001022 | ✅ |
+| Biella | 096004 | ✅ |
+| Bobbio Pellice | 001026 | ✅ |
+| Borgomanero | 003024 | ✅ |
+| Bosio | 006022 | ✅ |
+| Briga Alta | 004031 | ✅ |
+| Carrega Ligure | 006034 | ✅ |
+| Caselle Torinese | 001063 | ✅ |
+| Castelmagno | 004053 | ✅ |
+| Cerano | 003049 | ✅ |
+| Ceresole Reale | 001073 | ✅ |
+| Chiusa di Pesio | 004068 | ✅ |
+| Costigliole Saluzzo | 004075 | ✅ |
+| Cuneo | 004078 | ✅ |
+| Entracque | 004084 | ✅ |
+| Formazza | 103031 | ✅ |
+| Govone | 004099 | ✅ |
+| Isola Sant'Antonio | 006087 | ✅ |
+| Lemie | 001131 | ✅ |
+| Limone Piemonte | 004110 | ✅ |
+| Locana | 001134 | ✅ |
+| Macugnaga | 103039 | ✅ |
+| Marentino | 001144 | ✅ (riuscito al retry) |
+| Massello | 001145 | ✅ |
+| Momo | 003100 | ✅ |
+| Monterosso Grana | 004139 | ✅ |
+| Noasca | 001165 | ✅ |
+| Novara | 003106 | ✅ |
+| Novi Ligure | 006114 | ✅ |
+| Piedicavallo | 096044 | ✅ |
+| Pino Torinese | 001192 | ✅ |
+| Piverone | 001196 | ✅ |
+| Pontechianale | 004172 | ✅ |
+| Pralormo | 001203 | ✅ |
+| Salbertrand | 001232 | ✅ |
+| Saliceto | 004201 | ✅ |
+| Santena | 001257 | ✅ |
+| Sauze di Cesana | 001258 | ✅ |
+| Serole | 005104 | ✅ |
+| Sparone | 001267 | ✅ |
+| Torino | 001272 | ✅ |
+| Tortona | 006174 | ✅ |
+| Usseglio | 001282 | ✅ (riuscito al retry) |
+| Valprato Soana | 001288 | ✅ |
+| Verbania | 103072 | ✅ |
+| Vercelli | 002158 | ✅ |
+| Vinadio | 004248 | ✅ |
+
 ## Come scaricare nuovi comuni (Open-Meteo, storico 2000 → oggi)
 
 **Fonte**: Open-Meteo Archive API (`https://archive-api.open-meteo.com/v1/archive`),
@@ -268,7 +608,7 @@ Un CSV con **queste colonne esatte** (stesso ordine non obbligatorio, ma
 nomi e contenuto sì):
 
 | Colonna | Contenuto | Note |
-|---|---|---|
+|---|---|---|---|
 | `date` | data (`YYYY-MM-DD`) | |
 | `temp_max` | temperatura massima giornaliera (°C) | |
 | `temp_min` | temperatura minima giornaliera (°C) | |
