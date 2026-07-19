@@ -527,7 +527,7 @@ with tab_detail:
         st.caption(
             "Ex pagina dedicata \"Validazione Dati\", spostata qui il 2026-07-18: la mappa bias "
             "e il confronto ondate/trend sono già più sopra e in Ondate di Calore/Analisi "
-            "Temporale (modalità Confronto) — qui il resto del dettaglio, sui 51 comuni con "
+            "Temporale (modalità Confronto) — qui il resto del dettaglio, sui 108 comuni con "
             "entrambe le fonti."
         )
         validation = get_arpa_validation()
