@@ -262,7 +262,7 @@ with tab_overview:
                 integer=True,
             )
             st.caption(
-                "Le due mappe non coprono esattamente gli stessi comuni (51 hanno entrambe le "
+                "Le due mappe non coprono esattamente gli stessi comuni (108 hanno entrambe le "
                 "fonti, gli altri solo una): confronta le zone dove **entrambe** hanno un colore, "
                 "non l'assenza di colore in una delle due."
             )
