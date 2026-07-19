@@ -789,12 +789,18 @@ richiesta. Anche la citazione di `ARPA Piemonte` come fonte dati è
 rimasta (non è un riferimento al codice/wiki del progetto, ma
 un'attribuzione della fonte dei dati, legittima in un portfolio).
 
-**Non ancora fatto**: l'utente ha anche chiesto di cambiare il titolo
-"Heatwave Piemonte" (giudicato poco significativo) — non ancora deciso
-un nome sostitutivo (`AskUserQuestion` proposto 3 opzioni, risposta
-"ci penso"). Da applicare in `config.yaml` (`dashboard.title`), in tutti
-gli `st.set_page_config(page_title=...)` delle pagine, e nell'hero della
-Home (`render_hero(title=...)`) una volta deciso. Se in futuro il
+**Titolo cambiato (2026-07-19)**: dopo aver proposto varie opzioni in stile
+tesi/articolo scientifico (`AskUserQuestion`), l'utente ha scelto "Il
+riscaldamento del Piemonte: un'analisi spazio-temporale dei trend termici e
+delle ondate di calore". Applicato in `README.md` (H1), `config.yaml`
+(`dashboard.title`, letto da `Home.py` per `page_title`) e nell'hero della
+Home (`render_hero(title="Il riscaldamento del Piemonte")`). "Heatwave
+Piemonte" resta come brand: eyebrow dell'hero (`"Heatwave Piemonte — analisi
+spazio-temporale"`) e suffisso in tutti gli altri `st.set_page_config(page_title=...)`
+delle pagine (`"<Nome pagina> — Heatwave Piemonte"`), non toccati apposta per
+coerenza di navigazione. `PROJECT_SUMMARY.md` non toccato (documento di
+pianificazione immutabile per `CLAUDE.md`) — cita ancora il vecchio titolo.
+Se in futuro il
 repository GitHub diventa pubblico, l'utente ha detto che un link ad
 esso in fondo alla pagina sarebbe accettabile (non un riferimento a
 wiki/codice interno, ma un invito a esplorare il progetto completo) —

@@ -491,11 +491,14 @@ completo:
     Ondate di Calore e Analisi Temporale, dati ARPA estesi a 218 comuni per
     supportarlo. Pagina "Validazione Dati" tenuta com'era (scelta
     deliberata). Vedi [Dashboard](dashboard.md#selettore-fonte-dati-open-meteo--arpa--confronto--2026-07-18).
-13. **Titolo dashboard da cambiare** — "Heatwave Piemonte" giudicato poco
-    significativo dall'utente il 2026-07-18 (sera); chiesto un nome
-    sostitutivo (`AskUserQuestion`, 3 proposte), risposta "ci penso" —
-    ancora da decidere e applicare (`config.yaml` → `dashboard.title`,
-    tutti gli `st.set_page_config`, hero della Home).
+13. ~~Titolo dashboard da cambiare~~ — **deciso e applicato il 2026-07-19**:
+    "Il riscaldamento del Piemonte: un'analisi spazio-temporale dei trend
+    termici e delle ondate di calore" (README H1, `config.yaml` →
+    `dashboard.title`, hero della Home). "Heatwave Piemonte" resta come
+    brand/eyebrow (Home + tutti gli `st.set_page_config(page_title=...)`
+    delle altre pagine, invariati). `PROJECT_SUMMARY.md` non toccato
+    (documento di pianificazione immutabile per `CLAUDE.md`) — cita ancora
+    il vecchio titolo.
 
 ## Discrepanze da tenere a mente quando si presenta il progetto
 

@@ -2923,3 +2923,17 @@ Log cronologico append-only. Ogni riga: data, azione, pagine toccate.
   disambiguazione sul numero `06` già usato in passato dalla pagina
   "Validazione Dati" rimossa il 2026-07-18), `index.md` (5 → 6 pagine),
   `Home.py` (commento in testa con l'elenco pagine aggiornato).
+
+- **2026-07-19** — Deciso e applicato il nuovo titolo del progetto (punto
+  aperto dal 2026-07-18, vedi voce sopra). Proposti titoli in stile
+  tesi/articolo scientifico via `AskUserQuestion`; l'utente ha scelto "Il
+  riscaldamento del Piemonte: un'analisi spazio-temporale dei trend termici
+  e delle ondate di calore". Applicato in `README.md` (H1), `config.yaml`
+  (`dashboard.title`) e nell'hero di `Home.py` (`render_hero(title=...)`,
+  "Heatwave Piemonte" spostato a eyebrow come brand). Non toccato
+  `PROJECT_SUMMARY.md` (sorgente di pianificazione immutabile per
+  `CLAUDE.md`) né i suffissi "— Heatwave Piemonte" negli `st.set_page_config`
+  delle altre pagine (brand di navigazione, non il titolo).
+
+  Pagine aggiornate: `project-status.md` (punto 13 chiuso), `dashboard.md`
+  (sezione "Non ancora fatto" → esito).
