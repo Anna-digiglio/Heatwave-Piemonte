@@ -103,6 +103,6 @@ visualization:
 # --- DASHBOARD ---
 dashboard:
   port: 8501
-  title: "Heatwave Piemonte - Analisi Spazio-Temporale"
+  title: "Il riscaldamento del Piemonte: analisi spazio-temporale dei trend termici e delle ondate di calore"
   theme: "light"
   max_upload_size: 200  # MB
