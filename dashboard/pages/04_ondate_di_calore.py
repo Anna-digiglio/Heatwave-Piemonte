@@ -128,7 +128,7 @@ if source == SOURCE_BOTH:
         cc3.metric("Ondate ARPA reali", int(comparison.get('n_arpa_events', 0)))
         cc3.caption(f"Contro {int(comparison.get('n_om_events', 0))} rilevate da Open-Meteo")
         st.caption(
-            "Calcolato sui 51 comuni con entrambe le fonti disponibili (non filtrato per "
+            "Calcolato sui 108 comuni con entrambe le fonti disponibili (non filtrato per "
             "provincia/anno)."
         )
     else:
