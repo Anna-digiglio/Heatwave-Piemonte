@@ -1,10 +1,10 @@
 {
-  "n_temperature_rows": 1716094,
+  "n_temperature_rows": 2268823,
   "date_start": "2000-01-01",
-  "date_end": "2026-07-18",
+  "date_end": "2026-07-19",
   "n_municipalities": 1180,
-  "n_municipalities_with_data": 177,
-  "n_heatwaves": 640,
-  "n_arpa_rows": 1965138,
+  "n_municipalities_with_data": 234,
+  "n_heatwaves": 770,
+  "n_arpa_rows": 1979158,
   "n_arpa_municipalities": 218
 }
