@@ -15,6 +15,15 @@ giornaliero (vedi [Fonti Dati](data-sources.md) per il limite scoperto il
 coperti su 1180** (8 capoluoghi di provincia + 169 extra), 2000-01-01 →
 oggi.
 
+**Stato al 2026-07-19 (import comuni ARPA-target dalla collaboratrice)**:
+**234 comuni coperti** — importati i 57 comuni consegnati dalla
+collaboratrice (vedi sezione "Obiettivo reale" sotto per il dettaglio),
+`temperature` ora a 2.268.823 righe. Ricalcolo a valle completo: elevazione
+234/234, `heatwave_events` 640 → **770**, `kpi_annual_by_municipality`
+**6.318 righe** (234 comuni × 27 anni), `kpi_annual_by_province` invariato
+a 216. `download_arpa.py` rilanciato di conseguenza per far crescere anche
+`arpa_temperature` sui nuovi comuni — vedi sotto per l'esito.
+
 **Aggiornamento delta del 2026-07-19**: serie estesa fino al 2026-07-19 per
 **177/177 comuni** via `update_recent_data.py` (nessun comune nuovo, solo
 delta sui comuni già coperti — nessun blocco da quota Open-Meteo su questo
@@ -86,12 +95,32 @@ nella mappa di confronto/bias. Per completarla serve scaricare Open-Meteo
 (**storico completo 2000-01-01 → oggi**, non un delta — il bias si calcola
 su serie storiche, non su un giorno) per questi 167 comuni.
 
-**Stato al 2026-07-19**: di questi 167, **9 sono già stati scaricati per
-caso** durante il tentativo (mal indirizzato) di stamattina su Torino,
-vedi sopra — ma **non ancora importati** in `temperature`. Restano
-**158 comuni** da scaricare ancora. Quota Open-Meteo di oggi già bloccata
-(vedi sopra) — **da riprendere il giorno dopo il reset**, non lo stesso
-giorno.
+**Stato al 2026-07-19 (mattina)**: di questi 167, **9 sono già stati
+scaricati per caso** durante il tentativo (mal indirizzato) di stamattina
+su Torino, vedi sopra — ma **non ancora importati** in `temperature`.
+Restano **158 comuni** da scaricare ancora. Quota Open-Meteo di oggi già
+bloccata (vedi sopra) — **da riprendere il giorno dopo il reset**, non lo
+stesso giorno.
+
+**Aggiornamento (stesso giorno, poco dopo)**: la collaboratrice (stessa
+seconda macchina delle sessioni precedenti) ha consegnato **57 comuni**
+scaricati direttamente dalla lista dei 167 sopra (round-robin per
+provincia, non nell'ordine della tabella — vedi
+[Pipeline ETL](etl-pipeline.md#comuni-extra-mirati-alla-validazione-arpa--158-comuni-target-2026-07-19)
+per il dettaglio completo del suo download, bloccato anche lei dalla
+quota dopo 57/158). **Importati nel DB** (pulizia + join `istat_code` →
+`municipality_id` + `insert_temperature_for_municipalities` + ricalcolo a
+valle completo, vedi sopra): **234 comuni** ora in `temperature`.
+`download_arpa.py` rilanciato di conseguenza: 108/234 comuni con
+Open-Meteo hanno anche una stazione ARPA attiva (i 51 di prima + tutti i
+57 nuovi, confermando che la lista target era corretta al 100%) — vedi
+[Fonti Dati](data-sources.md) per l'esito finale del download e il nuovo
+numero di comuni utilizzabili nella mappa Bias.
+
+**Restano 101 comuni** (167 - 9 Torino - 57 collaboratrice) dei 167
+originali ancora da scaricare per completare la copertura Open-Meteo su
+tutti i comuni ARPA — target per le prossime sessioni, dopo il reset della
+quota giornaliera.
 
 <details>
 <summary>I 167 comuni ARPA senza Open-Meteo, per provincia (✅ = già scaricato oggi via Torino, non ancora importato)</summary>

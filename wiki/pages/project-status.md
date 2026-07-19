@@ -13,7 +13,7 @@ ogni sessione di lavoro rilevante (vedi workflow di ingest in `CLAUDE.md`).
 | Struttura repo | ✅ | ✅ |
 | Schema DB (`01_init_database.sql`) | ✅ | ✅ completo: 6 tabelle, 2 viste, 1 funzione, 25+ indici. **Eseguito per la prima volta su un DB reale il 2026-07-04** (Postgres 16 + PostGIS locale) — trovati e risolti 4 bug mai emersi finché nessuno l'aveva davvero eseguito (vedi [ETL](etl-pipeline.md) e [Modello Dati](data-model.md)) |
 | Script download (`download_data.py`) | pianificato | ✅ scritto, bug di import **risolto il 2026-07-04** (vedi [Fonti Dati](data-sources.md)); aggiunto anche retry/backoff per rate limit Open-Meteo |
-| Download dati 2000-2026 | ⬜ | ✅ **eseguito il 2026-07-04, esteso il 2026-07-15, due volte il 2026-07-17 e due volte il 2026-07-18** — 1.716.094+ righe reali, **177 comuni** (8 capoluoghi + 169 extra), dal 2000 **fino a oggi** (non più fermo al 31/12/2025) |
+| Download dati 2000-2026 | ⬜ | ✅ **eseguito il 2026-07-04, esteso il 2026-07-15, due volte il 2026-07-17, due volte il 2026-07-18 e il 2026-07-19** — 2.268.823 righe reali, **234 comuni** (8 capoluoghi + 226 extra), dal 2000 **fino a oggi** (non più fermo al 31/12/2025) |
 | Dati geografici (ISTAT comuni/province) | ⬜ | ✅ **caricati il 2026-07-04** — 1180 comuni reali in `municipalities` (DB Postgres/PostGIS locale), 8 province con codici ISTAT corretti |
 | Python environment / requirements | ⬜ | `.venv` presente, `requirements.txt` presente e dettagliato |
 
@@ -23,8 +23,8 @@ ogni sessione di lavoro rilevante (vedi workflow di ingest in `CLAUDE.md`).
 |---|---|---|
 | `DataCleaner` completo | pianificato | ✅ scritto, **ma non era mai stato eseguibile** fino al 2026-07-04 (`SyntaxError` da newline letterali corrotte + bug che scartava il 99,9% dei dati — vedi [ETL](etl-pipeline.md)). Eseguito su 75.976 righe (8 comuni) e poi su altre 341.892 (36 comuni extra, 2026-07-15), senza modifiche al codice |
 | Caricamento `temperature` nel DB | pianificato | ✅ **eseguito il 2026-07-04, esteso il 2026-07-15** — **417.868 righe reali, 44 comuni**, in `temperature`, batch insert (vedi [ETL](etl-pipeline.md)) |
-| `identify_heatwaves()` eseguita | pianificato | ✅ eseguita il 2026-07-12 su 8 comuni (51 ondate), **rieseguita il 2026-07-15** su 44 comuni (145 ondate), **due volte il 2026-07-17** su 63 poi 98 comuni e **due volte il 2026-07-18** su 155 poi 177 comuni, sempre dopo `TRUNCATE` (non idempotente) — **640 ondate totali**, incluse quelle del 2026 (vedi [Modello Dati](data-model.md)) |
-| KPI calcolati | pianificato | ✅ viste materializzate rinfrescate il 2026-07-12 (208 righe, 8 comuni), il 2026-07-15 (1144 righe, 44 comuni), due volte il 2026-07-17 e **due volte il 2026-07-18** — `kpi_annual_by_municipality` ora **4.779 righe** (177 comuni × 27 anni, 2000-2026) |
+| `identify_heatwaves()` eseguita | pianificato | ✅ eseguita il 2026-07-12 su 8 comuni (51 ondate), **rieseguita il 2026-07-15** su 44 comuni (145 ondate), **due volte il 2026-07-17** su 63 poi 98 comuni, **due volte il 2026-07-18** su 155 poi 177 comuni e **il 2026-07-19** su 234 comuni, sempre dopo `TRUNCATE` (non idempotente) — **770 ondate totali**, incluse quelle del 2026 (vedi [Modello Dati](data-model.md)) |
+| KPI calcolati | pianificato | ✅ viste materializzate rinfrescate il 2026-07-12 (208 righe, 8 comuni), il 2026-07-15 (1144 righe, 44 comuni), due volte il 2026-07-17, due volte il 2026-07-18 e **il 2026-07-19** — `kpi_annual_by_municipality` ora **6.318 righe** (234 comuni × 27 anni, 2000-2026). Refresh eseguito **senza `CONCURRENTLY`**: la vista non ha un indice univoco (solo btree non-unique), quindi `REFRESH MATERIALIZED VIEW CONCURRENTLY` fallisce con `ObjectNotInPrerequisiteState` — segnalato come possibile miglioria futura (creare un indice univoco su `(municipality_id, year)`), non ancora applicato |
 | Query SQL (10+) | pianificato | 3 query scritte in `02_common_queries.sql` |
 
 ## Settimana 3 — Visualizzazione & Deployment
@@ -406,6 +406,33 @@ Dettaglio tecnico → sezione "Validazione ARPA — dettaglio" (visibile solo
 in modalità Confronto). **5 pagine dashboard**, non più 6. Nessun
 contenuto perso. Verificato con `AppTest` su tutte e 3 le combinazioni di
 fonte, incluso `Home.py`, nessuna eccezione.
+
+### 2026-07-19 — 177 → 234 comuni: terza collaborazione mirata alla mappa Bias ARPA
+
+Sessione partita da un fraintendimento: l'utente aveva chiesto di
+scaricare Open-Meteo per completare la mappa Bias Open-Meteo↔ARPA (i
+comuni con ARPA ma senza Open-Meteo, 167 su 218), non di aggiornare la
+serie esistente né di estendere la copertura spaziale a caso — le due
+azioni tentate all'inizio della sessione, corrette non appena l'utente ha
+chiarito l'obiettivo (vedi [Comuni già
+coperti](comuni-coperti.md#correzione-stessa-giornata)). Il tentativo
+diretto (provincia di Torino) si è bloccato dopo 18 comuni; per puro caso
+9 di quei 18 avevano anche ARPA e sono comunque serviti.
+
+La collaboratrice (stessa seconda macchina delle sessioni del 07-17 e
+07-18) ha scaricato **57 comuni** direttamente dalla lista dei 167 target
+(round-robin per provincia), bloccata anch'essa dalla quota a 57/158.
+Consegnati e importati (pulizia + join `istat_code` → `municipality_id` +
+`insert_temperature_for_municipalities` + ricalcolo a valle completo):
+**234 comuni**, 2.268.823 righe in `temperature`. `download_arpa.py`
+rilanciato di conseguenza: 108/234 comuni Open-Meteo hanno anche ARPA (i
+51 di prima + tutti i 57 nuovi — la lista target si è rivelata corretta al
+100%). Restano **101 comuni** dei 167 originali ancora senza Open-Meteo,
+per le prossime sessioni dopo il reset quota.
+
+Vedi [Comuni già coperti](comuni-coperti.md#obiettivo-reale-completare-la-mappa-bias-open-meteoarpa)
+per la lista completa e [Pipeline ETL](etl-pipeline.md#comuni-extra-mirati-alla-validazione-arpa--158-comuni-target-2026-07-19)
+per il dettaglio del download della collaboratrice e dell'import.
 
 ## Prossimi passi
 
