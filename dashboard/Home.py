@@ -40,9 +40,9 @@ inject_custom_css()
 stats = get_overview_stats()
 arpa_stats = get_arpa_overview_stats()
 n_years = stats['date_end'].year - stats['date_start'].year + 1
-# Copertura combinata: unione dei comuni Open-Meteo (177) e ARPA (218),
-# 51 in comune a entrambe - non una somma ingenua (177+218), che
-# conterebbe due volte quei 51. Vedi wiki/pages/dashboard.md.
+# Copertura combinata: unione dei comuni Open-Meteo (234) e ARPA (218),
+# 108 in comune a entrambe - non una somma ingenua (234+218), che
+# conterebbe due volte quei 108. Vedi wiki/pages/dashboard.md.
 combined_trend_df = get_combined_trend_analysis()
 n_municipalities_combined = combined_trend_df['municipality_name'].nunique() if not combined_trend_df.empty else 0
 n_rows_combined = stats['n_temperature_rows'] + arpa_stats['n_arpa_rows']
