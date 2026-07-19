@@ -3,7 +3,7 @@ Home.py - Heatwave Piemonte Dashboard (pagina principale)
 
 Entry point Streamlit. Le altre pagine sono in `pages/` (convenzione
 multipage di Streamlit): 02_analisi_temporale, 03_analisi_spaziale,
-04_ondate_di_calore, 05_download_dati.
+04_ondate_di_calore, 05_contesto_territoriale, 06_download_dati.
 
 Usage:
     streamlit run dashboard/Home.py
@@ -69,7 +69,7 @@ card1, card2, card3 = st.columns(3)
 with card1:
     with st.container(key="navcard-temporale", height=CARD_HEIGHT):
         render_nav_card_header(
-            icon="📈", title="Analisi Temporal",
+            icon="📈", title="Analisi Temporale",
             description=(
                 "Le temperature stanno davvero salendo? Trend, anomalie, "
                 "confronto tra stagioni e variabilità nel tempo, comune per comune."
