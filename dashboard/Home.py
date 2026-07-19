@@ -69,7 +69,7 @@ card1, card2, card3 = st.columns(3)
 with card1:
     with st.container(key="navcard-temporale", height=CARD_HEIGHT):
         render_nav_card_header(
-            icon="📈", title="Analisi Temporale",
+            icon="📈", title="Analisi Temporal",
             description=(
                 "Le temperature stanno davvero salendo? Trend, anomalie, "
                 "confronto tra stagioni e variabilità nel tempo, comune per comune."
