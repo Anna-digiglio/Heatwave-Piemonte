@@ -232,12 +232,93 @@ Da citare, organizzata per ruolo nel paper:
   CORINE Land Cover su città italiane; Frontiers, *Mapping urban heatwaves
   and islands: the reverse effect of Salento's "white cities"* — caso
   controintuitivo utile per la discussione su fattori mitiganti.
-- **Contesto climatico regionale/nazionale** (per l'introduzione): +7.5
-  giorni/decade di ondate di calore in Italia; +134% eventi di caldo
-  estremo estivo nel trentennio 1991-2020 vs 1961-1990 nel Nord
-  Italia/Arco Alpino; *Changes in large-scale circulation behind the
-  increase in extreme heat events in the Apennines* (2025); variabilità
-  termica Po Valley da radiosondaggi (arXiv).
+- **Contesto climatico regionale/nazionale** (per l'introduzione): Settanta
+  et al. (2024, *Theoretical and Applied Climatology*, 155, DOI
+  10.1007/s00704-024-05063-w) — fonte esatta del dato "+7.5 giorni/decade"
+  (250+ stazioni, 1991-2020, 77% delle stazioni +3gg/decade), preprint ad
+  accesso aperto scaricato in `paper/references/`; Capozzi, Di Bernardino
+  & Budillon (2025, *Atmospheric Research*, 319, DOI
+  10.1016/j.atmosres.2025.108013) — completa il titolo già raccolto il
+  2026-07-16 ("Changes in large-scale circulation..."), paywall, nessuna
+  versione aperta trovata; variabilità termica Po Valley da radiosondaggi
+  (arXiv, titolo esatto ancora da recuperare).
+
+## Confronto con report istituzionali (ISTAT, ARPA, ISPRA/SNPA) — aggiunto il 2026-07-19
+
+Su richiesta esplicita dell'utente ("vorrei fare il confronto con altri
+articoli scientifici di istat, arpa, ispra e altri"), cercati e scaricati
+report ufficiali recenti per confrontare i risultati del progetto con
+stime istituzionali indipendenti sullo stesso territorio/fenomeno. Tutti
+verificati con una richiesta HTTP diretta (200 OK, `Content-Type:
+application/pdf`) prima del download, non solo citati a memoria — PDF
+completi in `paper/references/` (vedi `paper/references/README.md` per
+il dettaglio completo, incluse le dimensioni dei file e perché ciascuno è
+stato scelto):
+
+- **SNPA — *Il clima in Italia nel 2025*** (Report Ambientali SNPA n.
+  48/2026, pubblicato 2026-07-01) — sintesi nazionale annuale, coordinata
+  da ISPRA con dati di tutte le ARPA regionali.
+- **ARPA Piemonte — *Il clima in Piemonte — Anno 2025*** (pubblicato
+  2026-02-18) — il confronto diretto più rilevante per questo progetto,
+  stessa regione: **2025 quinto anno più caldo dal 1958** in Piemonte
+  (temperatura media annua ~10.8°C, +quasi 1°C sopra il trentennio di
+  riferimento 1991-2020) — da confrontare esplicitamente in discussione
+  col trend Mann-Kendall 2000-2025 già calcolato (+0.3/+1.4 °C/decade su
+  44 comuni, `paper/manoscritto.md` §3.1).
+- **ISTAT — Statistica Focus METEOCLIMA, anno 2022** (pubblicato
+  2024-10) — indice di ondata di calore a percentile per capoluogo di
+  provincia: stessa famiglia metodologica (soglia relativa) della
+  definizione alternativa già implementata in
+  `dashboard/components/heatwave_definitions.py`, utile per discutere il
+  limite della soglia fissa usata come definizione canonica del progetto.
+- **ISPRA — Focus "Le città, la sfida dei cambiamenti climatici"** —
+  approfondimento sull'isola di calore urbana nelle città italiane,
+  complementare alla letteratura UHI su Torino già raccolta sopra.
+
+Anche la bibliografia già raccolta il 2026-07-16 è stata completata dove
+possibile con dettagli verificati via l'API pubblica di Crossref
+(autori/rivista/volume/DOI), non lasciata a titoli informali quando un
+riscontro reale era reperibile — vedi la sezione sopra e
+`paper/manoscritto.md` per il dettaglio.
+
+**Capozzi et al. (2025), Appennini — procurato dall'utente lo stesso
+giorno, dopo un primo tentativo fallito**: il primo giro di ricerca
+web aveva trovato solo il DOI/link ScienceDirect (apparentemente
+paywalled) di *Changes in large-scale circulation behind the increase
+in extreme heat events in the Apennines (Italy)* (Capozzi, Di
+Bernardino, Budillon — *Atmospheric Research*, 319, 108013). L'utente
+ha scaricato il file da solo, ma i primi 3 tentativi hanno preso per
+errore altri articoli dello stesso fascicolo di rivista (l'editoriale
++ due paper non pertinenti — uno su previsione stagionale ENSO/IOD in
+Asia, uno su polvere sahariana e fulmini in Corsica), scoperti come
+sbagliati leggendo il contenuto reale con `pdftotext` invece di
+fidarsi del nome del file, ed eliminati su richiesta dell'utente. Il
+file giusto è arrivato al tentativo successivo — verificato allo
+stesso modo (prima pagina reale = titolo/autori/abstract corretti).
+**Scoperta utile dalla lettura del testo**: l'articolo è in realtà
+**open access nativo (licenza CC BY)**, non paywalled come sembrava
+dal primo tentativo di accesso via ScienceDirect — e contiene la
+**fonte esatta del dato "+134%"** citato dal 16/7 senza riferimento
+preciso: eventi estremi di caldo negli **Appennini** (non "Nord
+Italia/Arco Alpino" come erroneamente scritto nella raccolta
+iniziale — corretto in `paper/manoscritto.md` §1.1), 1991-2020 vs
+1961-1990, **+134% in estate, +102% in primavera** (+53% inverno,
++27% autunno, questi ultimi due non sempre significativi). File in
+`paper/references/Capozzi_2025_Apennines_extreme_heat_circulation.pdf`
+(22.7 MB).
+
+## Riferimenti metodologici (aggiunti il 2026-07-19)
+
+Su richiesta esplicita dell'utente, aggiunti i riferimenti classici dei
+metodi statistici/spaziali già usati in `src/analysis/` — necessari
+perché la futura pagina dashboard "Sintesi della Ricerca" (vedi sotto)
+cita ogni affermazione, non solo i risultati: Mann (1945) e Kendall
+(1975) per il test di trend; Moran (1950) per l'indice di
+autocorrelazione spaziale; Cleveland et al. (1990) per la scomposizione
+STL; MacQueen (1967) per il K-means; Anselin (1988) per il modello a
+errore spaziale. Elenco completo con DOI dove disponibile in
+`paper/manoscritto.md` (sezione Bibliografia) e nella pagina dashboard
+[Citazioni e Fonti](dashboard.md).
 
 ## Idee da esplorare (non implementate, tracciate il 2026-07-16)
 
@@ -275,6 +356,40 @@ crescente:
   urbanizzazione; il progetto ha già un `OpenStreetMapDownloader` in
   `src/data_acquisition/download_data.py`, mai attivato di default (vedi
   [Fonti dati](data-sources.md)).
+
+## Pagina dashboard "Sintesi della Ricerca" (07) — in pianificazione, 2026-07-19
+
+Su richiesta dell'utente: due nuove pagine dashboard, non solo il paper
+tecnico. La prima già fatta è [Citazioni e Fonti](dashboard.md) (`08`,
+vedi sopra). La seconda, **non ancora implementata**, sarà una pagina
+divulgativa (non il paper tecnico, quello resta in `paper/manoscritto.md`)
+che riassume dati raccolti e risultati per un pubblico non specialistico,
+citando ogni affermazione. **In attesa del ricalcolo dei dati aggiunti la
+mattina del 2026-07-19** prima di scriverne il contenuto — la struttura
+sotto è stata discussa e confermata con l'utente in chat, non ancora
+scritta come pagina.
+
+Sottocapitoli concordati:
+
+1. Perché questo progetto — contesto (riscaldamento Nord Italia/Arco
+   Alpino, letteratura consolidata su Torino ma non sul resto della
+   regione).
+2. I dati raccolti — riassunto di tutti i dati del progetto (comuni,
+   anni, fonti, righe).
+3. Come misuriamo il riscaldamento — trend Mann-Kendall, stagionalità
+   STL, in breve e citate (vedi "Riferimenti metodologici" sopra).
+4. Cosa abbiamo trovato — trend diffuso, pattern spaziale, ondate di
+   calore, confronto con Garzena et al. (2019) su Torino e con i report
+   istituzionali sopra (ARPA Piemonte in particolare).
+5. Uso del suolo e popolazione — se il modello a errore spaziale lo
+   conferma dopo il ricalcolo.
+6. **Limiti** (titolo corretto il 2026-07-19 su richiesta esplicita
+   dell'utente: non più "Limiti, onestamente" — il contenuto resta lo
+   stesso, solo il titolo è stato reso più neutro) — dati da rianalisi,
+   validazione ARPA, copertura parziale.
+7. Cosa significa in pratica.
+8. Rimando alla pagina [Citazioni e Fonti](dashboard.md) per l'elenco
+   completo.
 
 ## Manoscritto
 

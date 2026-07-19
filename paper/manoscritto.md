@@ -42,13 +42,17 @@ struttura]*
 
 ## 1. Introduzione
 
-**[FATTO — contesto generale, letteratura raccolta il 2026-07-16]**
+**[FATTO — contesto generale, letteratura raccolta il 2026-07-16, fonti
+esatte verificate il 2026-07-19]**
 
 1.1. Le ondate di calore in Italia sono aumentate di circa 7.5 giorni/decade
-a livello nazionale; nel trentennio 1991-2020, gli eventi di caldo estremo
-estivo nel Nord Italia/Arco Alpino sono aumentati del 134% rispetto al
-periodo di riferimento 1961-1990 (citare fonte esatta — vedi bibliografia
-§9, voce "contesto climatico nazionale").
+a livello nazionale (Settanta et al. 2024, oltre 250 stazioni, 1991-2020).
+Negli Appennini, nel trentennio 1991-2020, gli eventi di caldo estremo
+estivo sono aumentati del 134% rispetto al periodo di riferimento
+1961-1990 (Capozzi et al. 2025) — **correzione il 2026-07-19**: la
+raccolta del 16/7 attribuiva questo dato genericamente a "Nord
+Italia/Arco Alpino", ma la fonte reale (ora scaricata, vedi Bibliografia)
+riguarda specificamente gli Appennini, non le Alpi.
 
 1.2. Il Piemonte, e in particolare Torino, ha una letteratura consolidata
 sull'isola di calore urbana (Garzena et al. 2019; studi su UHI/UDI
@@ -323,31 +327,106 @@ con l'uso del suolo resta speculativo.
 
 ## Bibliografia
 
-*Lista raccolta il 2026-07-16 (vedi `wiki/pages/paper-scientifico.md` per il
-contesto di ciascuna voce). Da completare con DOI/anno di pubblicazione
-esatti e formattazione secondo lo stile della rivista target.*
+*Lista raccolta il 2026-07-16, completata il 2026-07-19: ogni voce
+verificata con l'API pubblica di Crossref (autori/rivista/volume/DOI),
+nessuna lasciata a un titolo raccolto a memoria. Dettaglio completo di
+ogni verifica e dei PDF scaricati in `paper/references/README.md`.*
 
 - Garzena, D. et al. (2019). Analysis of the long-time climate data series
   for Turin and assessment of the city's urban heat island. *Weather*
   (Wiley/RMetS).
 - Perkins, S.E. & Alexander, L.V. (2013). On the Measurement of Heat Waves.
   *Journal of Climate*, 26(13).
-- Nairn, J. & Fenwick, J. The Excess Heat Factor: A Metric for Heatwave
-  Intensity and Its Use in Classifying Heatwave Severity.
-- Studio SUHI/impervious surface su città metropolitane italiane
-  (*Science of the Total Environment*) — quantifica +4°C di SUHI ogni +10%
-  di superficie impermeabile.
-- *An innovative approach to select urban-rural sites for Urban Heat Island
-  analysis: the case of Turin* (Urban Climate).
-- *Characterization of the Urban Heat and Dry Island effects in the Turin
-  metropolitan area* (Urban Climate).
-- Studio numerico su UHI a Torino durante l'ondata di calore 2019
-  (pattern termici e circolazione locale, incluso il Foehn).
-- Frontiers, *Mapping urban heatwaves and islands: the reverse effect of
-  Salento's "white cities"*.
-- *Changes in large-scale circulation behind the increase in extreme heat
-  events in the Apennines* (2025).
-- Variabilità termica Po Valley da radiosondaggi (arXiv).
+- Nairn, J. & Fawcett, R. (2014). The Excess Heat Factor: A Metric for
+  Heatwave Intensity and Its Use in Classifying Heatwave Severity.
+  *International Journal of Environmental Research and Public Health*,
+  12(1), 227-253. DOI: 10.3390/ijerph120100227. **Correzione il
+  2026-07-19**: il coautore non è "Fenwick" (come raccolto a orecchio il
+  16/7) ma **Fawcett** — verificato via Crossref. Open access (MDPI), ma
+  download bloccato da protezione anti-bot del sito (403); link diretto
+  disponibile.
+- Morabito, M., Crisci, A., Guerri, G., Messeri, A., Congedo, L., Munafò,
+  M. (2021). Surface urban heat islands in Italian metropolitan cities:
+  Tree cover and impervious surface influences. *Science of The Total
+  Environment*, 751, 142334. DOI: 10.1016/j.scitotenv.2020.142334 — era il
+  "Studio SUHI/impervious surface" senza autori, ora completo.
+- Bassani, F., Garbero, V., Poggi, D., Ridolfi, L., von Hardenberg, J.,
+  Milelli, M. (2022). An innovative approach to select urban-rural sites
+  for Urban Heat Island analysis: the case of Turin (Italy). *Urban
+  Climate*, 42, 101099. DOI: 10.1016/j.uclim.2022.101099.
+- Milelli, M., Bassani, F., Garbero, V., Poggi, D., von Hardenberg, J.,
+  Ridolfi, L. (2023). Characterization of the Urban Heat and Dry Island
+  effects in the Turin metropolitan area. *Urban Climate*, 47, 101397.
+  DOI: 10.1016/j.uclim.2022.101397.
+- Pauly, L., Canonico, M., Ferrero, E. (2024). Numerical investigation of
+  thermal patterns and local wind circulations to characterize Urban Heat
+  Island during a heatwave in Turin. *Urban Climate*, 54, 101847. DOI:
+  10.1016/j.uclim.2024.101847 — era lo "studio numerico su UHI a Torino
+  2019" senza titolo verificato: simulazione WRF/MLUCM dell'ondata di
+  calore di giugno 2019, incluso l'effetto Foehn.
+- De Razza, S., Zanetti, C., De Marchi, M., Pappalardo, S.E. (2024).
+  Mapping urban heatwaves and islands: the reverse effect of Salento's
+  "white cities". *Frontiers in Earth Science*, 12. DOI:
+  10.3389/feart.2024.1375827 — open access, scaricato per intero in
+  `paper/references/DeRazza_2024_Salento_white_cities.pdf`.
+- Settanta, G., Fraschetti, P., Lena, F., Perconti, W., Piervitali, E.
+  (2024). Recent tendencies of extreme heat events in Italy. *Theoretical
+  and Applied Climatology*, 155, 7335–7348. DOI: 10.1007/s00704-024-05063-w
+  — fonte esatta del dato "+7.5 giorni/decade" citato in Introduzione
+  (250+ stazioni, 1991-2020, 77% delle stazioni +3gg/decade). Preprint ad
+  accesso aperto scaricato in
+  `paper/references/Settanta_2024_extreme_heat_events_Italy_PREPRINT.pdf`
+  (DOI preprint 10.21203/rs.3.rs-4004015/v1).
+- Capozzi, V., Di Bernardino, A., Budillon, G. (2025). Changes in
+  large-scale circulation behind the increase in extreme heat events in
+  the Apennines (Italy). *Atmospheric Research*, 319, 108013. DOI:
+  10.1016/j.atmosres.2025.108013 — completa il titolo già presente dal
+  2026-07-16. **Procurato dall'utente il 2026-07-19** e scaricato per
+  intero in `paper/references/Capozzi_2025_Apennines_extreme_heat_circulation.pdf`
+  — open access nativo (licenza CC BY), non paywall come inizialmente
+  pensato. **Questa è la fonte esatta** del dato "+134%" già citato senza
+  riferimento preciso dal 2026-07-16: Appennini, 1991-2020 vs 1961-1990,
+  eventi estremi di caldo **+134% in estate, +102% in primavera** (+53%
+  inverno, +27% autunno, questi ultimi due non sempre significativi in
+  durata/severità).
+- Petkov, B.H. (2015). Temperature Variability over the Po Valley, Italy,
+  according to Radiosounding Data. *Advances in Meteorology*, 2015. DOI:
+  10.1155/2015/383614 — rivista open access (Hindawi), scaricato per
+  intero in `paper/references/Petkov_2015_Po_Valley_radiosounding.pdf`
+  (anche su arXiv, 1410.8081). Era il riferimento "Po Valley da
+  radiosondaggi" senza titolo verificato.
+
+### Report istituzionali di confronto (aggiunti il 2026-07-19)
+
+PDF completi in `paper/references/` (vedi `paper/references/README.md` per
+dettagli e link):
+
+- SNPA (2026). *Il clima in Italia nel 2025*. Report Ambientali SNPA n.
+  48/2026, ISBN 978-88-448-0375-9.
+- ARPA Piemonte (2026). *Il clima in Piemonte — Anno 2025*. — confronto
+  diretto più rilevante: 2025 quinto anno più caldo dal 1958 in Piemonte
+  (media annua ~10.8°C, +quasi 1°C sopra il trentennio 1991-2020 —
+  confrontabile con il trend Mann-Kendall di questo lavoro, §3.1).
+- ISTAT (2024). *Misure statistiche per l'adattamento ai cambiamenti
+  climatici*. Statistica Focus, METEOCLIMA, anno 2022.
+- ISPRA. *Qualità dell'ambiente urbano — Focus: Le città, la sfida dei
+  cambiamenti climatici*.
+
+### Riferimenti metodologici (aggiunti il 2026-07-19)
+
+- Mann, H.B. (1945). Nonparametric Tests Against Trend. *Econometrica*,
+  13, 245. DOI: 10.2307/1907187.
+- Kendall, M.G. (1975). Rank Correlation Methods. Griffin, Londra.
+- Moran, P.A.P. (1950). Notes on Continuous Stochastic Phenomena.
+  *Biometrika*, 37, 17-23. DOI: 10.1093/biomet/37.1-2.17.
+- Cleveland, R.B., Cleveland, W.S., McRae, J.E., Terpenning, I. (1990).
+  STL: A Seasonal-Trend Decomposition Procedure Based on Loess. *Journal
+  of Official Statistics*, 6(1), 3-73.
+- MacQueen, J. (1967). Some Methods for Classification and Analysis of
+  Multivariate Observations. Proc. 5th Berkeley Symposium on Mathematical
+  Statistics and Probability, 1, 281-297.
+- Anselin, L. (1988). Spatial Econometrics: Methods and Models. Kluwer
+  Academic Publishers.
 
 ---
 

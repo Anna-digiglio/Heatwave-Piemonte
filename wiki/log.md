@@ -2953,3 +2953,109 @@ Log cronologico append-only. Ogni riga: data, azione, pagine toccate.
   Pagina aggiornata: `dashboard.md` (sottosezione "Analisi Temporale",
   bullet del widget di confronto con nuova voce "Testo esplicativo esteso
   (2026-07-19)").
+
+- **2026-07-19** — INGEST. Creata `dashboard/pages/08_citazioni_e_fonti.py`,
+  nuova pagina statica (nessuna query DB) su richiesta dell'utente: elenco
+  delle fonti dati reali (Open-Meteo, ARPA Piemonte, ISTAT confini/
+  popolazione, Copernicus CORINE/NDVI) con link diretto via
+  `st.link_button`, e bibliografia scientifica raccolta per il paper
+  (riusa/organizza per ruolo la lista già raccolta in
+  `wiki/pages/paper-scientifico.md` e `paper/manoscritto.md`), con le voci
+  senza DOI/anno/volume verificati segnalate esplicitamente come
+  "riferimento parziale" invece di presentarle come citazioni complete.
+  Numerata `08` (non `07`) per lasciare posto a una futura pagina di
+  sintesi divulgativa dell'articolo scientifico — quella pagina non è
+  stata creata in questa sessione: l'utente aspetta il ricalcolo dei nuovi
+  dati aggiunti la mattina del 2026-07-19 prima di scriverne il contenuto,
+  ma ha chiesto di iniziare a discutere struttura/sottocapitoli e scelta
+  degli articoli da citare (vedi risposta in chat, non ancora salvata come
+  pagina wiki in attesa di conferma dell'utente). Verificato con
+  `py_compile` e avvio reale di `streamlit run dashboard/Home.py`
+  (richiesta HTTP 200 sia su `/` sia su `/08_citazioni_e_fonti`, nessun
+  errore/traceback in log).
+
+  Pagine aggiornate: `dashboard.md` (albero "Struttura reale" +
+  "Cronologia in breve"), `index.md` (voce Dashboard, conteggio pagine
+  6→7).
+
+- **2026-07-19** — INGEST (stessa giornata, continuazione). Su richiesta
+  esplicita dell'utente: confronto con report scientifici/istituzionali
+  di ISTAT, ARPA, ISPRA "e altri se ne trovi", da scaricare o linkare, più
+  completamento della bibliografia con le citazioni metodologiche
+  classiche già proposte in chat (Mann-Kendall, Moran, STL, K-means,
+  Anselin) e correzione del titolo del sottocapitolo "Limiti" (tolto
+  "onestamente") nel piano della futura pagina 07.
+
+  Cercati via `WebSearch`/`WebFetch`, verificati con richiesta HTTP diretta
+  prima di scaricare (mai fidandosi solo del titolo del risultato di
+  ricerca): 4 report istituzionali reali (SNPA *Il clima in Italia nel
+  2025*, ARPA Piemonte *Il clima in Piemonte — Anno 2025*, ISTAT
+  *Statistica Focus METEOCLIMA 2022*, ISPRA *Focus Le città*) scaricati in
+  `paper/references/` (nuova cartella, ~35 MB). Trovati anche due articoli
+  peer-reviewed che completano titoli già presenti in bibliografia dal
+  2026-07-16 come riferimenti parziali — dettagli verificati via l'API
+  pubblica di Crossref, non a memoria: Settanta et al. (2024,
+  *Theoretical and Applied Climatology*, DOI 10.1007/s00704-024-05063-w,
+  fonte esatta del dato "+7.5 giorni/decade" già citato senza fonte
+  precisa) e Capozzi et al. (2025, *Atmospheric Research*, DOI
+  10.1016/j.atmosres.2025.108013).
+
+  **Correzione in corso d'opera**: l'utente ha chiesto esplicitamente di
+  non escludere gli articoli scientifici scaricati dal versionamento Git
+  ("non me li eliminare... li voglio leggere") dopo che una prima bozza di
+  questo lavoro aggiungeva `paper/references/*.pdf` a `.gitignore` per
+  contenere le dimensioni — modifica annullata subito, nessun file
+  cancellato in nessun momento (il `.gitignore` controlla solo cosa Git
+  traccia, non cosa esiste su disco). Recuperato anche un preprint ad
+  accesso aperto su Research Square per Settanta et al. (gli stessi autori
+  lo hanno reso pubblico prima della revisione tra pari), scaricato per
+  intero in `paper/references/Settanta_2024_extreme_heat_events_Italy_PREPRINT.pdf`
+  — per Capozzi et al. nessuna versione aperta trovata (solo un abstract
+  di conferenza collegato, non un full paper), lasciato come link/DOI.
+
+  Pagine aggiornate: `paper/references/README.md` (nuovo, indice
+  completo con link/dimensioni/motivazione di ogni fonte),
+  `paper/manoscritto.md` (Bibliografia + due nuove sottosezioni "Report
+  istituzionali di confronto" e "Riferimenti metodologici"),
+  `paper-scientifico.md` (letteratura completata, due nuove sezioni allo
+  stesso contenuto, più una nuova sezione "Pagina dashboard 'Sintesi
+  della Ricerca' (07)" che fissa per la prima volta i sottocapitoli
+  concordati in chat), `dashboard.md` (pagina `08_citazioni_e_fonti.py`
+  ampliata con le stesse due sezioni + bibliografia completata,
+  verificato con `py_compile`).
+
+- **2026-07-19** — INGEST (stessa giornata, terza continuazione). Chiuse
+  tutte le voci di bibliografia ancora segnalate come "riferimento
+  parziale"/"titolo esatto da verificare" (l'utente ha chiesto perché
+  fossero lì): verificate una per una via API Crossref (mai a memoria).
+  Completate con autori/rivista/volume/pagine/DOI reali: Nairn & Fawcett
+  (2014, IJERPH — **corretto un errore**: il coautore raccolto il 16/7
+  come "Fenwick" è in realtà Fawcett), Morabito et al. (2021, Sci. Total
+  Environ.), Bassani et al. (2022, Urban Climate), Milelli et al. (2023,
+  Urban Climate), Pauly et al. (2024, Urban Climate — lo "studio numerico
+  UHI Torino 2019"), De Razza et al. (2024, Frontiers in Earth Science —
+  open access, scaricato per intero), Petkov (2015, Advances in
+  Meteorology — open access Hindawi/arXiv, scaricato per intero).
+
+  **Capozzi et al. (2025, Apennines)**: primo tentativo di accesso via
+  ScienceDirect risultava paywalled, non scaricato. L'utente ha scaricato
+  il file da solo — i primi 3 tentativi hanno preso per errore altri
+  articoli dello stesso fascicolo di *Atmospheric Research* vol. 319
+  (editoriale + due paper non pertinenti su ENSO/IOD e polvere sahariana),
+  scoperti come sbagliati verificando il contenuto reale con `pdftotext`
+  (mai fidandosi del nome del file) invece di assumerli corretti, ed
+  eliminati su richiesta esplicita dell'utente. Il file corretto è
+  arrivato al tentativo successivo, verificato allo stesso modo —
+  **scoperta**: l'articolo è in realtà open access nativo (licenza CC
+  BY), non paywalled, e contiene la fonte esatta del dato "+134%" già
+  citato dal 16/7 senza riferimento preciso — corretto anche un errore
+  geografico nella raccolta iniziale (il dato riguarda gli **Appennini**,
+  non "Nord Italia/Arco Alpino" come scritto in `paper/manoscritto.md`
+  §1.1 prima di oggi).
+
+  Pagine aggiornate: `paper/references/README.md` (tabelle
+  "scaricati"/"non scaricati" riorganizzate con tutte le voci complete),
+  `paper/manoscritto.md` (Bibliografia + correzione §1.1 Introduzione),
+  `paper-scientifico.md` (dettaglio del percorso Capozzi), pagina
+  dashboard `08_citazioni_e_fonti.py` (bibliografia completata,
+  verificato con `py_compile`).

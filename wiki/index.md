@@ -32,7 +32,7 @@ dubbio, la sorgente grezza (codice/SQL/config) prevale sempre sulla wiki.
 ## Visualizzazione
 
 - [Mappe GIS](pages/gis-maps.md) — 3 progetti QGIS, **generati via PyQGIS ed eseguiti su dati reali**
-- [Dashboard](pages/dashboard.md) — dashboard Streamlit, **implementata, eseguita su dati reali e ampliata** (6 pagine, mappe coropletiche PostGIS), **restyling identità "calore" 2026-07-17**, **tema chiaro adattivo per hero/card/stats 2026-07-18**, **selettore fonte Open-Meteo/ARPA/Confronto in Analisi Temporale, Ondate di Calore e Analisi Spaziale 2026-07-18** (la pagina dedicata "Validazione Dati", nata e rimossa lo stesso giorno, è confluita nel selettore), **uso del suolo/popolazione/NDVI spostati dalla pagina Analisi Spaziale a una nuova pagina Contesto Territoriale 2026-07-19**
+- [Dashboard](pages/dashboard.md) — dashboard Streamlit, **implementata, eseguita su dati reali e ampliata** (7 pagine, mappe coropletiche PostGIS), **restyling identità "calore" 2026-07-17**, **tema chiaro adattivo per hero/card/stats 2026-07-18**, **selettore fonte Open-Meteo/ARPA/Confronto in Analisi Temporale, Ondate di Calore e Analisi Spaziale 2026-07-18** (la pagina dedicata "Validazione Dati", nata e rimossa lo stesso giorno, è confluita nel selettore), **uso del suolo/popolazione/NDVI spostati dalla pagina Analisi Spaziale a una nuova pagina Contesto Territoriale 2026-07-19**, **nuova pagina Citazioni e Fonti (08) 2026-07-19** — bibliografia + fonti dati con link, in coda a tutte le altre; in arrivo anche una pagina di sintesi divulgativa dell'articolo scientifico (07), in attesa del ricalcolo dati del 2026-07-19
 
 ## Qualità del codice
 

@@ -35,6 +35,31 @@
   `06_download_dati.py`. Link incrociati (`st.page_link`) aggiunti in
   entrambe le direzioni. Vedi sezione "Contesto Territoriale" sotto per il
   dettaglio.
+- **2026-07-19** — aggiunta `08_citazioni_e_fonti.py`, pagina statica
+  (nessuna query DB) con due sezioni: le fonti dati reali effettivamente
+  usate nel progetto (Open-Meteo, ARPA Piemonte, ISTAT confini/popolazione,
+  Copernicus CORINE/NDVI), ciascuna con link diretto (`st.link_button`), e
+  la bibliografia scientifica raccolta per il paper (vedi
+  [Articolo scientifico](paper-scientifico.md)), organizzata per ruolo
+  (definizione ondate di calore, UHI Torino, uso del suolo → temperatura,
+  contesto climatico). Le voci senza DOI/anno/volume verificati sono
+  segnalate esplicitamente come "riferimento parziale", non presentate
+  come citazioni complete. Numerata `08` (non `07`) per lasciare posto a
+  una futura pagina di sintesi divulgativa dell'articolo scientifico, il
+  cui contenuto resta in attesa del ricalcolo dei dati aggiunti la mattina
+  del 2026-07-19 — struttura confermata in
+  [Articolo scientifico](paper-scientifico.md), non ancora implementata.
+  **Ampliata lo stesso giorno**, su richiesta esplicita di confrontare i
+  risultati con report istituzionali reali: aggiunte due nuove sezioni
+  ("Confronto con report istituzionali" — SNPA/ARPA Piemonte/ISTAT/ISPRA,
+  con PDF scaricati in `paper/references/`; "Riferimenti metodologici" —
+  Mann-Kendall, Moran, STL, K-means, Anselin) e completate con dettagli
+  verificati via Crossref le due voci di bibliografia sul contesto
+  climatico nazionale (Settanta et al. 2024, Capozzi et al. 2025) che
+  prima erano solo titoli parziali. Vedi
+  [Articolo scientifico](paper-scientifico.md) per il dettaglio completo
+  della ricerca e `paper/references/README.md` per l'elenco dei file
+  scaricati.
 
 Tutti i riferimenti a "44 comuni" nel resto di questa pagina descrivono lo
 stato al 2026-07-15 e sono stati aggiornati dove riguardano il
@@ -60,7 +85,8 @@ dashboard/
 │   ├── 03_analisi_spaziale.py      # coropletiche per provincia, trend per comune, fasce altitudinali, cluster, Moran's I
 │   ├── 04_ondate_di_calore.py      # frequenza/intensità/cumulato, mappa concentrazione, heatmap calendario
 │   ├── 05_contesto_territoriale.py # uso del suolo, popolazione, NDVI (tutti i 1180 comuni) e scatter vs temperatura — spostata da 03_analisi_spaziale.py il 2026-07-19
-│   └── 06_download_dati.py         # export CSV (dati puliti + risultati di analisi) — rinumerata da 05 il 2026-07-19
+│   ├── 06_download_dati.py         # export CSV (dati puliti + risultati di analisi) — rinumerata da 05 il 2026-07-19
+│   └── 08_citazioni_e_fonti.py     # bibliografia scientifica + elenco fonti dati reali con link — nuova il 2026-07-19 (07 riservata alla futura pagina di sintesi dell'articolo scientifico, non ancora creata)
 └── components/
     ├── __init__.py                 # bootstrap sys.path (vedi bug sotto)
     ├── constants.py                # palette colori, soglie fasce altitudinali, capoluoghi, riferimenti letteratura, etichette Mann-Kendall (2026-07-15); token identità "calore" THEME_*/FONT_*/MAP_TILES (2026-07-17)
