@@ -48,8 +48,8 @@ n_municipalities_combined = combined_trend_df['municipality_name'].nunique() if 
 n_rows_combined = stats['n_temperature_rows'] + arpa_stats['n_arpa_rows']
 
 render_hero(
-    eyebrow="Analisi spazio-temporale",
-    title="Heatwave Piemonte",
+    eyebrow="Heatwave Piemonte — analisi spazio-temporale",
+    title="Il riscaldamento del Piemonte",
     lede=(
         f"<b>{n_years} anni di dati meteorologici reali</b> per capire come sta "
         "cambiando il clima in Piemonte: le temperature stanno davvero salendo? "
