@@ -38,17 +38,28 @@ logger = get_logger(__name__)
 
 
 def load_municipalities_with_data() -> pd.DataFrame:
-    """Comuni già presenti in `temperature`, con centroide della geometria."""
+    """
+    Comuni già presenti in `temperature`, con centroide della geometria.
+
+    Ordinati con i comuni che hanno anche copertura ARPA per primi (`has_arpa`
+    DESC): la quota giornaliera Open-Meteo è imprevedibile (vedi
+    wiki/pages/comuni-coperti.md) e può bloccare il run a metà, quindi
+    conviene garantire prima il delta dei comuni utili al confronto
+    ARPA/Open-Meteo, poi il resto in ordine alfabetico.
+    """
     query = """
         SELECT DISTINCT m.municipality_id, m.name,
                ST_Y(ST_Centroid(m.geometry)) AS lat,
-               ST_X(ST_Centroid(m.geometry)) AS lon
+               ST_X(ST_Centroid(m.geometry)) AS lon,
+               EXISTS (
+                   SELECT 1 FROM arpa_temperature a WHERE a.municipality_id = m.municipality_id
+               ) AS has_arpa
         FROM municipalities m
         JOIN temperature t ON t.municipality_id = m.municipality_id
-        ORDER BY m.name
+        ORDER BY has_arpa DESC, m.name
     """
     rows = db_manager.execute_query(query)
-    columns = ['municipality_id', 'name', 'lat', 'lon']
+    columns = ['municipality_id', 'name', 'lat', 'lon', 'has_arpa']
     return pd.DataFrame(rows, columns=columns)
 
 
@@ -108,7 +119,11 @@ def main():
     today = date.today().strftime('%Y-%m-%d')
     municipalities = load_municipalities_with_data()
     latest_dates = latest_date_per_municipality()
-    logger.info(f"{len(municipalities)} comuni con dati; aggiornamento fino al {today}")
+    n_arpa = int(municipalities['has_arpa'].sum())
+    logger.info(
+        f"{len(municipalities)} comuni con dati ({n_arpa} con copertura ARPA, scaricati per primi); "
+        f"aggiornamento fino al {today}"
+    )
 
     output_path = Path(config.get('paths.raw_data')) / 'temperature_data_recent.csv'
     n_success = download_recent(municipalities, latest_dates, today, output_path)
