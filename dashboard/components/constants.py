@@ -134,6 +134,11 @@ THEME_TOKENS = {
         # crema/corallo caldo.
         "hero_title_gradient": "linear-gradient(100deg, #fff 30%, #ffe9c7 55%, #ffb199 78%)",
         "glow_opacity": (0.30, 0.20, 0.26),
+        # Testo del box st.warning: arancione caldo leggibile sullo sfondo
+        # scuro, al posto del marrone/ocra di default di Streamlit (feedback
+        # utente, 2026-07-19: "il marrone non mi piace, prova con un
+        # arancione").
+        "warning_text": "#ffb454",
     },
     "light": {
         "ink": "#ffffff",
@@ -151,6 +156,9 @@ THEME_TOKENS = {
         # Sfumature radiali più tenui: sullo sfondo bianco la stessa opacità
         # del tema scuro risulterebbe "sporca" invece che un bagliore sottile.
         "glow_opacity": (0.16, 0.12, 0.14),
+        # Vedi commento nel tema "dark": stesso concetto, tono più scuro per
+        # restare leggibile sullo sfondo ambra chiaro invece che su uno scuro.
+        "warning_text": "#b45a0c",
     },
 }
 
