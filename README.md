@@ -1,4 +1,4 @@
-# 🌡️ Heatwave Piemonte - Analisi Spazio-Temporale delle Ondate di Calore
+# 🌡️ Il riscaldamento del Piemonte: un'analisi spazio-temporale dei trend termici e delle ondate di calore
 
 [![Python Version](https://img.shields.io/badge/Python-3.9+-blue)](https://www.python.org/downloads/)
 [![License](https://img.shields.io/badge/License-MIT-green)](LICENSE)
