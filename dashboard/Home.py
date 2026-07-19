@@ -121,11 +121,13 @@ render_stats_row([
         'label': "Righe di temperatura", 'unit': "Open-Meteo + ARPA", 'color': THEME_COLD,
         'value': f"{n_rows_combined:,}".replace(',', '.'),
         'spark': [0.3, 0.35, 0.5, 0.45, 0.65, 0.6, 0.8, 1.0],
+        'unit_wrap': True,
     },
     {
         'label': "Periodo coperto", 'unit': f"{n_years} anni", 'color': THEME_MID,
         'value': f"{stats['date_start'].year}–{stats['date_end'].year}",
         'spark': [0.1, 0.2, 0.3, 0.4, 0.55, 0.7, 0.85, 1.0],
+        'unit_wrap': True,
     },
     {
         'label': "Comuni con dati reali", 'unit': f"/ {stats['n_municipalities']}", 'color': THEME_MID,
