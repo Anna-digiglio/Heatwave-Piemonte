@@ -357,19 +357,41 @@ crescente:
   `src/data_acquisition/download_data.py`, mai attivato di default (vedi
   [Fonti dati](data-sources.md)).
 
-## Pagina dashboard "Sintesi della Ricerca" (07) — in pianificazione, 2026-07-19
+## Pagina dashboard "Sintesi della Ricerca" (06) — implementata il 2026-07-19 (sera)
 
 Su richiesta dell'utente: due nuove pagine dashboard, non solo il paper
-tecnico. La prima già fatta è [Citazioni e Fonti](dashboard.md) (`08`,
-vedi sopra). La seconda, **non ancora implementata**, sarà una pagina
-divulgativa (non il paper tecnico, quello resta in `paper/manoscritto.md`)
-che riassume dati raccolti e risultati per un pubblico non specialistico,
-citando ogni affermazione. **In attesa del ricalcolo dei dati aggiunti la
-mattina del 2026-07-19** prima di scriverne il contenuto — la struttura
-sotto è stata discussa e confermata con l'utente in chat, non ancora
-scritta come pagina.
+tecnico. Entrambe fatte: [Citazioni e Fonti](dashboard.md) (`08`, vedi
+sopra) e questa, `06_sintesi_della_ricerca.py` (creata come `07`, poi
+rinumerata a `06` lo stesso giorno su richiesta esplicita dell'utente:
+Download Dati doveva spostarsi dopo questa pagina, non prima, quindi
+rinumerato a `07`) — una pagina divulgativa
+(non il paper tecnico, quello resta in `paper/manoscritto.md`) che
+riassume dati raccolti e risultati per un pubblico non specialistico,
+citando ogni affermazione. Scritta dopo la conferma dell'utente che il
+ricalcolo dati della mattina (44→234 comuni) era concluso — i numeri
+usati vengono dai file `output/*.csv` correnti e dalle query live di
+`components/queries.py`, **non** da `paper/manoscritto.md`, rimasto
+stale ai numeri di 44 comuni (vedi nota sotto). Dettaglio implementativo
+completo in [Dashboard](dashboard.md).
 
-Sottocapitoli concordati:
+**Scoperta di sostanza emersa verificando i numeri correnti prima di
+scrivere la pagina**: il modello a errore spaziale rieseguito a n=234
+mostra ora **% urbano significativo** (p=0.031, segno atteso) mentre
+**NDVI non lo è più** (coefficiente sceso a +0.10) — invertito rispetto
+a n=98, dove era il contrario. Prima conferma quantitativa, seppur
+provvisoria, dell'ipotesi originale del progetto. Trovati anche 2 comuni
+alpini (Argentera, Briga Alta) con trend di **raffreddamento**
+significativo, inclusi nella pagina invece di presentare il
+riscaldamento come unanime.
+
+**Disallineamento aperto**: `paper/manoscritto.md` (§3.1-3.6, Abstract)
+descrive ancora l'analisi su 44 comuni — non aggiornato in questa
+sessione, segnalato esplicitamente all'utente. La dashboard (questa
+pagina e le altre) e il manoscritto tecnico raccontano quindi, per ora,
+due stati diversi del progetto: la dashboard è allineata al campione
+corrente (234 comuni), il manoscritto no.
+
+Sottocapitoli:
 
 1. Perché questo progetto — contesto (riscaldamento Nord Italia/Arco
    Alpino, letteratura consolidata su Torino ma non sul resto della

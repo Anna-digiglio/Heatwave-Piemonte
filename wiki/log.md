@@ -3147,3 +3147,81 @@ Log cronologico append-only. Ogni riga: data, azione, pagine toccate.
   `dashboard/pages/04_ondate_di_calore.py`,
   `dashboard/pages/05_contesto_territoriale.py`,
   `dashboard/pages/08_citazioni_e_fonti.py`.
+
+- **2026-07-19** (sera, seguito) — INGEST. Creata
+  `dashboard/pages/07_sintesi_della_ricerca.py`, la seconda pagina
+  pianificata in [Articolo scientifico](paper-scientifico.md): sintesi
+  divulgativa (non l'articolo tecnico, che resta in `paper/manoscritto.md`)
+  dei dati raccolti e dei risultati, con ogni affermazione citata. Prima
+  di scriverla, verificato lo stato reale post-ricalcolo (l'utente aveva
+  detto "procediamo" dopo aver confermato che il nuovo calcolo dati della
+  mattina era finito): **non bastava fidarsi di `paper/manoscritto.md`**,
+  rimasto fermo ai numeri di 44 comuni/§3.5 "[DA FARE]" — letti invece
+  `output/trend_analysis.csv`, `output/morans_i_summary.csv`,
+  `output/spatial_analysis.csv`, `output/spatial_regression_spatial_model.txt`
+  e le sezioni più recenti di `project-status.md`/`statistical-analysis.md`
+  per i numeri reali a 234 comuni.
+
+  **Scoperta di sostanza, non solo di numeri**: il modello a errore
+  spaziale rieseguito a n=234 mostra ora **% urbano significativo**
+  (p=0.031, coefficiente positivo, segno atteso) mentre **NDVI non lo è
+  più** (coefficiente sceso a +0.10) — invertito rispetto a n=98 dove era
+  il contrario. Prima vera conferma quantitativa, seppur provvisoria,
+  dell'ipotesi originale del progetto (uso del suolo come fattore
+  esplicativo oltre la quota). Trovati anche 2 comuni alpini (Argentera,
+  Briga Alta) con trend di **raffreddamento** statisticamente
+  significativo — dettaglio onesto incluso nella pagina invece di
+  presentare il riscaldamento come unanime.
+
+  **Scelta implementativa**: la pagina riusa le query esistenti in
+  `components/queries.py` (`get_trend_analysis`, `get_morans_i_summary`,
+  `get_spatial_analysis`, `get_arpa_validation`,
+  `get_arpa_event_comparison_summary`, ecc.) invece di numeri scritti a
+  mano, così i valori mostrati restano sempre aggiornati insieme al resto
+  della dashboard — coerente con l'architettura a export statico già
+  documentata in `dashboard.md`. Verificato con `streamlit.testing.v1.AppTest`
+  (nessuna eccezione, tutti i numeri calcolati corrispondono a quelli letti
+  a mano dai file di output) oltre che con un avvio reale (HTTP 200 su
+  `/07_sintesi_della_ricerca`).
+
+  **Non ancora fatto**: `paper/manoscritto.md` resta al livello di
+  dettaglio di 44 comuni (§3.1-3.6 e Abstract) — la nuova pagina dashboard
+  usa i numeri correnti (234 comuni), quindi dashboard e manoscritto
+  tecnico sono temporaneamente disallineati. Segnalato all'utente,
+  aggiornamento del manoscritto lasciato come attività separata.
+
+  Pagine aggiornate: nessuna pagina wiki di dominio ancora sincronizzata
+  con questa pagina dashboard oltre a questo log — da fare al prossimo
+  giro di lint (vedi `CLAUDE.md`, workflow Lint).
+
+- **2026-07-19** (sera, seguito) — FIX su richiesta esplicita dell'utente:
+  ripulito il testo di `06_sintesi_della_ricerca.py` (allora ancora `07`)
+  da tutti i trattini lunghi "—" (sostituiti con due punti/virgole/frasi
+  riformulate, lasciati invariati solo i trattini brevi "–" degli
+  intervalli numerici come "2000–2026") e sostituiti i riferimenti interni
+  "(§4)"/"(§5)"/"(§6)" — non comprensibili a un lettore senza numerazione
+  visibile delle sezioni — con il nome vero della sezione tra virgolette
+  («Cosa abbiamo trovato», «Uso del suolo e popolazione», «Limiti»).
+  Verificato di nuovo con `py_compile` e `AppTest` dopo le modifiche.
+
+  Subito dopo, seconda richiesta: spostare Download Dati **dopo** Sintesi
+  della Ricerca (era stata creata come `07`, dopo `06_download_dati.py`).
+  Rinominati i file (`git mv` per `06_download_dati.py`, `mv` semplice per
+  `07_sintesi_della_ricerca.py` perché ancora non tracciato in Git):
+  **`06_sintesi_della_ricerca.py`** e **`07_download_dati.py`**.
+  Aggiornati tutti i riferimenti incrociati trovati via `grep` sull'intera
+  cartella `dashboard/`: il link "Download Dati" dentro la stessa pagina
+  sintesi e dentro `08_citazioni_e_fonti.py` (entrambi puntavano a
+  `06_download_dati.py`), il docstring interno di entrambi i file
+  rinominati (uno diceva ancora `05_download_dati.py`, stale da una
+  rinumerazione precedente mai corretta nel docstring), e l'elenco pagine
+  nel docstring di `Home.py`. Verificato con `py_compile` e `AppTest` su
+  tutte e 4 le pagine coinvolte (Home, 06, 07, 08), nessuna eccezione.
+
+  Pagine aggiornate: `dashboard.md` (albero "Struttura reale"),
+  `index.md` (voce Dashboard), `paper-scientifico.md` (titolo sezione e
+  nome file aggiornati da `07` a `06`). Nota: le voci precedenti di questo
+  log che citano `07_sintesi_della_ricerca.py` **non sono state riscritte**
+  (il log è cronologico e append-only per convenzione di `CLAUDE.md`) —
+  descrivono correttamente lo stato al momento in cui furono scritte,
+  prima di questa rinumerazione.

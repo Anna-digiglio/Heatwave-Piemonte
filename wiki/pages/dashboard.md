@@ -60,6 +60,25 @@
   [Articolo scientifico](paper-scientifico.md) per il dettaglio completo
   della ricerca e `paper/references/README.md` per l'elenco dei file
   scaricati.
+- **2026-07-19** (sera) — aggiunta `07_sintesi_della_ricerca.py`, la
+  seconda pagina divulgativa pianificata: riassume dati raccolti e
+  risultati (non l'articolo tecnico, che resta in `paper/manoscritto.md`)
+  citando ogni affermazione, con rimando alla pagina "Citazioni e Fonti"
+  (`08_citazioni_e_fonti.py`, vedi sopra) per l'elenco completo. A
+  differenza di quella (statica), questa pagina
+  **riusa le query esistenti** di `components/queries.py` per i numeri
+  (trend, Moran's I, cluster, validazione ARPA), così restano sempre
+  aggiornati invece di essere scritti a mano. Verificato prima di
+  scriverla che `paper/manoscritto.md` era rimasto ai numeri di 44 comuni
+  (stale rispetto al ricalcolo a 234 comuni dello stesso giorno) — i
+  numeri usati in questa pagina vengono dai file `output/*.csv`/wiki
+  aggiornati, non dal manoscritto. **Scoperta di sostanza durante la
+  verifica**: il modello a errore spaziale a n=234 mostra ora % urbano
+  significativo (p=0.031, segno atteso) e NDVI non più significativo —
+  invertito rispetto a n=98. `paper/manoscritto.md` non è stato
+  aggiornato di conseguenza in questa sessione (attività separata,
+  segnalata all'utente). Verificato con `AppTest` (nessuna eccezione,
+  numeri corrispondenti ai file sorgente) e avvio reale.
 
 Tutti i riferimenti a "44 comuni" nel resto di questa pagina descrivono lo
 stato al 2026-07-15 e sono stati aggiornati dove riguardano il
@@ -85,8 +104,9 @@ dashboard/
 │   ├── 03_analisi_spaziale.py      # coropletiche per provincia, trend per comune, fasce altitudinali, cluster, Moran's I
 │   ├── 04_ondate_di_calore.py      # frequenza/intensità/cumulato, mappa concentrazione, heatmap calendario
 │   ├── 05_contesto_territoriale.py # uso del suolo, popolazione, NDVI (tutti i 1180 comuni) e scatter vs temperatura — spostata da 03_analisi_spaziale.py il 2026-07-19
-│   ├── 06_download_dati.py         # export CSV (dati puliti + risultati di analisi) — rinumerata da 05 il 2026-07-19
-│   └── 08_citazioni_e_fonti.py     # bibliografia scientifica + elenco fonti dati reali con link — nuova il 2026-07-19 (07 riservata alla futura pagina di sintesi dell'articolo scientifico, non ancora creata)
+│   ├── 06_sintesi_della_ricerca.py # sintesi divulgativa dei dati/risultati, ogni affermazione citata, numeri live da components/queries.py — creata come 07 il 2026-07-19 (sera), rinumerata a 06 lo stesso giorno su richiesta esplicita dell'utente (va prima di Download Dati)
+│   ├── 07_download_dati.py         # export CSV (dati puliti + risultati di analisi) — rinumerata da 06 (e da 05 prima ancora) il 2026-07-19
+│   └── 08_citazioni_e_fonti.py     # bibliografia scientifica + elenco fonti dati reali con link — nuova il 2026-07-19
 └── components/
     ├── __init__.py                 # bootstrap sys.path (vedi bug sotto)
     ├── constants.py                # palette colori, soglie fasce altitudinali, capoluoghi, riferimenti letteratura, etichette Mann-Kendall (2026-07-15); token identità "calore" THEME_*/FONT_*/MAP_TILES (2026-07-17)
