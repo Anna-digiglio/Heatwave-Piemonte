@@ -3,8 +3,9 @@ data_source.py - Selettore fonte dati (Open-Meteo / ARPA / confronto),
 riusabile tra le pagine che supportano entrambe le fonti.
 
 Contesto: la copertura ARPA (218 comuni dal 2026-07-18, vedi
-wiki/pages/data-sources.md) e quella Open-Meteo (177 comuni) si sovrappongono
-solo parzialmente - 51 comuni hanno entrambe le fonti, 167 hanno solo ARPA.
+wiki/pages/data-sources.md) e quella Open-Meteo (234 comuni dal 2026-07-19)
+si sovrappongono solo parzialmente - 108 comuni hanno entrambe le fonti,
+110 hanno solo ARPA.
 Questo componente adatta le opzioni mostrate a quali fonti sono davvero
 disponibili per il comune/insieme di comuni selezionato, invece di lasciare
 scegliere un'opzione che poi risulterebbe vuota.
