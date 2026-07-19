@@ -9,7 +9,6 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 import folium
-import numpy as np
 import pandas as pd
 import plotly.express as px
 import streamlit as st
@@ -18,15 +17,12 @@ from streamlit_folium import st_folium
 
 from components.charts import apply_chart_theme
 from components.constants import (
-    CLUSTER_COLORS, LAND_COVER_COLORS, LAND_COVER_LABELS, MAP_TILES,
-    NDVI_COLORS, TEMPERATURE_COLORSCALE, TREND_COLORSCALE, VEGETATION_CLASS_LABELS,
-    elevation_band,
+    CLUSTER_COLORS, MAP_TILES, TEMPERATURE_COLORSCALE, TREND_COLORSCALE, elevation_band,
 )
 from components.data_source import SOURCE_ARPA, SOURCE_BOTH, SOURCE_OPENMETEO, render_source_selector
 from components.filters import render_province_filter, render_year_range_filter
 from components.maps import render_gradient_legend, wkt_to_geojson
 from components.queries import (
-    get_all_municipality_geometries_wkt,
     get_arpa_hot_day_bias,
     get_arpa_kpi_annual,
     get_arpa_morans_i,
@@ -38,12 +34,9 @@ from components.queries import (
     get_arpa_validation,
     get_kpi_annual,
     get_kpi_annual_by_province,
-    get_land_cover_all,
-    get_land_cover_with_population,
     get_morans_i_summary,
     get_municipality_geometries_wkt,
     get_municipality_metadata,
-    get_ndvi_all,
     get_province_geometries_wkt,
     get_spatial_analysis,
     get_trend_analysis,
@@ -74,10 +67,7 @@ source = render_source_selector(
 )
 st.caption(
     "Il selettore sopra si applica alla mappa coropletica, alla mappa del trend, al confronto per "
-    "fascia altitudinale, ai cluster climatici e all'indice di Moran. Le mappe di uso del suolo, "
-    "popolazione, NDVI e lo scatter più sotto restano sempre su Open-Meteo: uso del suolo/NDVI/"
-    "popolazione non dipendono dalla fonte di temperatura, e lo scatter è legato al modello di "
-    "regressione spaziale già discusso in Metodologia (calcolato solo su Open-Meteo)."
+    "fascia altitudinale, ai cluster climatici e all'indice di Moran."
 )
 
 active_metadata_f = arpa_metadata_f if source == SOURCE_ARPA else metadata_f
@@ -97,11 +87,10 @@ with st.expander("ℹ️ Come si legge questa pagina"):
         "- **Cluster climatici** (tab Dettaglio) raggruppano i comuni simili "
         "con K-means; l'**indice di Moran** misura se i comuni vicini hanno "
         "anche temperature simili.\n"
-        "- Le mappe di **uso del suolo**, **densità di popolazione** e "
-        "**NDVI** (CORINE Land Cover 2018, ISTAT, Copernicus Global Land "
-        "Service) coprono tutti i 1180 comuni piemontesi, non solo quelli "
-        "con temperatura — servono a esplorare *perché* certe zone "
-        "potrebbero risultare più calde, non solo *dove* lo sono."
+        "- Per le mappe di **uso del suolo**, **densità di popolazione** e "
+        "**NDVI** (che coprono tutti i 1180 comuni piemontesi, non solo "
+        "quelli con temperatura) vedi la pagina Contesto Territoriale "
+        "(link sotto)."
     )
 
 st.info(
@@ -110,6 +99,7 @@ st.info(
     "con dati ARPA (stazione reale). Le mappe provinciali aggregano solo i comuni "
     "disponibili in ciascuna provincia."
 )
+st.page_link("pages/05_contesto_territoriale.py", label="Uso del suolo, popolazione e NDVI → Contesto Territoriale")
 
 tab_overview, tab_detail = st.tabs(["📊 Panoramica", "🔬 Dettaglio tecnico / metodologia"])
 
@@ -394,174 +384,12 @@ with tab_overview:
                 width='stretch',
             )
 
-    st.subheader("Uso del suolo per comune")
     st.caption(
-        "Classe di uso del suolo dominante (CORINE Land Cover 2018, "
-        "Copernicus) per ciascuno dei 1180 comuni piemontesi — non solo "
-        "quelli con dati di temperatura. \"Urbano/artificiale\" include "
-        "residenziale, industriale, trasporti e verde urbano; il dettaglio "
-        "per sotto-classe è nel grafico più sotto."
+        "Le mappe di uso del suolo, densità di popolazione e NDVI (tutti i 1180 comuni "
+        "piemontesi) e il confronto diretto con la temperatura sono nella pagina "
+        "Contesto Territoriale:"
     )
-    land_cover_all = get_land_cover_all()
-    geo_all = get_all_municipality_geometries_wkt()
-    lc_geo = geo_all.merge(land_cover_all.drop(columns=['province_name']), on='municipality_name')
-    lc_geo_f = lc_geo[lc_geo['province_name'].isin(provinces)]
-
-    if lc_geo_f.empty:
-        st.info("Nessun comune per il filtro provincia scelto.")
-    else:
-        m_lc = folium.Map(location=[45.0, 8.0], zoom_start=8, tiles=MAP_TILES)
-        for _, row in lc_geo_f.iterrows():
-            color = LAND_COVER_COLORS.get(row['dominant_class'], '#cccccc')
-            folium.GeoJson(
-                wkt_to_geojson(row['geometry_wkt']),
-                tooltip=f"{row['municipality_name']}: {LAND_COVER_LABELS.get(row['dominant_class'], row['dominant_class'])}",
-                style_function=lambda _, c=color: {'fillColor': c, 'color': '#999', 'weight': 0.3, 'fillOpacity': 0.8},
-            ).add_to(m_lc)
-        st_folium(m_lc, width=None, height=420, returned_objects=[], key='map_land_cover')
-        legend_rows = ''.join(
-            f'<div style="display:flex;align-items:center;gap:8px;margin:2px 0;">'
-            f'<span style="display:inline-block;width:22px;height:14px;background:{LAND_COVER_COLORS[k]};'
-            f'border:1px solid rgba(0,0,0,0.3);border-radius:3px;flex-shrink:0;"></span>'
-            f'<span style="font-size:0.85rem;">{v}</span></div>'
-            for k, v in LAND_COVER_LABELS.items()
-        )
-        st.markdown(f'<div style="margin:0.25rem 0 0.75rem 0;">{legend_rows}</div>', unsafe_allow_html=True)
-
-    st.subheader("Densità di popolazione")
-    st.caption(
-        "Popolazione residente (stima ISTAT 1° gennaio 2026) diviso "
-        "superficie comunale — tutti i 1180 comuni. Scala logaritmica: senza, "
-        "Torino schiaccerebbe la scala rendendo illeggibili tutte le "
-        "differenze tra gli altri comuni."
-    )
-    pop_geo = geo_all.merge(land_cover_all[['municipality_name', 'population', 'area_km2', 'pop_density']],
-                             on='municipality_name')
-    pop_geo_f = pop_geo[pop_geo['province_name'].isin(provinces) & pop_geo['pop_density'].notna()]
-
-    if pop_geo_f.empty:
-        st.info("Nessun dato di popolazione per il filtro scelto.")
-    else:
-        log_density = np.log10(pop_geo_f['pop_density'].clip(lower=0.1))
-        cmap_pop = LinearColormap(['#fef0d9', '#fc8d59', '#b30000'], vmin=log_density.min(), vmax=log_density.max())
-        m_pop = folium.Map(location=[45.0, 8.0], zoom_start=8, tiles=MAP_TILES)
-        for (_, row), log_val in zip(pop_geo_f.iterrows(), log_density):
-            color = cmap_pop(log_val)
-            folium.GeoJson(
-                wkt_to_geojson(row['geometry_wkt']),
-                tooltip=f"{row['municipality_name']}: {row['pop_density']:.0f} ab/km² ({row['population']:.0f} ab.)",
-                style_function=lambda _, c=color: {'fillColor': c, 'color': '#999', 'weight': 0.3, 'fillOpacity': 0.8},
-            ).add_to(m_pop)
-        st_folium(m_pop, width=None, height=420, returned_objects=[], key='map_population')
-        st.caption(
-            f"Da {10**log_density.min():.1f} a {10**log_density.max():.0f} ab/km² "
-            "nel filtro attuale (scala log)."
-        )
-
-    st.subheader("NDVI — verde da satellite")
-    st.caption(
-        "Indice di vegetazione (NDVI, Copernicus Global Land Service, "
-        "composito 10-giornaliero inizio luglio 2026) per tutti i 1180 "
-        "comuni — misura **continua** di quanto verde c'è, complementare "
-        "alla classe di uso del suolo dominante sopra: due comuni "
-        "entrambi \"urbani\" per CORINE possono avere quantità di verde "
-        "molto diverse (es. per via di parchi/alberature)."
-    )
-    ndvi_all = get_ndvi_all()
-    ndvi_geo = geo_all.merge(ndvi_all.drop(columns=['province_name']), on='municipality_name')
-    ndvi_geo_f = ndvi_geo[ndvi_geo['province_name'].isin(provinces)]
-
-    if ndvi_geo_f.empty:
-        st.info("Nessun dato NDVI per il filtro scelto.")
-    else:
-        ndvi_min, ndvi_max = ndvi_geo_f['ndvi_mean'].min(), ndvi_geo_f['ndvi_mean'].max()
-        cmap_ndvi = LinearColormap(NDVI_COLORS, vmin=ndvi_min, vmax=ndvi_max)
-        m_ndvi = folium.Map(location=[45.0, 8.0], zoom_start=8, tiles=MAP_TILES)
-        for _, row in ndvi_geo_f.iterrows():
-            color = cmap_ndvi(row['ndvi_mean'])
-            veg_label = VEGETATION_CLASS_LABELS.get(row['vegetation_class'], row['vegetation_class'])
-            folium.GeoJson(
-                wkt_to_geojson(row['geometry_wkt']),
-                tooltip=f"{row['municipality_name']}: NDVI {row['ndvi_mean']:.2f} ({veg_label})",
-                style_function=lambda _, c=color: {'fillColor': c, 'color': '#999', 'weight': 0.3, 'fillOpacity': 0.8},
-            ).add_to(m_ndvi)
-        st_folium(m_ndvi, width=None, height=420, returned_objects=[], key='map_ndvi')
-        render_gradient_legend(
-            cmap_ndvi, ndvi_min, ndvi_max,
-            labels=["Rado", "Scarso", "Moderato", "Denso", "Molto denso"],
-            unit="NDVI", title="Legenda — NDVI (verde da satellite)", decimals=2,
-        )
-
-    st.subheader("Temperatura, uso del suolo e popolazione")
-    st.caption(
-        "Ogni punto è un comune **con dati di temperatura reali** "
-        f"({metadata_f.shape[0]} nel filtro attuale). Colore = fascia "
-        "altitudinale (la quota è il fattore che pesa di più, vedi grafico "
-        "sopra); posizione orizzontale = quanto suolo urbano/industriale ha "
-        "il comune. Se, **a parità di colore** (cioè a parità di quota), i "
-        "punti più a destra tendono a stare più in alto, è un indizio "
-        "(non una prova) che l'urbanizzazione conta anche al netto "
-        "dell'altitudine."
-    )
-    lc_pop = get_land_cover_with_population()
-    annual_avg = annual_f.groupby('municipality_name')['temp_mean_annual'].mean().reset_index()
-    scatter_df = annual_avg.merge(lc_pop, on='municipality_name').merge(
-        metadata_f[['municipality_name', 'elevation_m']], on='municipality_name'
-    ).merge(ndvi_all[['municipality_name', 'ndvi_mean']], on='municipality_name', how='left')
-    scatter_df = scatter_df[scatter_df['province_name'].isin(provinces)]
-
-    x_variable = st.radio(
-        "Variabile in ascissa", ['pct_urban', 'pct_industrial_commercial', 'pop_density', 'ndvi_mean'],
-        format_func=lambda v: {'pct_urban': '% suolo urbano/artificiale',
-                                'pct_industrial_commercial': '% industriale/commerciale',
-                                'pop_density': 'Densità di popolazione (ab/km²)',
-                                'ndvi_mean': 'NDVI medio (verde da satellite)'}[v],
-        horizontal=True, key='uhi_x_variable',
-    )
-
-    if scatter_df.empty:
-        st.info("Dati insufficienti per il filtro scelto.")
-    else:
-        scatter_df = scatter_df.copy()
-        scatter_df['fascia'] = scatter_df['elevation_m'].apply(elevation_band)
-        fig_scatter = px.scatter(
-            scatter_df, x=x_variable, y='temp_mean_annual', color='fascia',
-            category_orders={'fascia': ['Pianura', 'Collina', 'Montagna']},
-            color_discrete_map={'Pianura': '#e74c3c', 'Collina': '#f39c12', 'Montagna': '#3498db'},
-            hover_name='municipality_name',
-            labels={
-                'pct_urban': '% suolo urbano/artificiale',
-                'pct_industrial_commercial': '% industriale/commerciale',
-                'pop_density': 'Densità di popolazione (ab/km²)',
-                'ndvi_mean': 'NDVI medio',
-                'temp_mean_annual': 'Temp. media annuale (°C)', 'fascia': 'Fascia altitudinale',
-            },
-        )
-        if x_variable == 'pop_density':
-            fig_scatter.update_xaxes(type='log')
-        fig_scatter.update_layout(height=380, margin=dict(t=10, b=10), legend=dict(orientation='h'))
-        st.plotly_chart(apply_chart_theme(fig_scatter), width='stretch')
-
-        corr = scatter_df[x_variable].corr(scatter_df['temp_mean_annual'])
-        st.metric("Correlazione (Pearson r, tutti i comuni nel filtro)", f"{corr:+.2f}")
-        st.caption(
-            "Correlazione semplice, **non controllata per quota** (a differenza "
-            "della lettura \"a parità di colore\" suggerita sopra) — un valore "
-            "alto qui può derivare in parte dal fatto che i comuni di pianura "
-            "sono sia più caldi sia più urbanizzati. Un modello che isola "
-            "l'effetto di ciascuna variabile dalle altre (regressione a errore "
-            "spaziale) esiste già: controllando per elevazione, **né % urbano "
-            "né NDVI risultano significativi** con il campione attuale (p=0.19 "
-            "e p=0.58) — solo l'elevazione resta un predittore robusto. Le due "
-            "variabili sono instabili in modo diverso: il coefficiente di "
-            "NDVI è quasi crollato a zero (da +1.09 a +0.16) man mano che il "
-            "campione è cresciuto, segno che l'effetto visto in precedenza "
-            "era probabilmente un artefatto di un campione ancora piccolo; "
-            "quello di % urbano è rimasto piccolo ma stabile, solo la sua "
-            "significatività statistica è oscillata — più coerente con un "
-            "effetto debole ma reale, da confermare con più dati. Risultato "
-            "ancora provvisorio (n=177 comuni)."
-        )
+    st.page_link("pages/05_contesto_territoriale.py", label="🌍 Vai a Contesto Territoriale →")
 
 with tab_detail:
     # Cluster/Moran's I sono calcolati sull'intero periodo/tutti i comuni
@@ -810,33 +638,10 @@ with tab_detail:
         "di \"zona altimetrica\" (che è più complessa e valuta l'intero "
         "territorio comunale, non un solo punto). L'elevazione viene da "
         "Open-Meteo, non da un catasto ufficiale.\n"
-        "- **Perché lo scatter uso del suolo/temperatura non è un vero "
-        "studio dell'effetto isola di calore?** Mostra una correlazione tra "
-        "tutti i comuni con dati, colorata per fascia altitudinale così da "
-        "poter almeno *guardare a occhio* se l'effetto regge a parità di "
-        "quota — ma il coefficiente di correlazione mostrato resta "
-        "calcolato su tutti i comuni insieme, senza isolare "
-        "matematicamente l'effetto della quota da quello dell'uso del "
-        "suolo. Un modello che lo fa **esiste**: una regressione OLS con "
-        "elevazione+popolazione+%urbano+NDVI, seguita da un modello a "
-        "errore spaziale dato che l'indice di Moran sui residui restava "
-        "significativo (coerente con quello qui sotto). Risultato: "
-        "l'effetto urbano diventa significativo col segno atteso solo nel "
-        "modello spaziale — l'OLS classico lo mascherava. Risultato "
-        "provvisorio, da confermare al crescere del campione di comuni.\n"
-        "- **Da dove viene l'uso del suolo, e che limite ha?** CORINE Land "
-        "Cover 2018 (Copernicus) — uno scatto del 2018, confrontato qui "
-        "con le temperature dell'intero periodo disponibile e popolazione "
-        "stimata 2026. L'uso del "
-        "suolo cambia lentamente (un'epoca CORINE copre ~6 anni), quindi è "
-        "un compromesso accettabile, ma non un dato perfettamente "
-        "allineato nel tempo con gli altri due.\n"
-        "- **Da dove viene l'NDVI, e che limite ha?** Copernicus Global "
-        "Land Service NDVI 300m V3 — un **singolo composito di 10 giorni** "
-        "(inizio luglio 2026), non una media pluriennale come le "
-        "temperature: cattura la vegetazione di quel periodo specifico "
-        "(piena stagione vegetativa), non un valore \"tipico\" stabile nel "
-        "tempo. Un composito invernale darebbe una mappa molto diversa.\n"
+        "- Lo scatter uso del suolo/popolazione/NDVI vs temperatura, e il "
+        "modello di regressione spaziale che lo accompagna, sono nella pagina "
+        "Contesto Territoriale — insieme ai limiti delle fonti CORINE Land "
+        "Cover e NDVI usate lì.\n"
         "- **Perché la mappa del trend non si aggiorna con il filtro anni?** "
         "Usa la pendenza di riscaldamento già calcolata sull'intero periodo "
         "disponibile per ciascun comune. Ricalcolarla ogni volta che cambi "
