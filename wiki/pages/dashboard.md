@@ -238,6 +238,23 @@ filtro (vedi sopra).
   letteratura** (IPCC AR6, rapporti ISPRA) — dichiarati esplicitamente
   come non calcolati da questo progetto e non scaricati in tempo reale,
   solo per dare un contesto di scala.
+  - **Testo esplicativo esteso (2026-07-19)**: su richiesta dell'utente
+    ("mi piace, ma non è forse molto esplicativo, rendilo più prolisso"),
+    aggiunto sotto le 3 metriche un blocco discorsivo che spiega perché il
+    confronto è un ordine di grandezza e non un test rigoroso (metodologie
+    e periodi diversi: i riferimenti globale/Italia sono medie su 50-150
+    anni, il valore locale è una regressione sul solo periodo selezionato
+    nello slider, tipicamente 20-25 anni, quindi più sensibile alla scelta
+    degli estremi e alla variabilità di singole annate); motiva perché un
+    trend locale superiore alla media è comunque plausibile e documentato
+    in letteratura per l'arco alpino/prealpino (minore capacità termica,
+    riduzione della copertura nevosa, il Mediterraneo come "hotspot"
+    climatico) pur segnalando che effetti locali non isolati dal progetto
+    (isola di calore urbana, cambi d'uso del suolo attorno alla stazione)
+    possono contribuire al segnale osservato; chiude con il rapporto
+    calcolato dal vivo (`slope_decade / riferimento`) tra il trend del
+    comune/aggregato selezionato e i due riferimenti, es. "×4 il
+    riferimento globale".
 
 **Tab Dettaglio tecnico**: test Mann-Kendall/Sen's slope sull'intero
 periodo, scomposizione STL, nota di metodologia.

@@ -2937,3 +2937,19 @@ Log cronologico append-only. Ogni riga: data, azione, pagine toccate.
 
   Pagine aggiornate: `project-status.md` (punto 13 chiuso), `dashboard.md`
   (sezione "Non ancora fatto" → esito).
+
+- **2026-07-19** — Su richiesta dell'utente ("mi piace, ma non è forse molto
+  esplicativo, rendilo più prolisso"), esteso il testo del widget "Confronto
+  con il contesto nazionale/globale" nel tab Panoramica di
+  `02_analisi_temporale.py`: aggiunto un blocco discorsivo dopo le 3
+  metriche che spiega perché il confronto è un ordine di grandezza (periodi
+  e metodologie diversi tra riferimenti di letteratura e trend locale sul
+  periodo selezionato), il razionale scientifico per un riscaldamento
+  alpino/prealpino spesso superiore alla media (minore capacità termica,
+  riduzione neve, Mediterraneo come hotspot), l'avvertenza sui possibili
+  effetti locali non isolati (isola di calore urbana, uso del suolo) e il
+  rapporto numerico calcolato dal vivo tra trend locale e i due riferimenti.
+
+  Pagina aggiornata: `dashboard.md` (sottosezione "Analisi Temporale",
+  bullet del widget di confronto con nuova voce "Testo esplicativo esteso
+  (2026-07-19)").
