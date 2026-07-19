@@ -21,8 +21,15 @@ collaboratrice (vedi sezione "Obiettivo reale" sotto per il dettaglio),
 `temperature` ora a 2.268.823 righe. Ricalcolo a valle completo: elevazione
 234/234, `heatwave_events` 640 → **770**, `kpi_annual_by_municipality`
 **6.318 righe** (234 comuni × 27 anni), `kpi_annual_by_province` invariato
-a 216. `download_arpa.py` rilanciato di conseguenza per far crescere anche
-`arpa_temperature` sui nuovi comuni — vedi sotto per l'esito.
+a 216. `download_arpa.py` rilanciato di conseguenza (su richiesta esplicita
+dell'utente, dopo un primo fraintendimento): **108/234 comuni Open-Meteo
+hanno anche ARPA** (era 51), la mappa Bias raddoppia di campione. Pipeline
+di analisi completa rieseguita (`refresh_dashboard.py`, ~2h20min totali
+con un'interruzione e ripartenza a metà) — vedi [Pipeline
+ETL](etl-pipeline.md#import-dei-57-comuni-arpa-target-e-ricalcolo-completo-2026-07-19)
+per il resoconto completo e [Analisi
+statistica](statistical-analysis.md#validazione-contro-arpa-piemonte-2026-07-18-estesa-il-2026-07-19)
+per i risultati aggiornati (bias -1.59°C, quasi invariato).
 
 **Aggiornamento delta del 2026-07-19**: serie estesa fino al 2026-07-19 per
 **177/177 comuni** via `update_recent_data.py` (nessun comune nuovo, solo

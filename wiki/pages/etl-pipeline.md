@@ -520,6 +520,93 @@ confronto di bias — l'obiettivo reale di questo lotto non è il numero di
 comuni in `temperature` di per sé, ma il numero di comuni con **entrambe**
 le fonti.
 
+## Import dei 57 comuni ARPA-target e ricalcolo completo (2026-07-19)
+
+Import del lotto descritto nella sezione precedente, eseguito dal titolare
+nella stessa giornata dopo la consegna dei due file (`temperature_data_extra_helper_arpa_target.csv`,
+`riepilogo_57_comuni_arpa_target.csv`).
+
+**Pulizia e join**: caricamento con `dtype={'istat_code': str}` (stesso
+accorgimento delle sessioni precedenti, altrimenti si perdono gli zeri
+iniziali), passaggio manuale attraverso i metodi di `DataCleaner` (0 righe
+scartate, 881 outlier IQR flaggati, nessuno fuori range fisico), join
+`istat_code` → `municipality_id` (57/57 risolti, nessuna sovrapposizione
+con i 177 comuni già presenti né con i 18 di Torino ancora in sospeso).
+Caricato con `insert_temperature_for_municipalities()`: **552.729 righe
+inserite, 177 → 234 comuni**.
+
+**Ricalcolo a valle completo**: elevazione ri-scaricata (234/234
+popolati), `TRUNCATE heatwave_events` + `identify_heatwaves()` (**640 →
+770 ondate**), refresh viste KPI (`kpi_annual_by_municipality` 6.318
+righe, 234×27 anni). **Nota tecnica**: il refresh è stato eseguito
+**senza `CONCURRENTLY`** — `REFRESH MATERIALIZED VIEW CONCURRENTLY` ha
+fallito con `ObjectNotInPrerequisiteState` perché la vista non ha nessun
+indice **univoco** (solo i due btree non-unique su `(municipality_id,
+year)` e `(province_id, year)` da `01_init_database.sql`), requisito
+tecnico di Postgres per il refresh concorrente. Sessioni precedenti
+citano refresh "concorrenti" riusciti — non verificato se lo fossero
+davvero o se la wiki generalizzasse; con lo schema attuale non è
+possibile. Segnalato come miglioria futura, non applicato in questa
+sessione (fuori scope).
+
+**Crescita della copertura ARPA di conseguenza** (richiesta esplicita
+dell'utente dopo un primo fraintendimento — inizialmente avviata come
+iniziativa del titolare/IA senza chiederlo, poi fermata su richiesta
+dell'utente e ripresa solo dopo conferma): rilanciato `download_arpa.py`
+(default, non `--only-uncovered` — join su `temperature`, che ora include
+i 57 nuovi). 108/234 comuni Open-Meteo hanno una stazione ARPA attiva
+(51 preesistenti + tutti i 57 nuovi, **100% di corrispondenza** — conferma
+che la lista target in `comuni-coperti.md` era corretta). Download
+interrotto una volta (limite ambientale del task in background, non un
+errore Python — nessun traceback, nessun salto temporale sospetto) dopo
+13 comuni, ripreso automaticamente sfruttando la logica di resume basata
+sul CSV di output già esistente (`arpa_temperature_after_57import.csv`),
+completato sui restanti 95 (1 fallimento singolo transitorio,
+`ConnectionResetError`). **830.408 righe nuove**, importate con
+`insert_arpa_temperature()` (`ON CONFLICT (station_code, date) DO
+NOTHING`, quindi sicuro anche in caso di sovrapposizione) — **946.938
+righe processate**, `arpa_temperature` a 1.979.158 righe totali (218
+comuni, invariato: i 57 nuovi erano già stazioni note, solo senza
+controparte Open-Meteo prima d'ora).
+
+**Rieseguita l'intera pipeline di analisi** (`refresh_dashboard.py`: trend,
+ondate, STL stagionale, spaziale, regressione, validazione ARPA, export
+dashboard). **Primo tentativo interrotto** dopo ~106 minuti (208/234
+comuni STL completati) da un'interruzione esterna del processo in
+background, stesso tipo di anomalia del download ARPA sopra — nessun
+errore applicativo, il rilancio successivo è ripartito da zero (ogni
+modulo sovrascrive i propri output, quindi sicuro) e questa volta ha
+completato tutti e 7 gli step, STL compresa (**127 minuti**, il passo
+di gran lunga più lento: ~36s/comune × 234). Risultati finali della
+validazione ARPA sul campione a 108 comuni: vedi [Analisi
+statistica](statistical-analysis.md#validazione-contro-arpa-piemonte-2026-07-18-estesa-il-2026-07-19)
+per il dettaglio completo (bias -1.59°C, correlazione col recall delle
+ondate crollata a 16.4% dal 31.4% dei 51 comuni originali — non ancora
+spiegato, segnalato come domanda aperta).
+
+**Consolidamento file** (stesso pattern delle due sessioni precedenti,
+richiesto esplicitamente dall'utente): in `data/raw/`,
+`temperature_data_extra_helper_arpa_target.csv` unito in
+`temperature_data_extra.csv` (istat_code → municipality_id, zero
+sovrapposizioni verificate) ed eliminato insieme al riepilogo — **non**
+toccato invece `temperature_data_extra_torino_2026-07-19.csv` (i 18
+comuni di Torino restano non importati, quindi tenuti separati per non
+rompere la corrispondenza file↔DB). In `data/processed/`, il file pulito
+di oggi (`temperature_extra_arpa_target_57_clean.csv`) unito in
+`temperature_clean_extra.csv` dopo verifica di zero sovrapposizioni.
+Verificato **77.560 + 2.191.263 = 2.268.823**, combacia esattamente col
+totale reale in `temperature`.
+
+**Mappe QGIS rigenerate** (dimenticate nel primo giro di ricalcolo,
+lanciate solo dopo che l'utente ha chiesto esplicitamente "le cartine"):
+`python-qgis-ltr.bat qgis_projects/build_maps.py`, tutti e 3 i progetti
+(`temperature_heatmap`, `hotspot_analysis`, `evolution_animation`) e le
+preview PNG rigenerati con i 234 comuni. Verificato visivamente: la
+preview mostra molte più aree colorate rispetto alle versioni precedenti
+(177/98 comuni). Le righe tratteggiate sulle preview sono l'artefatto già
+noto di rendering etichette senza font nell'ambiente headless (vedi [Mappe
+GIS](gis-maps.md)), non un problema introdotto da questa sessione.
+
 ## Passaggi pianificati ma non ancora scritti
 
 - Calcolo KPI giornalieri/annuali lato Python (oggi solo le viste

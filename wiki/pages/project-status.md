@@ -434,6 +434,19 @@ Vedi [Comuni già coperti](comuni-coperti.md#obiettivo-reale-completare-la-mappa
 per la lista completa e [Pipeline ETL](etl-pipeline.md#comuni-extra-mirati-alla-validazione-arpa--158-comuni-target-2026-07-19)
 per il dettaglio del download della collaboratrice e dell'import.
 
+**Aggiornamento (stesso giorno, sera)**: `download_arpa.py` e l'intera
+pipeline di analisi (`refresh_dashboard.py`) rieseguiti per intero — vedi
+[Pipeline ETL](etl-pipeline.md#import-dei-57-comuni-arpa-target-e-ricalcolo-completo-2026-07-19)
+per il resoconto completo, incluse due interruzioni ambientali dei
+processi in background (non errori applicativi) e la correzione di
+un'iniziativa non richiesta (il titolare/IA aveva rilanciato il download
+ARPA di propria iniziativa, fermato su segnalazione dell'utente e ripreso
+solo dopo conferma). Risultati di validazione aggiornati sul campione a
+108 comuni in [Analisi
+statistica](statistical-analysis.md#validazione-contro-arpa-piemonte-2026-07-18-estesa-il-2026-07-19):
+bias -1.59°C (quasi invariato), ma **recall delle ondate crollato al
+16.4%** dal 31.4% originale — domanda aperta, non ancora spiegata.
+
 ## Prossimi passi
 
 Tutti minori/non bloccanti — il nucleo pianificato del progetto è

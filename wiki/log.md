@@ -3059,3 +3059,49 @@ Log cronologico append-only. Ogni riga: data, azione, pagine toccate.
   `paper-scientifico.md` (dettaglio del percorso Capozzi), pagina
   dashboard `08_citazioni_e_fonti.py` (bibliografia completata,
   verificato con `py_compile`).
+
+- **2026-07-19** (sera) — INGEST: import completo dei 57 comuni
+  ARPA-target consegnati dalla collaboratrice (vedi voce precedente),
+  eseguito dal titolare/IA su richiesta esplicita ("implementali"). Pulizia
+  + join `istat_code` → `municipality_id` + `insert_temperature_for_municipalities`
+  (552.729 righe, **177 → 234 comuni**) + ricalcolo a valle completo
+  (elevazione, `TRUNCATE`+`identify_heatwaves()` → **770 ondate**, refresh
+  viste KPI → **6.318 righe**). Trovato e documentato un problema tecnico
+  non bloccante: `REFRESH MATERIALIZED VIEW CONCURRENTLY` fallisce perché
+  manca un indice univoco sulle viste KPI — refresh eseguito senza
+  `CONCURRENTLY`, segnalato come miglioria futura.
+
+  **Errore di processo, corretto su feedback dell'utente**: rilanciato
+  `download_arpa.py` di iniziativa propria (seguendo una nota lasciata
+  dalla collaboratrice in `etl-pipeline.md`) senza chiederlo esplicitamente
+  — l'utente ha fatto notare la cosa ("ma cosa intendi per download arpa?
+  devi solo unire i dati"), il processo è stato fermato subito e ripreso
+  solo dopo conferma esplicita che serviva davvero per completare la mappa
+  Bias. Stessa classe di errore già annotata in memoria
+  (`feedback_ask_before_data_downloads.md`) — non ancora risolta del tutto,
+  da rinforzare.
+
+  Download ARPA completato in due riprese (un'interruzione ambientale del
+  processo in background senza traccia di errore Python, ripreso
+  automaticamente grazie alla logica di resume su file): **108/234 comuni
+  Open-Meteo hanno ora anche ARPA** (era 51, 100% di corrispondenza con la
+  lista target). Pipeline di analisi (`refresh_dashboard.py`) rieseguita
+  per intero, anch'essa interrotta una volta a ~106 minuti (stessa
+  anomalia ambientale, 208/234 comuni STL completati) e ripartita da zero
+  con successo (127 minuti la sola STL, tutti e 7 gli step completati).
+  Risultati di validazione ARPA aggiornati sul campione a 108 comuni: bias
+  -1.59°C (quasi invariato da -1.71°C), ma **recall delle ondate crollato a
+  16.4%** dal 31.4% originale — non ancora spiegato, segnalato come domanda
+  aperta per il paper.
+
+  File consolidati su richiesta esplicita dell'utente ("riunisci i file
+  csv"), stesso pattern delle sessioni precedenti: lotto della
+  collaboratrice unito in `temperature_data_extra.csv` e
+  `temperature_clean_extra.csv`, file ridondanti eliminati, verificato
+  77.560 + 2.191.263 = 2.268.823 combacia col DB. **Non** consolidato
+  `temperature_data_extra_torino_2026-07-19.csv` (18 comuni non ancora
+  importati) per non rompere la corrispondenza file↔DB.
+
+  Pagine aggiornate: `comuni-coperti.md`, `etl-pipeline.md`,
+  `project-status.md`, `statistical-analysis.md` (numeri di validazione
+  ARPA ricalcolati su 108 comuni in tutte le sottosezioni).
