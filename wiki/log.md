@@ -3105,3 +3105,45 @@ Log cronologico append-only. Ogni riga: data, azione, pagine toccate.
   Pagine aggiornate: `comuni-coperti.md`, `etl-pipeline.md`,
   `project-status.md`, `statistical-analysis.md` (numeri di validazione
   ARPA ricalcolati su 108 comuni in tutte le sottosezioni).
+
+- **2026-07-19** (sera, seguito) — FIX: l'utente ha segnalato che la mappa
+  "Bias Open-Meteo vs ARPA per comune" mostrava ancora ~55 comuni invece di
+  108, e ha corretto un mio equivoco: non esiste nessuna sessione Claude
+  parallela sul frontend (avevo assunto il contrario in precedenza,
+  vedendo file `dashboard/pages/` rinominati/aggiunti senza che li avessi
+  toccati io). Causa reale: un processo Streamlit locale, avviato dall'
+  utente alle 14:02:42 (prima che l'export dati finisse alle 16:09),
+  serviva ancora dati vecchi in cache (`st.cache_data(ttl=600)` — TTL
+  scaduto più volte ma la sessione del browser non aveva mai rieseguito lo
+  script dopo l'aggiornamento dei dati).
+
+  Trovati e corretti anche **numeri hardcoded ormai stantii** nel codice
+  del frontend (commenti/didascalie, non logica — la logica che conta i
+  comuni combinati era già dinamica e corretta): "51"→"108" e
+  "177"→"234" in `Home.py`, `components/data_source.py`,
+  `components/queries.py`, `pages/03_analisi_spaziale.py`,
+  `pages/04_ondate_di_calore.py`, `pages/08_citazioni_e_fonti.py`.
+
+  **Trovato un cambiamento scientifico reale, non solo un numero da
+  aggiornare**: in `pages/05_contesto_territoriale.py`, la narrazione sul
+  modello a errore spaziale citava p=0.19 (non significativo) per "%
+  urbano" — con il campione esteso a 234 comuni, il modello ML spatial
+  error (`output/spatial_regression_spatial_model.txt`) mostra ora
+  **p=0.031 (significativo)** per la stessa variabile, mentre NDVI resta
+  non significativo e il suo coefficiente continua a restringersi verso
+  zero (+0.16 → +0.10). Riscritta la sezione per riflettere il nuovo
+  risultato e segnalare esplicitamente l'instabilità tra un aggiornamento
+  e l'altro come limite da monitorare, non come conferma.
+
+  Processo Streamlit riavviato pulito (credentials.toml creato per
+  saltare il prompt email interattivo di onboarding, mai configurato
+  prima su questa macchina). Verificato con `AppTest`: Home + tutte le 6
+  pagine numerate, nessuna eccezione, caption della mappa Bias confermata
+  a "108 comuni" nel testo effettivamente renderizzato (non solo nel
+  codice sorgente).
+
+  Pagine aggiornate: `dashboard/Home.py`, `dashboard/components/data_source.py`,
+  `dashboard/components/queries.py`, `dashboard/pages/03_analisi_spaziale.py`,
+  `dashboard/pages/04_ondate_di_calore.py`,
+  `dashboard/pages/05_contesto_territoriale.py`,
+  `dashboard/pages/08_citazioni_e_fonti.py`.
