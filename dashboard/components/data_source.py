@@ -17,17 +17,19 @@ SOURCE_ARPA = 'arpa'
 SOURCE_BOTH = 'both'
 
 _LABELS = {
+    SOURCE_BOTH: 'Open-Meteo + ARPA',
     SOURCE_OPENMETEO: 'Open-Meteo',
-    SOURCE_ARPA: 'Solo ARPA',
-    SOURCE_BOTH: 'Confronto ARPA + Open-Meteo',
+    SOURCE_ARPA: 'ARPA',
 }
 
 
 def render_source_selector(key: str, has_om: bool, has_arpa: bool, horizontal: bool = True) -> str:
     """
-    Radio Open-Meteo / Solo ARPA / Confronto, con le opzioni ridotte a
+    Radio Open-Meteo + ARPA / Open-Meteo / ARPA, con le opzioni ridotte a
     quelle disponibili davvero (`has_om`/`has_arpa` riferite al comune o
-    all'insieme di comuni correntemente selezionato).
+    all'insieme di comuni correntemente selezionato). Default su "Open-Meteo
+    + ARPA" (la vista combinata, coerente con la Home) invece della singola
+    fonte Open-Meteo.
 
     Se solo una fonte è disponibile, non mostra un radio con opzioni
     disabilitate ma un'informazione testuale e restituisce direttamente
@@ -35,7 +37,7 @@ def render_source_selector(key: str, has_om: bool, has_arpa: bool, horizontal: b
     scelta ma assente".
     """
     if has_om and has_arpa:
-        options = [SOURCE_OPENMETEO, SOURCE_BOTH, SOURCE_ARPA]
+        options = [SOURCE_BOTH, SOURCE_OPENMETEO, SOURCE_ARPA]
         choice = st.radio(
             "Fonte dati",
             options,
