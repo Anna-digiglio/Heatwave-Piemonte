@@ -30,10 +30,11 @@ from components.queries import (
     get_municipality_metadata,
     get_ndvi_all,
 )
-from components.styling import inject_custom_css
+from components.styling import inject_custom_css, render_sidebar_branding
 
 st.set_page_config(page_title='Contesto Territoriale — Heatwave Piemonte', layout='wide')
 inject_custom_css()
+render_sidebar_branding()
 st.title("🌍 Contesto Territoriale")
 st.caption(
     "Uso del suolo, densità di popolazione e verde da satellite per tutti i 1180 comuni "
