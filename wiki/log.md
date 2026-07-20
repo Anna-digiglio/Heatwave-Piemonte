@@ -3279,3 +3279,153 @@ Log cronologico append-only. Ogni riga: data, azione, pagine toccate.
 
   Pagine aggiornate: `dashboard.md` (sezione "Home": "3 card" → "7
   card", nuovo bullet cronologico 2026-07-20).
+
+- **2026-07-20** (seguito) — Su richiesta dell'utente: sidebar leggermente
+  più stretta, titolo in cima, contatti dell'autrice in fondo, in
+  `dashboard/components/styling.py`. Nuove regole CSS su
+  `[data-testid="stSidebar"]` (`min-width: 18rem`, valore approssimato per
+  difetto — non è stato possibile leggere il default effettivo di
+  Streamlit 1.58 dal bundle JS minificato, il resize manuale resta
+  possibile) e su `[data-testid="stSidebarUserContent"]` (colonna flex a
+  tutta altezza, così `.hw-sidebar-footer` con `margin-top: auto` resta
+  ancorato in fondo invece di seguire subito il titolo). Nuova funzione
+  `render_sidebar_branding()`: titolo "🌡️ Heatwave Piemonte" + contatti
+  (Anna Digiglio, anna.digiglio97@gmail.com, link `mailto:`). **Limite
+  noto**: il titolo compare subito sotto la nav automatica delle pagine,
+  non sopra — non c'è un'API per anteporlo senza un'immagine per
+  `st.logo()`, mai valutata in questa sessione. Richiamata in tutte e 8 le
+  pagine (`Home.py` + `pages/02-08`) subito dopo `inject_custom_css()`,
+  stesso pattern di chiamata già esistente.
+
+  Verificato con `py_compile` su tutti gli 8 file e `AppTest` (nessuna
+  eccezione nuova; 2 eccezioni preesistenti e non correlate confermate via
+  `git stash` — `03_analisi_spaziale.py`/`05_contesto_territoriale.py`
+  falliscono in isolamento su `st.page_link` verso l'altra pagina,
+  limite noto di `AppTest` che testa una pagina alla volta senza il
+  registro completo delle pagine dell'app; funzionano nell'app reale).
+  Avvio locale reale: tutte e 8 le pagine HTTP 200.
+
+  Pagine aggiornate: nessuna pagina wiki di dominio ancora sincronizzata
+  con questo cambiamento oltre a questo log (solo CSS/branding, non
+  contenuto/dati) — da rivedere al prossimo giro di lint.
+
+- **2026-07-20** (seguito, correzione) — L'utente ha respinto il primo
+  tentativo: il titolo testuale sotto la nav non andava bene ("deve stare
+  in alto sopra home, se non riesci a metterlo eliminalo") e ha chiesto il
+  testo giusto ("Il riscaldamento del Piemonte", il titolo reale del
+  progetto, non più il brand "Heatwave Piemonte"). Riprovato con
+  `st.logo()` invece di un div `st.sidebar.markdown`: è l'unica API che
+  compare sopra la nav automatica delle pagine (verificato leggendo
+  `streamlit/elements/lib/image_utils.py` nel venv: accetta anche una
+  stringa SVG grezza, non solo un file), con un'icona `"🌡️"` (emoji
+  singola, formato supportato direttamente da `st.logo`) per lo stato
+  sidebar chiusa. SVG generato al volo in `_sidebar_title_svg()`, colore
+  del testo preso da `THEME_TOKENS` in base a `st.context.theme.type`
+  (stesso pattern di `inject_custom_css()`) per restare leggibile sia in
+  chiaro sia in scuro.
+
+  Corretta anche l'ancoratura dei contatti in fondo, sospettata non
+  funzionante nel primo tentativo: il CSS toccava solo
+  `stSidebarUserContent`, ma senza un'altezza esplicita più in alto nella
+  catena (`stSidebarContent`) `height: 100%` non aveva nulla da cui
+  ereditare. Ora entrambi i livelli sono colonne flex a piena altezza in
+  cascata.
+
+  **Causa distinta trovata durante il fix**: l'utente vedeva anche un
+  `ImportError` su `render_sidebar_branding` non legato a queste modifiche
+  ma a due processi Streamlit locali rimasti vivi da sessioni di test
+  precedenti (avviati più volte sulla stessa porta 8502 senza chiuderli
+  tutti) — il browser era connesso a un processo vecchio con l'import
+  ancora mancante. Terminati entrambi via `taskkill`, server riavviato
+  pulito.
+
+  Verificato con `py_compile` e `AppTest` (nessuna eccezione) e un avvio
+  locale reale pulito (porta liberata prima del riavvio, HTTP 200, nessun
+  errore in log).
+
+  Pagine aggiornate: nessuna pagina wiki di dominio oltre a questo log
+  (solo CSS/branding).
+
+- **2026-07-20** (seguito, seconda correzione) — L'utente ha respinto anche
+  il tentativo con `st.logo()`: esteticamente non convincente ("deve
+  essere simile al titolo della pagina home") e i contatti restavano
+  ancora non ancorati in fondo nonostante il fix flex del giro precedente.
+  Due cambi distinti:
+  - **Titolo**: abbandonato `st.logo()`/SVG. Tornato a un div HTML
+    normale in `st.sidebar` con lo stesso trattamento del titolo hero di
+    Home (`.hw-hero h1`): font Fraunces reale (non un fallback di sistema
+    dentro un SVG, che non carica il `@import` della pagina) e stesso
+    gradiente testo (`background-clip: text`) preso da
+    `tokens["hero_title_gradient"]`. Compromesso dichiarato: compare
+    **sotto** la nav automatica delle pagine, non sopra — non c'è un modo
+    verificato per anteporlo con questo stesso trattamento tipografico;
+    l'utente aveva esplicitamente autorizzato di rinunciare al
+    posizionamento se irraggiungibile bene ("se non riesci a metterlo
+    eliminalo").
+  - **Contatti in fondo**: il tentativo precedente rendeva
+    `stSidebarContent`/`stSidebarUserContent` colonne flex a piena altezza
+    con `margin-top: auto` sul footer, basandosi su un'assunzione non
+    verificabile sulla struttura interna di Streamlit (nessun modo di
+    ispezionarla senza un browser reale). Sostituito con
+    `position: fixed; left:0; bottom:0; width:18rem` (stessa larghezza
+    della sidebar), che ancora il footer al bordo della finestra invece
+    che a un contenitore flex — non dipende più da assunzioni sulla
+    gerarchia DOM di Streamlit. Nascosto a sidebar chiusa via
+    `[aria-expanded="true"]` (attributo reale confermato nel bundle JS),
+    per non restare "appeso" sopra il contenuto principale.
+
+  Verificato con `py_compile`, `AppTest` (nessuna eccezione, markup del
+  titolo presente col gradiente corretto) e riavvio locale pulito (porta
+  liberata prima, HTTP 200, nessun errore in log). **Non verificato
+  visivamente** in un browser reale (nessuno strumento di screenshot
+  disponibile in questa sessione) — il posizionamento fisso del footer e
+  l'aspetto del titolo restano da confermare dall'utente.
+
+  Pagine aggiornate: nessuna pagina wiki di dominio oltre a questo log
+  (solo CSS/branding).
+
+- **2026-07-20** (seguito, conferma finale) — L'utente ha condiviso uno
+  screenshot reale della Home: i contatti sono correttamente ancorati in
+  fondo alla sidebar (il fix `position: fixed` funziona), ma il titolo
+  restava sotto la nav, non sopra come richiesto in origine.
+
+  **Vincolo tecnico scoperto solo ora, confrontando i due tentativi**:
+  `st.logo()` renderizza l'SVG passato come immagine sandboxata
+  (`<img src="data:image/svg+xml;...">`) - i browser bloccano il
+  caricamento di font esterni (l'`@import` di Google Fonts usato per
+  Fraunces nel resto della pagina) dentro un'immagine SVG di questo tipo,
+  quindi può usare solo font di sistema. Non è un errore di
+  implementazione dei tentativi precedenti: è un limite strutturale di
+  `st.logo()` che rende impossibile avere **contemporaneamente**
+  "sopra la nav" (richiede `st.logo()`) e "stesso font/gradiente della
+  Home" (richiede HTML/CSS normale, che invece non può comparire sopra la
+  nav). Spiegato esplicitamente all'utente invece di continuare a provare
+  varianti alla cieca.
+
+  Presentata la scelta con `AskUserQuestion` (sopra/system-font,
+  sotto/stile-Home, o eliminarlo): **l'utente ha scelto di tenere lo stato
+  attuale** (sotto la nav, font Fraunces + gradiente identico al titolo
+  hero di Home) - nessuna ulteriore modifica al codice.
+
+  Pagine aggiornate: nessuna pagina wiki di dominio oltre a questo log.
+
+- **2026-07-20** (seguito, bug regressione) — L'utente ha segnalato un
+  problema comparso solo dopo le modifiche sidebar: chiudendo la sidebar,
+  la pagina principale non si riespandeva più a riempire lo spazio
+  liberato (restava alla larghezza precedente). Causa: la regola
+  `[data-testid="stSidebar"] { min-width: 18rem !important; }` non era
+  condizionata allo stato aperto/chiuso, quindi impediva alla sidebar di
+  restringersi a 0 durante il collasso, interferendo con la logica nativa
+  di Streamlit che ridimensiona il contenuto principale in base alla
+  larghezza reale della sidebar. Corretto scoprendo la regola con
+  `[aria-expanded="true"]` (stesso attributo già usato per i contatti in
+  fondo): a sidebar chiusa la regola non si applica più, il collasso
+  torna a funzionare nativamente.
+
+  Verificato con `py_compile`, `AppTest` (nessuna eccezione) e riavvio
+  locale pulito (HTTP 200, nessun errore in log). Il comportamento di
+  collasso/riespansione non è verificabile senza un browser reale
+  (richiede interazione, non solo caricamento pagina) — da confermare
+  dall'utente.
+
+  Pagine aggiornate: nessuna pagina wiki di dominio oltre a questo log.
