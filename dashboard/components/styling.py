@@ -32,6 +32,7 @@ finestra "ho appena cliccato Dark/Light senza ancora interagire di nuovo".
 
 import streamlit as st
 
+from . import PROJECT_ROOT
 from .constants import (
     FONT_BODY, FONT_DISPLAY, FONT_MONO,
     THEME_COLD, THEME_HOT, THEME_MID, THEME_TOKENS,
@@ -119,17 +120,22 @@ div[data-testid="stMetricLabel"] {{
    non si applica più e il comportamento nativo di collasso/resize di
    Streamlit torna intatto.
 
-   **Titolo**: due tentativi precedenti scartati. Un div `st.sidebar.markdown`
-   finiva sotto la nav automatica delle pagine (non richiesto). Un
-   `st.logo()` con SVG generato al volo comparve correttamente sopra la
-   nav, ma con font di sistema (Georgia, l'SVG di `st.logo` non carica
-   affidabilmente il font Fraunces caricato via `@import` nel resto della
-   pagina) — respinto dall'utente ("non mi piace esteticamente, deve
-   essere simile al titolo della pagina home"). Tornati a un div HTML
-   normale (font Fraunces reale, stesso gradiente del titolo hero via
-   `background-clip: text`, coerente con `.hw-hero h1` sotto): compare
-   sotto la nav, non sopra — compromesso esplicitamente autorizzato
-   dall'utente ("se non riesci a metterlo eliminalo").
+   **Titolo**: tre tentativi precedenti. Un div `st.sidebar.markdown`
+   finiva sotto la nav automatica (non richiesto). Un `st.logo()` con SVG
+   di testo live (font-family referenziata, non tracciati) rendeva sopra
+   la nav ma solo con font di sistema — le immagini SVG passate a
+   `st.logo()` sono renderizzate dal browser in modalità sandboxata
+   (`<img src="data:image/svg+xml;...">`), che blocca il caricamento di
+   font esterni come l'`@import` di Fraunces usato nel resto della pagina
+   (respinto dall'utente: "non mi piace esteticamente, deve essere simile
+   al titolo della pagina home"). Un div HTML normale risolveva l'estetica
+   ma tornava sotto la nav. **Soluzione finale**: l'utente ha fornito due
+   SVG (`assets/logo-dark-theme.svg`, `assets/logo-light-theme.svg`) con
+   il testo già convertito in tracciati vettoriali invece che in un
+   elemento `<text>` - niente font da caricare, quindi funziona anche
+   sandboxato, e sono già gradientati con gli stessi colori di
+   `hero_title_gradient` sopra/sotto. `st.logo()` sceglie il file giusto
+   in base a `st.context.theme.type` in `render_sidebar_branding()`.
 
    **Contatti in fondo**: un tentativo con `stSidebarContent`/
    `stSidebarUserContent` come colonne flex a piena altezza + `margin-top:
@@ -144,18 +150,17 @@ div[data-testid="stMetricLabel"] {{
 [data-testid="stSidebar"][aria-expanded="true"] {{
     min-width: 18rem !important;
 }}
-.hw-sidebar-title {{
-    font-family: {FONT_DISPLAY};
-    font-weight: 600;
-    font-size: 1.32rem;
-    line-height: 1.18;
-    margin: 2px 0 16px;
-    padding-bottom: 14px;
-    border-bottom: 1px solid {tokens["border"]};
-    background: {tokens["hero_title_gradient"]};
-    -webkit-background-clip: text;
-    background-clip: text;
-    -webkit-text-fill-color: transparent;
+/* Logo un po' più in basso (staccato dal pulsante di collasso) e più
+   grande del massimo nativo di `st.logo(size="large")` (32px) - richiesta
+   utente, 2026-07-20. `!important` perché l'altezza è impostata da
+   Streamlit stesso in base al parametro `size`. */
+[data-testid="stSidebarLogo"] {{
+    margin-top: 14px;
+}}
+[data-testid="stSidebarLogo"] img {{
+    max-height: 46px !important;
+    height: 46px !important;
+    width: auto !important;
 }}
 [data-testid="stSidebar"][aria-expanded="true"] .hw-sidebar-footer {{
     position: fixed;
@@ -407,18 +412,25 @@ def inject_custom_css() -> None:
     st.markdown(_build_custom_css(THEME_TOKENS[theme_type]), unsafe_allow_html=True)
 
 
+_SIDEBAR_LOGO_PATHS = {
+    "dark": PROJECT_ROOT / "dashboard" / "assets" / "logo-dark-theme.svg",
+    "light": PROJECT_ROOT / "dashboard" / "assets" / "logo-light-theme.svg",
+}
+
+
 def render_sidebar_branding() -> None:
-    """Titolo di brand in cima alla sidebar, contatti dell'autrice in fondo.
+    """Logo di brand sopra la nav della sidebar, contatti dell'autrice in fondo.
 
     Da richiamare una volta per pagina, subito dopo `inject_custom_css()`.
-    Il titolo compare sotto la nav automatica delle pagine (nessun modo
-    affidabile per anteporlo con lo stesso font/gradiente del resto del
-    sito, vedi commento su `.hw-sidebar-title` in `_build_custom_css`); i
-    contatti sono ancorati al bordo inferiore della finestra via
-    `position: fixed` in CSS.
+    Il logo è un `st.logo()` (unico modo per comparire sopra la nav
+    automatica delle pagine) che punta a un SVG col testo già convertito in
+    tracciati (non font live, vedi commento in `_build_custom_css`), scelto
+    in base al tema attivo. I contatti sono ancorati al bordo inferiore
+    della finestra via `position: fixed` in CSS.
     """
+    theme_type = st.context.theme.type if st.context.theme.type in _SIDEBAR_LOGO_PATHS else "dark"
+    st.logo(str(_SIDEBAR_LOGO_PATHS[theme_type]), size="large", icon_image="🌡️")
     with st.sidebar:
-        st.markdown('<div class="hw-sidebar-title">Il riscaldamento del Piemonte</div>', unsafe_allow_html=True)
         st.markdown(
             '<div class="hw-sidebar-footer">'
             'Anna Digiglio<br>'
