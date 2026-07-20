@@ -34,11 +34,12 @@ from components.queries import (
     get_seasonal_decomposition_aggregate,
     get_trend_analysis,
 )
-from components.styling import inject_custom_css
+from components.styling import inject_custom_css, render_sidebar_branding
 from src.analysis.trend_analysis import linear_trend, mann_kendall_trend
 
 st.set_page_config(page_title='Analisi Temporale — Heatwave Piemonte', layout='wide')
 inject_custom_css()
+render_sidebar_branding()
 st.title("📈 Analisi Temporale")
 st.caption("La temperatura di ogni comune sta davvero cambiando nel tempo, o è solo variazione normale?")
 
