@@ -3409,6 +3409,34 @@ Log cronologico append-only. Ogni riga: data, azione, pagine toccate.
 
   Pagine aggiornate: nessuna pagina wiki di dominio oltre a questo log.
 
+- **2026-07-20** (seguito, soluzione definitiva titolo sidebar) — Spiegato
+  all'utente il vincolo tecnico di `st.logo()` (SVG renderizzato in
+  modalità sandboxata, blocca font esterni) e chiesto se preferisse
+  sopra/system-font, sotto/stile-Home, o eliminarlo. L'utente ha invece
+  chiesto le specifiche per fornire lei stessa un'immagine col font già
+  incorporato, e ha fornito due SVG già pronti (testo convertito in
+  tracciati vettoriali, non `<text>` con `font-family`, quindi senza
+  bisogno di caricare Fraunces): `logo-dark-theme.svg` e
+  `logo-light-theme.svg`, stesso gradiente di `hero_title_gradient` già
+  applicato via `<linearGradient>` nativo SVG. Salvati in
+  `dashboard/assets/` (cartella nuova).
+
+  `render_sidebar_branding()` ora usa `st.logo()` con il file giusto in
+  base a `st.context.theme.type` (stesso pattern del resto del modulo) +
+  `icon_image="🌡️"` per lo stato sidebar chiusa (emoji singola, supportata
+  direttamente da `st.logo` senza bisogno di un file). Rimossa la classe
+  CSS `.hw-sidebar-title` e il div HTML del tentativo precedente, non più
+  usati. Nuovo import `PROJECT_ROOT` da `components/__init__.py` per
+  costruire i path assoluti ai due SVG.
+
+  Verificato con `py_compile`, `AppTest` su tutte e 8 le pagine (nessuna
+  eccezione nuova) e riavvio locale pulito (HTTP 200, nessun errore in
+  log). **Aspetto visivo del logo sopra la nav non verificato di persona**
+  (nessuno strumento di screenshot disponibile) - da confermare
+  dall'utente.
+
+  Pagine aggiornate: nessuna pagina wiki di dominio oltre a questo log.
+
 - **2026-07-20** (seguito, bug regressione) — L'utente ha segnalato un
   problema comparso solo dopo le modifiche sidebar: chiudendo la sidebar,
   la pagina principale non si riespandeva più a riempire lo spazio
