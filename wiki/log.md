@@ -3257,3 +3257,25 @@ Log cronologico append-only. Ogni riga: data, azione, pagine toccate.
   convenzione, incluse altre già completate da tempo, es. "Dashboard
   Streamlit") — sorgente grezza immutabile per `CLAUDE.md`, non va
   editata per riflettere lo stato reale.
+
+- **2026-07-20** (seguito) — FIX su segnalazione dell'utente: le card di
+  navigazione nella Home (`dashboard/Home.py`) coprivano solo Analisi
+  Temporale, Analisi Spaziale e Ondate di Calore — le 4 pagine aggiunte
+  in sessioni precedenti (Contesto Territoriale, Sintesi della Ricerca,
+  Download Dati, Citazioni e Fonti) non avevano una card e restavano
+  raggiungibili solo dalla sidebar. Aggiunta una seconda riga di 4 card
+  (`st.columns(4)`), stesso componente `render_nav_card_header()` e
+  stesso `CARD_HEIGHT` della prima riga, icone allineate al titolo
+  `st.title` di ciascuna pagina. Verificato con `py_compile`,
+  `streamlit.testing.v1.AppTest` (nessuna eccezione, tutti e 7 i
+  titoli/link presenti nel markup renderizzato) e un avvio reale
+  (`streamlit run` su porta locale, HTTP 200 su `/`, poi terminato).
+  Confermato con l'utente il flusso di deploy per questo tipo di
+  modifiche: `dashboard/` legge solo dai Parquet statici (nessuna
+  dipendenza dal DB live), Streamlit Community Cloud fa redeploy
+  automatico a ogni push su `main` — nessun passaggio manuale
+  aggiuntivo, il test locale/`AppTest` resta consigliato ma non
+  obbligatorio prima del push.
+
+  Pagine aggiornate: `dashboard.md` (sezione "Home": "3 card" → "7
+  card", nuovo bullet cronologico 2026-07-20).
