@@ -3528,3 +3528,49 @@ Log cronologico append-only. Ogni riga: data, azione, pagine toccate.
   la prossima sessione. `temperature_data_extra.csv` passato da 226 a 305
   comuni in questa sola giornata, nessuno di questi importato in
   `temperature` (per scelta esplicita dell'utente, vedi sopra).
+
+- **2026-07-20** (sera, seguito) — FIX su richiesta dell'utente: la
+  descrizione del tentativo di Torino del 2026-07-19 dava l'impressione
+  che "scaricare la provincia di Torino" fosse il prossimo passo corretto
+  per i download generici di comuni extra — non lo è mai stato, era un
+  fraintendimento isolato. Riscritta la sezione per chiarire che il
+  criterio giusto (quando non si insegue una lista target specifica come
+  quella ARPA) resta quello basato sulla **posizione geografica**
+  (campionamento "farthest-point" proporzionale su tutte le province,
+  come dal 2026-07-15), non una singola provincia.
+
+- **2026-07-20** (sera, seguito) — FIX: l'utente ha chiesto se la
+  tabella dei 167 comuni ARPA-senza-Open-Meteo (quella che la
+  collaboratrice consulta prima di scaricare) fosse aggiornata con i
+  comuni presi in carico oggi — non lo era, aveva ancora solo i 9 ✅ del
+  2026-07-19 mattina, nonostante 136 comuni in più fossero nel frattempo
+  coperti (57 day1 già importati, 57 day3 e 22 del titolare/IA uniti nel
+  raw). Ricalcolata e riscritta interamente la colonna ✅ incrociando
+  `arpa_temperature`, `temperature`, `temperature_data_extra.csv` e il
+  file pendente di Torino: **145/167 ✅**, **22 ancora mancanti**, elencati
+  esplicitamente per nome in cima alla tabella da comunicare alla
+  collaboratrice. Corretto anche un piccolo errore nella prosa precedente
+  (un comune, "Monastero di Lanzo", elencato due volte nell'elenco dei
+  mancanti scritto a mano; "Villanova Solaro" mancava).
+
+  Pagine aggiornate: `comuni-coperti.md` (tabella dei 167 comuni
+  interamente ricalcolata, non più solo annotata a mano).
+
+- **2026-07-20** (sera, seguito) — FIX più ampio, stesso motivo: l'utente
+  ha fatto notare che serve anche sapere quali comuni **generici** (non
+  ARPA-target) scaricare, e che la tabella principale "Comuni già
+  coperti" (quella per provincia, con conteggi) era ferma a **177 comuni**
+  — non rifletteva né i 57+22 di oggi né i 18 di Torino né, in generale,
+  nessun comune scaricato da mesi. Ricostruita **interamente da zero**
+  incrociando `temperature` (DB), `temperature_data_extra.csv` e
+  `temperature_data_extra_torino_2026-07-19.csv`: **331/1180 comuni
+  coperti** (era 177), tabella per provincia rigenerata via script (non
+  più a mano) per evitare lo stesso tipo di disallineamento in futuro.
+  Aggiunta una nota esplicita in cima alla pagina su due liste distinte
+  da non confondere: i **849 comuni generici** ancora scaricabili
+  liberamente (criterio spaziale) contro i soli **22 comuni ARPA-target**
+  (obiettivo specifico della mappa Bias).
+
+  Pagine aggiornate: `comuni-coperti.md` (tabella "Comuni già coperti"
+  interamente rigenerata, 177→331; nuova nota di orientamento in cima
+  sulla distinzione tra le due liste).

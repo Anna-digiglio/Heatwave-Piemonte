@@ -25,6 +25,30 @@ volutamente indietro** rispetto ai file raw — questo è intenzionale, non
 un lavoro dimenticato. Vedi sezione "Obiettivo reale" più sotto per lo
 stato aggiornato dei comuni ancora mancanti.
 
+**Stato al 2026-07-20 (sera) — 331 comuni coperti su 1180, NON
+riscaricare nessuno di questi**: la tabella "Comuni già coperti" sotto è
+stata ricalcolata da zero incrociando **tutte** le fonti, non solo il DB —
+234 comuni già in `temperature`, più altri 97 già scaricati ma ancora solo
+su file raw in attesa d'importazione (`temperature_data_extra.csv` e
+`temperature_data_extra_torino_2026-07-19.csv`, vedi nota sopra sul perché
+non sono ancora nel DB). Questa distinzione **non conta** per chi deve
+decidere cosa scaricare: un comune già presente in un file raw (anche se
+non ancora importato) **non va ridownloadato**, altrimenti si spreca
+quota e si creano doppioni al momento dell'import. La tabella per
+provincia sotto riflette già questo — è la lista completa e aggiornata da
+consultare prima di qualunque nuovo download, per la collaboratrice o per
+chiunque altro.
+
+**Comuni nuovi da scaricare (uso generico, non ARPA-target)**: qualunque
+comune **non presente** nella tabella sotto — restano **849** su 1180.
+Per questi va usato il criterio spaziale di sempre (vedi ["Come scaricare
+nuovi comuni"](#come-scaricare-nuovi-comuni-open-meteo-storico-2000--oggi)
+più sotto), **non** la lista ARPA-target (quella è un obiettivo diverso,
+vedi sezione dedicata). Se invece l'obiettivo è completare la mappa Bias
+ARPA, i comuni da scaricare sono solo i **22 elencati nella sezione
+"Obiettivo reale"** più sotto, un sottoinsieme molto più piccolo e
+specifico di questi 849.
+
 **Stato al 2026-07-18 (aggiornato due volte in giornata)**: **177 comuni
 coperti su 1180** (8 capoluoghi di provincia + 169 extra), 2000-01-01 →
 oggi.
@@ -174,12 +198,14 @@ manualmente. I 22 riusciti **uniti nel file raw canonico**
 (`temperature_data_extra.csv`, zero sovrapposizioni verificate, 283 → **305
 comuni** nel file) — anche questo lotto **non importato in
 `temperature`**, in attesa come il resto. File temporaneo di download
-eliminato dopo l'unione. **Restano 22 comuni** dei 44 (da riprendere dopo
-il reset quota): Monastero di Lanzo, Parella, Perrero, Pinerolo,
-Pragelato, Rivoli, Ronco Canavese, Sauze d'Oulx, Sestriere, Susa, Trana,
-Traversella, Valchiusa, Varisella, Venaria Reale, Venaus, Verolengo,
-Vialfrè, Villafranca Piemonte, Varzo, e i 2 falliti oggi (Viola,
-Monastero di Lanzo — quest'ultimo contato una sola volta).
+eliminato dopo l'unione. **Restano esattamente 22 comuni** su tutti e 218 quelli con ARPA (marcati
+senza ✅ nella tabella sotto — verificato incrociando `arpa_temperature`,
+`temperature`, `temperature_data_extra.csv` e il file pendente di Torino):
+Monastero di Lanzo, Parella, Perrero, Pinerolo, Pragelato, Rivoli, Ronco
+Canavese, Sauze d'Oulx, Sestriere, Susa, Trana, Traversella, Valchiusa,
+Varisella, Varzo, Venaria Reale, Venaus, Verolengo, Vialfrè, Villafranca
+Piemonte, Villanova Solaro, Viola — **da comunicare alla collaboratrice
+per la prossima sessione**, così non riscarica quelli già fatti.
 
 **Stato del backlog non ancora importato (2026-07-20)**: `temperature_data_extra.csv`
 è passato da 226 a **305 comuni** in giornata (57 collaboratrice + 22
@@ -191,123 +217,123 @@ non ancora importato) — **fino a 97 comuni nuovi** in attesa (305 - 226 +
 18), più i 22 ancora da scaricare.
 
 <details>
-<summary>I 167 comuni ARPA senza Open-Meteo, per provincia (✅ = già scaricato oggi via Torino, non ancora importato)</summary>
+<summary>I 167 comuni ARPA senza Open-Meteo, per provincia — ✅ = ormai coperto (in `temperature` o in un file raw pendente: Torino, collaboratrice day1/day3, o il lotto del titolare/IA del 2026-07-20), aggiornato al 2026-07-20 sera. 145/167 ✅, 22 ancora da scaricare (vedi elenco sopra).</summary>
 
 | Provincia | Comune | Codice ISTAT | Scaricato oggi |
 |---|---|---|---|
-| Alessandria | Acqui Terme | 006001 |  |
-| Alessandria | Arquata Scrivia | 006009 |  |
-| Alessandria | Basaluzzo | 006012 |  |
-| Alessandria | Brignano-Frascata | 006024 |  |
-| Alessandria | Cabella Ligure | 006025 |  |
-| Alessandria | Casale Monferrato | 006039 |  |
-| Alessandria | Casaleggio Boiro | 006038 |  |
-| Alessandria | Fabbrica Curone | 006067 |  |
-| Alessandria | Garbagna | 006079 |  |
-| Alessandria | Gavi | 006081 |  |
-| Alessandria | Ovada | 006121 |  |
-| Alessandria | Ponzone | 006136 |  |
-| Alessandria | Roccaforte Ligure | 006146 |  |
-| Alessandria | San Salvatore Monferrato | 006154 |  |
-| Alessandria | Sardigliano | 006157 |  |
-| Alessandria | Serralunga di Crea | 006159 |  |
-| Alessandria | Sezzadio | 006161 |  |
-| Alessandria | Vignale Monferrato | 006179 |  |
-| Asti | Buttigliera d'Asti | 005012 |  |
-| Asti | Castagnole delle Lanze | 005022 |  |
-| Asti | Castell'Alfero | 005025 |  |
-| Asti | Loazzolo | 005060 |  |
-| Asti | Mombaldone | 005064 |  |
-| Asti | Montaldo Scarampi | 005074 |  |
-| Asti | Montechiaro d'Asti | 005075 |  |
-| Asti | Nizza Monferrato | 005080 |  |
-| Asti | Roccaverano | 005094 |  |
-| Asti | San Damiano d'Asti | 005097 |  |
-| Biella | Graglia | 096028 |  |
-| Biella | Masserano | 096032 |  |
-| Biella | Pettinengo | 096042 |  |
-| Biella | Piatto | 096043 |  |
-| Biella | Pray | 096050 |  |
-| Biella | Salussola | 096058 |  |
-| Biella | Valdilana | 096088 |  |
-| Cuneo | Alba | 004003 |  |
-| Cuneo | Argentera | 004006 |  |
-| Cuneo | Baldissero d'Alba | 004010 |  |
-| Cuneo | Barge | 004012 |  |
-| Cuneo | Bellino | 004017 |  |
-| Cuneo | Belvedere Langhe | 004018 |  |
-| Cuneo | Boves | 004028 |  |
-| Cuneo | Bra | 004029 |  |
-| Cuneo | Brossasco | 004033 |  |
-| Cuneo | Canosio | 004038 |  |
-| Cuneo | Carrù | 004043 |  |
-| Cuneo | Castelletto Uzzone | 004050 |  |
-| Cuneo | Castellinaldo d'Alba | 004051 |  |
-| Cuneo | Ceva | 004066 |  |
-| Cuneo | Crissolo | 004077 |  |
-| Cuneo | Demonte | 004079 |  |
-| Cuneo | Dronero | 004082 |  |
-| Cuneo | Elva | 004083 |  |
-| Cuneo | Feisoglio | 004088 |  |
-| Cuneo | Fossano | 004089 |  |
-| Cuneo | Frabosa Soprana | 004090 |  |
-| Cuneo | Garessio | 004095 |  |
-| Cuneo | Marene | 004117 |  |
-| Cuneo | Mombarcaro | 004124 |  |
-| Cuneo | Mondovì | 004130 |  |
-| Cuneo | Morozzo | 004144 |  |
-| Cuneo | Neive | 004148 |  |
-| Cuneo | Ormea | 004155 |  |
-| Cuneo | Paesana | 004157 |  |
-| Cuneo | Pamparato | 004159 |  |
-| Cuneo | Paroldo | 004160 |  |
-| Cuneo | Perlo | 004162 |  |
-| Cuneo | Peveragno | 004163 |  |
-| Cuneo | Priero | 004175 |  |
-| Cuneo | Prunetto | 004178 |  |
-| Cuneo | Roccaforte Mondovì | 004190 |  |
-| Cuneo | Roddino | 004195 |  |
-| Cuneo | Rodello | 004196 |  |
-| Cuneo | Saluzzo | 004203 |  |
-| Cuneo | Sampeyre | 004205 |  |
-| Cuneo | San Damiano Macra | 004207 |  |
-| Cuneo | Somano | 004221 |  |
-| Cuneo | Treiso | 004230 |  |
-| Cuneo | Valdieri | 004233 |  |
-| Cuneo | Vernante | 004239 |  |
+| Alessandria | Acqui Terme | 006001 | ✅ |
+| Alessandria | Arquata Scrivia | 006009 | ✅ |
+| Alessandria | Basaluzzo | 006012 | ✅ |
+| Alessandria | Brignano-Frascata | 006024 | ✅ |
+| Alessandria | Cabella Ligure | 006025 | ✅ |
+| Alessandria | Casale Monferrato | 006039 | ✅ |
+| Alessandria | Casaleggio Boiro | 006038 | ✅ |
+| Alessandria | Fabbrica Curone | 006067 | ✅ |
+| Alessandria | Garbagna | 006079 | ✅ |
+| Alessandria | Gavi | 006081 | ✅ |
+| Alessandria | Ovada | 006121 | ✅ |
+| Alessandria | Ponzone | 006136 | ✅ |
+| Alessandria | Roccaforte Ligure | 006146 | ✅ |
+| Alessandria | San Salvatore Monferrato | 006154 | ✅ |
+| Alessandria | Sardigliano | 006157 | ✅ |
+| Alessandria | Serralunga di Crea | 006159 | ✅ |
+| Alessandria | Sezzadio | 006161 | ✅ |
+| Alessandria | Vignale Monferrato | 006179 | ✅ |
+| Asti | Buttigliera d'Asti | 005012 | ✅ |
+| Asti | Castagnole delle Lanze | 005022 | ✅ |
+| Asti | Castell'Alfero | 005025 | ✅ |
+| Asti | Loazzolo | 005060 | ✅ |
+| Asti | Mombaldone | 005064 | ✅ |
+| Asti | Montaldo Scarampi | 005074 | ✅ |
+| Asti | Montechiaro d'Asti | 005075 | ✅ |
+| Asti | Nizza Monferrato | 005080 | ✅ |
+| Asti | Roccaverano | 005094 | ✅ |
+| Asti | San Damiano d'Asti | 005097 | ✅ |
+| Biella | Graglia | 096028 | ✅ |
+| Biella | Masserano | 096032 | ✅ |
+| Biella | Pettinengo | 096042 | ✅ |
+| Biella | Piatto | 096043 | ✅ |
+| Biella | Pray | 096050 | ✅ |
+| Biella | Salussola | 096058 | ✅ |
+| Biella | Valdilana | 096088 | ✅ |
+| Cuneo | Alba | 004003 | ✅ |
+| Cuneo | Argentera | 004006 | ✅ |
+| Cuneo | Baldissero d'Alba | 004010 | ✅ |
+| Cuneo | Barge | 004012 | ✅ |
+| Cuneo | Bellino | 004017 | ✅ |
+| Cuneo | Belvedere Langhe | 004018 | ✅ |
+| Cuneo | Boves | 004028 | ✅ |
+| Cuneo | Bra | 004029 | ✅ |
+| Cuneo | Brossasco | 004033 | ✅ |
+| Cuneo | Canosio | 004038 | ✅ |
+| Cuneo | Carrù | 004043 | ✅ |
+| Cuneo | Castelletto Uzzone | 004050 | ✅ |
+| Cuneo | Castellinaldo d'Alba | 004051 | ✅ |
+| Cuneo | Ceva | 004066 | ✅ |
+| Cuneo | Crissolo | 004077 | ✅ |
+| Cuneo | Demonte | 004079 | ✅ |
+| Cuneo | Dronero | 004082 | ✅ |
+| Cuneo | Elva | 004083 | ✅ |
+| Cuneo | Feisoglio | 004088 | ✅ |
+| Cuneo | Fossano | 004089 | ✅ |
+| Cuneo | Frabosa Soprana | 004090 | ✅ |
+| Cuneo | Garessio | 004095 | ✅ |
+| Cuneo | Marene | 004117 | ✅ |
+| Cuneo | Mombarcaro | 004124 | ✅ |
+| Cuneo | Mondovì | 004130 | ✅ |
+| Cuneo | Morozzo | 004144 | ✅ |
+| Cuneo | Neive | 004148 | ✅ |
+| Cuneo | Ormea | 004155 | ✅ |
+| Cuneo | Paesana | 004157 | ✅ |
+| Cuneo | Pamparato | 004159 | ✅ |
+| Cuneo | Paroldo | 004160 | ✅ |
+| Cuneo | Perlo | 004162 | ✅ |
+| Cuneo | Peveragno | 004163 | ✅ |
+| Cuneo | Priero | 004175 | ✅ |
+| Cuneo | Prunetto | 004178 | ✅ |
+| Cuneo | Roccaforte Mondovì | 004190 | ✅ |
+| Cuneo | Roddino | 004195 | ✅ |
+| Cuneo | Rodello | 004196 | ✅ |
+| Cuneo | Saluzzo | 004203 | ✅ |
+| Cuneo | Sampeyre | 004205 | ✅ |
+| Cuneo | San Damiano Macra | 004207 | ✅ |
+| Cuneo | Somano | 004221 | ✅ |
+| Cuneo | Treiso | 004230 | ✅ |
+| Cuneo | Valdieri | 004233 | ✅ |
+| Cuneo | Vernante | 004239 | ✅ |
 | Cuneo | Villanova Solaro | 004246 |  |
 | Cuneo | Viola | 004249 |  |
-| Novara | Ameno | 003002 |  |
-| Novara | Armeno | 003006 |  |
-| Novara | Cameri | 003032 |  |
-| Novara | Paruzzaro | 003114 |  |
-| Novara | Varallo Pombia | 003154 |  |
+| Novara | Ameno | 003002 | ✅ |
+| Novara | Armeno | 003006 | ✅ |
+| Novara | Cameri | 003032 | ✅ |
+| Novara | Paruzzaro | 003114 | ✅ |
+| Novara | Varallo Pombia | 003154 | ✅ |
 | Torino | Ala di Stura | 001003 | ✅ |
-| Torino | Andrate | 001010 |  |
+| Torino | Andrate | 001010 | ✅ |
 | Torino | Angrogna | 001011 | ✅ |
-| Torino | Avigliana | 001013 |  |
-| Torino | Balme | 001019 |  |
-| Torino | Borgofranco d'Ivrea | 001030 |  |
-| Torino | Borgone Susa | 001032 |  |
-| Torino | Brosso | 001036 |  |
-| Torino | Caluso | 001047 |  |
-| Torino | Candia Canavese | 001050 |  |
+| Torino | Avigliana | 001013 | ✅ |
+| Torino | Balme | 001019 | ✅ |
+| Torino | Borgofranco d'Ivrea | 001030 | ✅ |
+| Torino | Borgone Susa | 001032 | ✅ |
+| Torino | Brosso | 001036 | ✅ |
+| Torino | Caluso | 001047 | ✅ |
+| Torino | Candia Canavese | 001050 | ✅ |
 | Torino | Carmagnola | 001059 | ✅ |
 | Torino | Castagneto Po | 001064 | ✅ |
-| Torino | Cesana Torinese | 001074 |  |
-| Torino | Chiomonte | 001080 |  |
-| Torino | Chivasso | 001082 |  |
-| Torino | Coazze | 001089 |  |
-| Torino | Colleretto Castelnuovo | 001091 |  |
-| Torino | Condove | 001093 |  |
-| Torino | Cumiana | 001097 |  |
-| Torino | Druento | 001099 |  |
-| Torino | Fenestrelle | 001103 |  |
-| Torino | Front | 001109 |  |
-| Torino | Giaglione | 001114 |  |
+| Torino | Cesana Torinese | 001074 | ✅ |
+| Torino | Chiomonte | 001080 | ✅ |
+| Torino | Chivasso | 001082 | ✅ |
+| Torino | Coazze | 001089 | ✅ |
+| Torino | Colleretto Castelnuovo | 001091 | ✅ |
+| Torino | Condove | 001093 | ✅ |
+| Torino | Cumiana | 001097 | ✅ |
+| Torino | Druento | 001099 | ✅ |
+| Torino | Fenestrelle | 001103 | ✅ |
+| Torino | Front | 001109 | ✅ |
+| Torino | Giaglione | 001114 | ✅ |
 | Torino | Groscavallo | 001118 | ✅ |
-| Torino | Lanzo Torinese | 001128 |  |
-| Torino | Luserna San Giovanni | 001139 |  |
+| Torino | Lanzo Torinese | 001128 | ✅ |
+| Torino | Luserna San Giovanni | 001139 | ✅ |
 | Torino | Monastero di Lanzo | 001155 |  |
 | Torino | Moncalieri | 001156 | ✅ |
 | Torino | Oulx | 001175 | ✅ |
@@ -331,37 +357,37 @@ non ancora importato) — **fino a 97 comuni nuovi** in attesa (305 - 226 +
 | Torino | Vialfrè | 001296 |  |
 | Torino | Villafranca Piemonte | 001300 |  |
 | Torino | Viù | 001313 | ✅ |
-| Verbano-Cusio-Ossola | Antrona Schieranco | 103001 |  |
-| Verbano-Cusio-Ossola | Baceno | 103006 |  |
-| Verbano-Cusio-Ossola | Bannio Anzino | 103007 |  |
-| Verbano-Cusio-Ossola | Bognanco | 103012 |  |
-| Verbano-Cusio-Ossola | Cannobio | 103017 |  |
-| Verbano-Cusio-Ossola | Ceppo Morelli | 103021 |  |
-| Verbano-Cusio-Ossola | Cesara | 103022 |  |
-| Verbano-Cusio-Ossola | Cossogno | 103023 |  |
-| Verbano-Cusio-Ossola | Crodo | 103026 |  |
-| Verbano-Cusio-Ossola | Domodossola | 103028 |  |
-| Verbano-Cusio-Ossola | Druogno | 103029 |  |
-| Verbano-Cusio-Ossola | Mergozzo | 103044 |  |
-| Verbano-Cusio-Ossola | Montecrestese | 103046 |  |
-| Verbano-Cusio-Ossola | Omegna | 103050 |  |
-| Verbano-Cusio-Ossola | Pieve Vergonte | 103054 |  |
-| Verbano-Cusio-Ossola | Premia | 103056 |  |
-| Verbano-Cusio-Ossola | Stresa | 103064 |  |
-| Verbano-Cusio-Ossola | Toceno | 103065 |  |
-| Verbano-Cusio-Ossola | Trasquera | 103067 |  |
-| Verbano-Cusio-Ossola | Trontano | 103068 |  |
-| Verbano-Cusio-Ossola | Valle Cannobina | 103079 |  |
+| Verbano-Cusio-Ossola | Antrona Schieranco | 103001 | ✅ |
+| Verbano-Cusio-Ossola | Baceno | 103006 | ✅ |
+| Verbano-Cusio-Ossola | Bannio Anzino | 103007 | ✅ |
+| Verbano-Cusio-Ossola | Bognanco | 103012 | ✅ |
+| Verbano-Cusio-Ossola | Cannobio | 103017 | ✅ |
+| Verbano-Cusio-Ossola | Ceppo Morelli | 103021 | ✅ |
+| Verbano-Cusio-Ossola | Cesara | 103022 | ✅ |
+| Verbano-Cusio-Ossola | Cossogno | 103023 | ✅ |
+| Verbano-Cusio-Ossola | Crodo | 103026 | ✅ |
+| Verbano-Cusio-Ossola | Domodossola | 103028 | ✅ |
+| Verbano-Cusio-Ossola | Druogno | 103029 | ✅ |
+| Verbano-Cusio-Ossola | Mergozzo | 103044 | ✅ |
+| Verbano-Cusio-Ossola | Montecrestese | 103046 | ✅ |
+| Verbano-Cusio-Ossola | Omegna | 103050 | ✅ |
+| Verbano-Cusio-Ossola | Pieve Vergonte | 103054 | ✅ |
+| Verbano-Cusio-Ossola | Premia | 103056 | ✅ |
+| Verbano-Cusio-Ossola | Stresa | 103064 | ✅ |
+| Verbano-Cusio-Ossola | Toceno | 103065 | ✅ |
+| Verbano-Cusio-Ossola | Trasquera | 103067 | ✅ |
+| Verbano-Cusio-Ossola | Trontano | 103068 | ✅ |
+| Verbano-Cusio-Ossola | Valle Cannobina | 103079 | ✅ |
 | Verbano-Cusio-Ossola | Varzo | 103071 |  |
-| Vercelli | Albano Vercellese | 002003 |  |
-| Vercelli | Alto Sermenza | 002170 |  |
-| Vercelli | Boccioleto | 002014 |  |
-| Vercelli | Carcoforo | 002029 |  |
-| Vercelli | Cellio con Breia | 002171 |  |
-| Vercelli | Lozzolo | 002072 |  |
-| Vercelli | Rassa | 002110 |  |
-| Vercelli | Tricerro | 002147 |  |
-| Vercelli | Varallo | 002156 |  |
+| Vercelli | Albano Vercellese | 002003 | ✅ |
+| Vercelli | Alto Sermenza | 002170 | ✅ |
+| Vercelli | Boccioleto | 002014 | ✅ |
+| Vercelli | Carcoforo | 002029 | ✅ |
+| Vercelli | Cellio con Breia | 002171 | ✅ |
+| Vercelli | Lozzolo | 002072 | ✅ |
+| Vercelli | Rassa | 002110 | ✅ |
+| Vercelli | Tricerro | 002147 | ✅ |
+| Vercelli | Varallo | 002156 | ✅ |
 
 </details>
 
@@ -380,23 +406,33 @@ importare per evitare doppioni.
 
 ## Comuni già coperti (NON riscaricare questi)
 
-### Alessandria (28/187 comuni coperti)
+### Alessandria (46/187 comuni coperti)
 
 | Comune | Codice ISTAT |
 |---|---|
+| Acqui Terme | 006001 |
 | Alessandria | 006003 |
 | Alfiano Natta | 006004 |
 | Alice Bel Colle | 006005 |
+| Arquata Scrivia | 006009 |
+| Basaluzzo | 006012 |
 | Bassignana | 006013 |
 | Borgoratto Alessandrino | 006019 |
 | Bosio | 006022 |
 | Bozzole | 006023 |
+| Brignano-Frascata | 006024 |
+| Cabella Ligure | 006025 |
 | Carrega Ligure | 006034 |
+| Casale Monferrato | 006039 |
+| Casaleggio Boiro | 006038 |
 | Casalnoceto | 006040 |
 | Casasco | 006041 |
 | Cereseto | 006057 |
+| Fabbrica Curone | 006067 |
 | Fraconalto | 006069 |
 | Fubine Monferrato | 006076 |
+| Garbagna | 006079 |
+| Gavi | 006081 |
 | Gremiasco | 006083 |
 | Grondona | 006085 |
 | Isola Sant'Antonio | 006087 |
@@ -408,27 +444,45 @@ importare per evitare doppioni.
 | Morsasco | 006112 |
 | Novi Ligure | 006114 |
 | Occimiano | 006115 |
+| Ovada | 006121 |
+| Ponzone | 006136 |
 | Predosa | 006140 |
+| Roccaforte Ligure | 006146 |
+| San Salvatore Monferrato | 006154 |
 | Sant'Agata Fossili | 006156 |
+| Sardigliano | 006157 |
+| Serralunga di Crea | 006159 |
+| Sezzadio | 006161 |
 | Tortona | 006174 |
+| Vignale Monferrato | 006179 |
 | Villanova Monferrato | 006185 |
 
-### Asti (19/117 comuni coperti)
+### Asti (29/117 comuni coperti)
 
 | Comune | Codice ISTAT |
 |---|---|
 | Asti | 005005 |
+| Buttigliera d'Asti | 005012 |
+| Castagnole delle Lanze | 005022 |
+| Castell'Alfero | 005025 |
 | Cerro Tanaro | 005036 |
 | Cessole | 005037 |
 | Cisterna d'Asti | 005040 |
 | Coazzolo | 005041 |
 | Cortazzone | 005047 |
+| Loazzolo | 005060 |
 | Maranzana | 005061 |
+| Mombaldone | 005064 |
 | Moncalvo | 005069 |
 | Moncucco Torinese | 005070 |
+| Montaldo Scarampi | 005074 |
+| Montechiaro d'Asti | 005075 |
 | Montegrosso d'Asti | 005076 |
 | Moransengo-Tonengo | 005122 |
+| Nizza Monferrato | 005080 |
 | Robella | 005092 |
+| Roccaverano | 005094 |
+| San Damiano d'Asti | 005097 |
 | San Martino Alfieri | 005099 |
 | Serole | 005104 |
 | Sessame | 005105 |
@@ -437,7 +491,7 @@ importare per evitare doppioni.
 | Villanova d'Asti | 005118 |
 | Vinchio | 005120 |
 
-### Biella (11/74 comuni coperti)
+### Biella (18/74 comuni coperti)
 
 | Comune | Codice ISTAT |
 |---|---|
@@ -447,64 +501,119 @@ importare per evitare doppioni.
 | Cavaglià | 096016 |
 | Donato | 096024 |
 | Gifflenga | 096027 |
+| Graglia | 096028 |
 | Magnano | 096030 |
+| Masserano | 096032 |
 | Mezzana Mortigliengo | 096033 |
+| Pettinengo | 096042 |
+| Piatto | 096043 |
 | Piedicavallo | 096044 |
+| Pray | 096050 |
+| Salussola | 096058 |
 | Valdengo | 096071 |
+| Valdilana | 096088 |
 | Villa del Bosco | 096078 |
 
-### Cuneo (41/247 comuni coperti)
+### Cuneo (86/247 comuni coperti)
 
 | Comune | Codice ISTAT |
 |---|---|
 | Acceglio | 004001 |
 | Aisone | 004002 |
+| Alba | 004003 |
 | Alto | 004005 |
+| Argentera | 004006 |
 | Bagnasco | 004008 |
 | Bagnolo Piemonte | 004009 |
+| Baldissero d'Alba | 004010 |
+| Barge | 004012 |
 | Bastia Mondovì | 004014 |
+| Bellino | 004017 |
+| Belvedere Langhe | 004018 |
+| Boves | 004028 |
+| Bra | 004029 |
 | Briga Alta | 004031 |
+| Brossasco | 004033 |
+| Canosio | 004038 |
+| Carrù | 004043 |
 | Casalgrasso | 004045 |
+| Castelletto Uzzone | 004050 |
+| Castellinaldo d'Alba | 004051 |
 | Castelmagno | 004053 |
 | Cavallermaggiore | 004059 |
+| Ceva | 004066 |
 | Cherasco | 004067 |
 | Chiusa di Pesio | 004068 |
 | Costigliole Saluzzo | 004075 |
 | Cravanzana | 004076 |
+| Crissolo | 004077 |
 | Cuneo | 004078 |
+| Demonte | 004079 |
+| Dronero | 004082 |
+| Elva | 004083 |
 | Entracque | 004084 |
+| Feisoglio | 004088 |
+| Fossano | 004089 |
+| Frabosa Soprana | 004090 |
 | Gaiola | 004093 |
+| Garessio | 004095 |
 | Genola | 004096 |
 | Govone | 004099 |
 | Grinzane Cavour | 004100 |
 | Limone Piemonte | 004110 |
+| Marene | 004117 |
+| Mombarcaro | 004124 |
 | Mombasiglio | 004125 |
 | Monchiero | 004129 |
+| Mondovì | 004130 |
 | Montà | 004133 |
 | Monterosso Grana | 004139 |
+| Morozzo | 004144 |
+| Neive | 004148 |
 | Oncino | 004154 |
+| Ormea | 004155 |
+| Paesana | 004157 |
+| Pamparato | 004159 |
+| Paroldo | 004160 |
+| Perlo | 004162 |
+| Peveragno | 004163 |
 | Pianfei | 004165 |
 | Pietraporzio | 004167 |
 | Pontechianale | 004172 |
+| Priero | 004175 |
+| Prunetto | 004178 |
 | Rifreddo | 004181 |
 | Robilante | 004185 |
 | Roburent | 004186 |
 | Roccabruna | 004187 |
+| Roccaforte Mondovì | 004190 |
+| Roddino | 004195 |
+| Rodello | 004196 |
 | Saliceto | 004201 |
+| Saluzzo | 004203 |
+| Sampeyre | 004205 |
+| San Damiano Macra | 004207 |
 | Santo Stefano Belbo | 004213 |
+| Somano | 004221 |
 | Sommariva del Bosco | 004222 |
 | Stroppo | 004224 |
 | Torre San Giorgio | 004228 |
 | Torresina | 004229 |
+| Treiso | 004230 |
 | Trinità | 004232 |
+| Valdieri | 004233 |
+| Vernante | 004239 |
 | Vinadio | 004248 |
 
-### Novara (16/87 comuni coperti)
+### Novara (21/87 comuni coperti)
 
 | Comune | Codice ISTAT |
 |---|---|
+| Ameno | 003002 |
+| Armeno | 003006 |
 | Borgolavezzaro | 003023 |
 | Borgomanero | 003024 |
+| Cameri | 003032 |
 | Casaleggio Novara | 003039 |
 | Castelletto sopra Ticino | 003043 |
 | Cerano | 003049 |
@@ -516,44 +625,83 @@ importare per evitare doppioni.
 | Momo | 003100 |
 | Novara | 003106 |
 | Oleggio | 003108 |
+| Paruzzaro | 003114 |
 | Pettenasco | 003116 |
 | San Nazzaro Sesia | 003134 |
+| Varallo Pombia | 003154 |
 | Vinzaglio | 003164 |
 
-### Torino (46/312 comuni coperti)
+### Torino (85/312 comuni coperti)
 
 | Comune | Codice ISTAT |
 |---|---|
 | Agliè | 001001 |
+| Ala di Stura | 001003 |
+| Andrate | 001010 |
+| Angrogna | 001011 |
+| Avigliana | 001013 |
+| Balme | 001019 |
 | Bardonecchia | 001022 |
 | Barone Canavese | 001023 |
 | Bobbio Pellice | 001026 |
+| Borgofranco d'Ivrea | 001030 |
+| Borgone Susa | 001032 |
+| Brosso | 001036 |
 | Bruino | 001038 |
+| Burolo | 001042 |
+| Caluso | 001047 |
 | Campiglione Fenile | 001049 |
+| Candia Canavese | 001050 |
 | Candiolo | 001051 |
 | Carema | 001057 |
 | Carignano | 001058 |
+| Carmagnola | 001059 |
 | Caselle Torinese | 001063 |
+| Castagneto Po | 001064 |
 | Castelnuovo Nigra | 001067 |
 | Ceres | 001072 |
 | Ceresole Reale | 001073 |
+| Cesana Torinese | 001074 |
+| Chiomonte | 001080 |
 | Chiusa di San Michele | 001081 |
+| Chivasso | 001082 |
 | Claviere | 001087 |
 | Coassolo Torinese | 001088 |
+| Coazze | 001089 |
+| Colleretto Castelnuovo | 001091 |
+| Condove | 001093 |
+| Cumiana | 001097 |
+| Cuorgnè | 001098 |
+| Druento | 001099 |
 | Favria | 001101 |
+| Fenestrelle | 001103 |
 | Fiano | 001104 |
+| Front | 001109 |
+| Giaglione | 001114 |
 | Gravere | 001117 |
+| Groscavallo | 001118 |
+| Ingria | 001121 |
+| Lanzo Torinese | 001128 |
 | Lemie | 001131 |
 | Locana | 001134 |
+| Luserna San Giovanni | 001139 |
+| Maglione | 001143 |
 | Marentino | 001144 |
 | Massello | 001145 |
+| Moncalieri | 001156 |
 | Moncenisio | 001157 |
 | Noasca | 001165 |
+| Oulx | 001175 |
+| Pancalieri | 001178 |
 | Pianezza | 001189 |
 | Pino Torinese | 001192 |
+| Piscina | 001195 |
 | Piverone | 001196 |
 | Pomaretto | 001198 |
+| Prali | 001202 |
 | Pralormo | 001203 |
+| Prarostino | 001205 |
+| Riva presso Chieri | 001215 |
 | Rocca Canavese | 001221 |
 | Roletto | 001222 |
 | Rorà | 001226 |
@@ -566,35 +714,67 @@ importare per evitare doppioni.
 | Torino | 001272 |
 | Torrazza Piemonte | 001273 |
 | Usseglio | 001282 |
+| Val della Torre | 001284 |
 | Valprato Soana | 001288 |
 | Verrua Savoia | 001294 |
 | Vigone | 001299 |
+| Viù | 001313 |
 | Volpiano | 001314 |
 
-### Verbano-Cusio-Ossola (6/74 comuni coperti)
+### Verbano-Cusio-Ossola (27/74 comuni coperti)
 
 | Comune | Codice ISTAT |
 |---|---|
+| Antrona Schieranco | 103001 |
+| Baceno | 103006 |
+| Bannio Anzino | 103007 |
+| Bognanco | 103012 |
+| Cannobio | 103017 |
+| Ceppo Morelli | 103021 |
+| Cesara | 103022 |
+| Cossogno | 103023 |
 | Craveggia | 103024 |
+| Crodo | 103026 |
+| Domodossola | 103028 |
+| Druogno | 103029 |
 | Formazza | 103031 |
 | Macugnaga | 103039 |
 | Madonna del Sasso | 103040 |
+| Mergozzo | 103044 |
+| Montecrestese | 103046 |
+| Omegna | 103050 |
+| Pieve Vergonte | 103054 |
+| Premia | 103056 |
+| Stresa | 103064 |
+| Toceno | 103065 |
+| Trasquera | 103067 |
+| Trontano | 103068 |
+| Valle Cannobina | 103079 |
 | Verbania | 103072 |
 | Villadossola | 103075 |
 
-### Vercelli (10/82 comuni coperti)
+### Vercelli (19/82 comuni coperti)
 
 | Comune | Codice ISTAT |
 |---|---|
 | Alagna Valsesia | 002002 |
+| Albano Vercellese | 002003 |
+| Alto Sermenza | 002170 |
+| Boccioleto | 002014 |
+| Carcoforo | 002029 |
 | Carisio | 002032 |
+| Cellio con Breia | 002171 |
 | Fontanetto Po | 002058 |
 | Ghislarengo | 002062 |
+| Lozzolo | 002072 |
 | Moncrivello | 002079 |
 | Motta de' Conti | 002082 |
+| Rassa | 002110 |
 | Rimella | 002113 |
 | Scopello | 002135 |
+| Tricerro | 002147 |
 | Valduggia | 002152 |
+| Varallo | 002156 |
 | Vercelli | 002158 |
 
 ## Comuni prioritari per l'aggiornamento giornaliero (copertura ARPA)
