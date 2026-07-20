@@ -10,11 +10,12 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 import streamlit as st
 
 from components import PROJECT_ROOT
-from components.styling import inject_custom_css
+from components.styling import inject_custom_css, render_sidebar_branding
 from src.utils.config import config
 
 st.set_page_config(page_title='Download Dati — Heatwave Piemonte', layout='wide')
 inject_custom_css()
+render_sidebar_branding()
 st.title("⬇️ Download Dati")
 st.caption("Tutti i dati e i risultati mostrati in questo sito, scaricabili in formato CSV (apribile con Excel).")
 
