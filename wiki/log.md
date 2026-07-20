@@ -3487,3 +3487,44 @@ Log cronologico append-only. Ogni riga: data, azione, pagine toccate.
   mirati alla validazione ARPA — terza tranche, 57/101").
   `comuni-coperti.md` non toccata (aggiornamento post-import di
   competenza del titolare).
+
+- **2026-07-20** (sera) — INGEST + DECISIONE DI PROCESSO: l'utente ha
+  consegnato i due file della collaboratrice (terza tranche, 57 comuni)
+  e ha dato un'indicazione esplicita e importante da rispettare nelle
+  prossime sessioni: **niente più import/ricalcolo ad ogni giro di
+  download** — la pipeline completa a valle costa ore (~2h20min l'ultima
+  volta) e non ha senso ripeterla ogni giorno. **Da ora si accumula soltanto**
+  in `data/raw/temperature_data_extra.csv`, e si farà **un solo giro di
+  import + ricalcolo** fra qualche giorno, quando si sarà raccolto più
+  materiale. Prima di questo chiarimento ho frainteso due volte la
+  richiesta (ho iniziato a scaricare un delta non richiesto, poi ho dovuto
+  disfare l'azione) — il pattern "chiedere prima di assumere" (vedi
+  memoria `feedback_ask_before_data_downloads.md`, fuori da questo repo)
+  resta il punto debole da tenere d'occhio.
+
+  Uniti i 57 comuni della collaboratrice in `temperature_data_extra.csv`
+  (istat_code → municipality_id, zero sovrapposizioni, 226 → 283 comuni
+  nel file) — **non importati in `temperature`**, deliberatamente. File
+  della collaboratrice eliminati dopo l'unione.
+
+  Ricalcolato da zero l'elenco dei comuni ARPA-target ancora mancanti
+  **ovunque** (né in `temperature`, né in `temperature_data_extra.csv`, né
+  nel file pendente `temperature_data_extra_torino_2026-07-19.csv`):
+  **44 comuni** (stesso numero già trovato indipendentemente dalla
+  collaboratrice nella sessione precedente, buon segno di coerenza).
+  Avviato il download diretto (storico completo 2000→oggi, stesso
+  approccio di `download_extra_municipalities.py`) per tutti e 44, con lo
+  stesso monitor di blocco-quota delle sessioni precedenti — anche questo
+  lotto resterà solo accumulato, non importato.
+
+  Pagine aggiornate: `comuni-coperti.md` (nuova nota in cima sulla
+  decisione di rimandare import/ricalcolo, stato del terzo lotto,
+  inventario del backlog non importato).
+
+  **Esito finale del download dei 44**: bloccato dalla quota dopo
+  **22/44** (su "Viola", confermato dal blocco anche sul successivo).
+  I 22 riusciti uniti in `temperature_data_extra.csv` (283 → 305 comuni),
+  zero sovrapposizioni. File temporaneo eliminato. Restano 22 comuni per
+  la prossima sessione. `temperature_data_extra.csv` passato da 226 a 305
+  comuni in questa sola giornata, nessuno di questi importato in
+  `temperature` (per scelta esplicita dell'utente, vedi sopra).

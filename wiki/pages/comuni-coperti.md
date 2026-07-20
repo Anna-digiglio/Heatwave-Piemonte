@@ -11,6 +11,20 @@ scaricare due volte lo stesso comune sprecando quota di rate limit
 giornaliero (vedi [Fonti Dati](data-sources.md) per il limite scoperto il
 2026-07-17).
 
+**Decisione del 2026-07-20 — accumulo dati SENZA import/ricalcolo**:
+l'utente ha deciso esplicitamente di **non importare né ricalcolare** ad
+ogni sessione di download — l'intera pipeline a valle (pulizia, join,
+insert, `TRUNCATE`+`identify_heatwaves()`, refresh viste, tutti i moduli
+`src/analysis/`, mappe QGIS) richiede ore (vedi il ricalcolo del
+2026-07-19, ~2h20min solo per l'ultimo giro) e non ha senso ripeterla ogni
+giorno. **Il piano ora è**: continuare ad accumulare comuni scaricati (da
+più fonti/sessioni) in `data/raw/temperature_data_extra.csv` per qualche
+giorno, poi fare **un solo giro di import + ricalcolo completo** quando se
+ne sarà raccolto abbastanza. Fino ad allora, **`temperature` (DB) resta
+volutamente indietro** rispetto ai file raw — questo è intenzionale, non
+un lavoro dimenticato. Vedi sezione "Obiettivo reale" più sotto per lo
+stato aggiornato dei comuni ancora mancanti.
+
 **Stato al 2026-07-18 (aggiornato due volte in giornata)**: **177 comuni
 coperti su 1180** (8 capoluoghi di provincia + 169 extra), 2000-01-01 →
 oggi.
@@ -44,13 +58,22 @@ scaricati ma **non ancora importati** in `temperature`, fermi in
 ["Nota per chi importa"](#nota-per-chi-importa-di-solito-il-titolare-o-lia)
 sotto).
 
-**Download comuni extra — provincia di Torino (2026-07-19)**: su richiesta
-esplicita dell'utente, oltre al delta si è provato a scaricare comuni
-**nuovi** (non ancora in `temperature`) partendo dalla provincia di Torino
-(266 mancanti su 312), storico completo 2000-01-01 → oggi, selezionati con
-lo stesso criterio spaziale di
-[`download_extra_municipalities.py`](#nota-per-chi-importa-di-solito-il-titolare-o-lia)
-(farthest-point sampling dagli anchor già coperti). **Bloccato dalla quota
+**Download comuni extra (2026-07-19)**: su richiesta esplicita
+dell'utente, oltre al delta si è provato a scaricare comuni **nuovi**
+(non ancora in `temperature`), storico completo 2000-01-01 → oggi. **Non
+è corretto (vedi correzione sotto) restringersi a una singola provincia
+come prossimo passo** — il criterio giusto per i download generici di
+comuni extra (quando non si insegue una lista target specifica come
+quella ARPA più sotto) resta quello di sempre, **basato sulla posizione
+geografica**: campionamento "farthest-point"
+([`download_extra_municipalities.py`](#nota-per-chi-importa-di-solito-il-titolare-o-lia),
+lo stesso usato dal 2026-07-15), che seleziona comuni distribuendoli su
+tutte le province in proporzione alla loro dimensione, per massimizzare
+la copertura spaziale invece di concentrarsi su una zona sola. In questa
+sessione, per un fraintendimento (vedi sotto), il campionamento è stato
+lanciato filtrato su una sola provincia (Torino, 266 mancanti su 312)
+invece che su tutte — episodio isolato, non il metodo da riproporre.
+**Bloccato dalla quota
 giornaliera Open-Meteo dopo soli 18 comuni** (contro i 57+ osservati nei
 run di delta da 1-2 giorni): conferma empirica che la quota è legata al
 **volume di dati** scaricato, non al numero di richieste — uno storico
@@ -128,6 +151,44 @@ numero di comuni utilizzabili nella mappa Bias.
 originali ancora da scaricare per completare la copertura Open-Meteo su
 tutti i comuni ARPA — target per le prossime sessioni, dopo il reset della
 quota giornaliera.
+
+**Aggiornamento 2026-07-20 — terzo lotto dalla collaboratrice + 44 in
+corso dal titolare/IA**: la collaboratrice ha consegnato altri **57
+comuni** (`temperature_data_extra_helper_arpa_target_day3.csv` +
+riepilogo), scaricati direttamente dai 101 rimanenti. **Uniti nel file
+raw canonico `temperature_data_extra.csv`** (istat_code → municipality_id
+risolto, zero sovrapposizioni verificate, 226 → **283 comuni** nel file) —
+**deliberatamente NON importati in `temperature`** (vedi nota in cima alla
+pagina: import/ricalcolo rimandati di qualche giorno, per non ripetere un
+ricalcolo di ore ad ogni sessione). File del collega eliminati dopo
+l'unione, come da convenzione.
+
+Contestualmente, il titolare/IA ha calcolato i comuni ARPA-target
+**ancora mancanti ovunque** (né in `temperature`, né in `temperature_data_extra.csv`,
+né nel file pendente di Torino): **44 comuni** (soprattutto Cuneo e
+Torino), avviato il download diretto (storico completo) per tutti e 44,
+stesso metodo delle sessioni precedenti. **Bloccato dalla quota dopo
+22/44** (su "Viola", stesso pattern di backoff crescente, confermato dal
+blocco anche sul comune successivo "Monastero di Lanzo") — fermato
+manualmente. I 22 riusciti **uniti nel file raw canonico**
+(`temperature_data_extra.csv`, zero sovrapposizioni verificate, 283 → **305
+comuni** nel file) — anche questo lotto **non importato in
+`temperature`**, in attesa come il resto. File temporaneo di download
+eliminato dopo l'unione. **Restano 22 comuni** dei 44 (da riprendere dopo
+il reset quota): Monastero di Lanzo, Parella, Perrero, Pinerolo,
+Pragelato, Rivoli, Ronco Canavese, Sauze d'Oulx, Sestriere, Susa, Trana,
+Traversella, Valchiusa, Varisella, Venaria Reale, Venaus, Verolengo,
+Vialfrè, Villafranca Piemonte, Varzo, e i 2 falliti oggi (Viola,
+Monastero di Lanzo — quest'ultimo contato una sola volta).
+
+**Stato del backlog non ancora importato (2026-07-20)**: `temperature_data_extra.csv`
+è passato da 226 a **305 comuni** in giornata (57 collaboratrice + 22
+titolare/IA), tutti in attesa del prossimo giro di import. A questi si
+aggiungono i 18 comuni di Torino (file separato
+`temperature_data_extra_torino_2026-07-19.csv`, dal 2026-07-19) e il
+delta 2026-07-19→oggi per i 234 comuni già in `temperature` (anche quello
+non ancora importato) — **fino a 97 comuni nuovi** in attesa (305 - 226 +
+18), più i 22 ancora da scaricare.
 
 <details>
 <summary>I 167 comuni ARPA senza Open-Meteo, per provincia (✅ = già scaricato oggi via Torino, non ancora importato)</summary>
