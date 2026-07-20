@@ -106,6 +106,76 @@ div[data-testid="stMetricLabel"] {{
     box-shadow: inset 3px 0 0 0 {THEME_HOT};
 }}
 
+/* ---------- Sidebar: larghezza ridotta, titolo in cima, contatti in fondo -
+   Larghezza di default di Streamlit leggermente ridotta (richiesta utente,
+   2026-07-20). **Bug corretto lo stesso giorno**: la regola era su
+   `[data-testid="stSidebar"]` senza condizione, quindi il `min-width:
+   18rem !important` restava applicato anche a sidebar chiusa - impediva
+   alla larghezza di scendere a 0 durante il collasso, e la pagina
+   principale non si riespandeva più per riempire lo spazio liberato
+   (segnalato dall'utente: "chiudo la navbar [ma] la pagina intera non si
+   riadatta più"). Ora scoperta da `[aria-expanded="true"]`, stesso
+   attributo già usato sotto per i contatti: a sidebar chiusa la regola
+   non si applica più e il comportamento nativo di collasso/resize di
+   Streamlit torna intatto.
+
+   **Titolo**: due tentativi precedenti scartati. Un div `st.sidebar.markdown`
+   finiva sotto la nav automatica delle pagine (non richiesto). Un
+   `st.logo()` con SVG generato al volo comparve correttamente sopra la
+   nav, ma con font di sistema (Georgia, l'SVG di `st.logo` non carica
+   affidabilmente il font Fraunces caricato via `@import` nel resto della
+   pagina) — respinto dall'utente ("non mi piace esteticamente, deve
+   essere simile al titolo della pagina home"). Tornati a un div HTML
+   normale (font Fraunces reale, stesso gradiente del titolo hero via
+   `background-clip: text`, coerente con `.hw-hero h1` sotto): compare
+   sotto la nav, non sopra — compromesso esplicitamente autorizzato
+   dall'utente ("se non riesci a metterlo eliminalo").
+
+   **Contatti in fondo**: un tentativo con `stSidebarContent`/
+   `stSidebarUserContent` come colonne flex a piena altezza + `margin-top:
+   auto` non ha funzionato (struttura interna di Streamlit non verificabile
+   senza ispezionarla in un browser reale). Sostituito con `position:
+   fixed`, che non dipende dalla gerarchia flex/altezza dei contenitori di
+   Streamlit: ancorato al bordo inferiore della finestra, larghezza
+   identica al `min-width` della sidebar sopra. Nascosto quando la sidebar
+   è chiusa tramite `aria-expanded` (attributo reale di `stSidebar`,
+   verificato nel bundle JS installato), per non restare "appeso" sopra il
+   contenuto principale a sidebar chiusa. */
+[data-testid="stSidebar"][aria-expanded="true"] {{
+    min-width: 18rem !important;
+}}
+.hw-sidebar-title {{
+    font-family: {FONT_DISPLAY};
+    font-weight: 600;
+    font-size: 1.32rem;
+    line-height: 1.18;
+    margin: 2px 0 16px;
+    padding-bottom: 14px;
+    border-bottom: 1px solid {tokens["border"]};
+    background: {tokens["hero_title_gradient"]};
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+}}
+[data-testid="stSidebar"][aria-expanded="true"] .hw-sidebar-footer {{
+    position: fixed;
+    left: 0;
+    bottom: 0;
+    width: 18rem;
+    padding: 12px 1.5rem 16px;
+    background: {tokens["ink"]};
+    border-top: 1px solid {tokens["border"]};
+    font-family: {FONT_MONO};
+    font-size: 0.72rem;
+    line-height: 1.6;
+    color: {tokens["text_faint"]};
+}}
+.hw-sidebar-footer a {{
+    color: {tokens["text_muted"]};
+    text-decoration: none;
+}}
+.hw-sidebar-footer a:hover {{ color: {THEME_HOT}; }}
+
 /* st.warning: il giallo acceso di default di Streamlit ("giallino vomito" -
    feedback utente, 2026-07-19) stona con la palette calda del resto della
    pagina. Qui lo sostituiamo con l'ambra del tema (THEME_MID), alla stessa
@@ -335,6 +405,27 @@ def inject_custom_css() -> None:
     """
     theme_type = st.context.theme.type if st.context.theme.type in THEME_TOKENS else "dark"
     st.markdown(_build_custom_css(THEME_TOKENS[theme_type]), unsafe_allow_html=True)
+
+
+def render_sidebar_branding() -> None:
+    """Titolo di brand in cima alla sidebar, contatti dell'autrice in fondo.
+
+    Da richiamare una volta per pagina, subito dopo `inject_custom_css()`.
+    Il titolo compare sotto la nav automatica delle pagine (nessun modo
+    affidabile per anteporlo con lo stesso font/gradiente del resto del
+    sito, vedi commento su `.hw-sidebar-title` in `_build_custom_css`); i
+    contatti sono ancorati al bordo inferiore della finestra via
+    `position: fixed` in CSS.
+    """
+    with st.sidebar:
+        st.markdown('<div class="hw-sidebar-title">Il riscaldamento del Piemonte</div>', unsafe_allow_html=True)
+        st.markdown(
+            '<div class="hw-sidebar-footer">'
+            'Anna Digiglio<br>'
+            '<a href="mailto:anna.digiglio97@gmail.com">anna.digiglio97@gmail.com</a>'
+            '</div>',
+            unsafe_allow_html=True,
+        )
 
 
 def render_hero(eyebrow: str, title: str, lede: str, meta: list[tuple[str, str]]) -> None:
