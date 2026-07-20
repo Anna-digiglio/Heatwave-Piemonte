@@ -217,7 +217,7 @@ davvero:
 
 ### Home
 
-Intro in linguaggio semplice, 3 card di navigazione, metriche generali
+Intro in linguaggio semplice, 7 card di navigazione, metriche generali
 (righe di temperatura, periodo, comuni con dati reali, ondate identificate)
 con didascalie, mappa dei comuni e tabella trend di riscaldamento — nessun
 filtro (vedi sopra).
@@ -263,6 +263,16 @@ filtro (vedi sopra).
   - Verificato con `AppTest`, nessuna eccezione (18s, più veloce delle
     pagine con selettore perché qui si calcola una sola combinazione, non
     tre).
+- **Card mancanti aggiunte (2026-07-20)**: le 3 card originali coprivano
+  solo Analisi Temporale/Spaziale/Ondate di Calore — le 4 pagine
+  aggiunte dopo (Contesto Territoriale, Sintesi della Ricerca, Download
+  Dati, Citazioni e Fonti) restavano raggiungibili solo dalla sidebar,
+  non dalla Home. Su segnalazione dell'utente, aggiunta una seconda riga
+  di 4 card (`st.columns(4)`, stesso `render_nav_card_header()` e stesso
+  `CARD_HEIGHT` della prima riga, icone coerenti con il titolo `st.title`
+  di ciascuna pagina: 🌍/🔬/⬇️/📚). Verificato con `AppTest` (nessuna
+  eccezione, tutti e 7 i titoli/`page_link` presenti nel markup) e con un
+  avvio reale (`streamlit run`, HTTP 200 su `/`).
 
 ### Analisi Temporale (`02_analisi_temporale.py`) — ampliata il 2026-07-15
 
