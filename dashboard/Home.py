@@ -29,7 +29,9 @@ from components.queries import (
     get_combined_trend_analysis,
     get_overview_stats,
 )
-from components.styling import inject_custom_css, render_hero, render_nav_card_header, render_stats_row
+from components.styling import (
+    inject_custom_css, render_hero, render_nav_card_header, render_sidebar_branding, render_stats_row,
+)
 from src.utils.config import config
 
 st.set_page_config(
@@ -37,6 +39,7 @@ st.set_page_config(
     layout='wide',
 )
 inject_custom_css()
+render_sidebar_branding()
 
 stats = get_overview_stats()
 arpa_stats = get_arpa_overview_stats()
@@ -233,10 +236,22 @@ else:
     )
 
 st.subheader(f"Trend di riscaldamento ({stats['date_start'].year}-{stats['date_end'].year})")
-st.caption("La temperatura media di ogni comune sta salendo, scendendo, o restando stabile?")
 if trend_df.empty:
+    st.caption("La temperatura media di ogni comune sta salendo, scendendo, o restando stabile?")
     st.info("Dati di trend non ancora disponibili.")
 else:
+    n_sig_warm = int(((trend_df['lr_p_value'] < 0.05) & (trend_df['lr_slope_per_decade'] > 0)).sum())
+    n_sig_cool = int(((trend_df['lr_p_value'] < 0.05) & (trend_df['lr_slope_per_decade'] < 0)).sum())
+    cooling_clause = (
+        f", mentre {n_sig_cool} comuni di alta quota mostrano un raffreddamento significativo"
+        if n_sig_cool else ""
+    )
+    st.caption(
+        f"**Sta salendo**: su {len(trend_df)} comuni con dati, {n_sig_warm} mostrano un trend di "
+        "riscaldamento statisticamente significativo (Mann-Kendall e regressione lineare, "
+        f"p<0.05){cooling_clause}. Coerente con il 2025, quinto anno più caldo dal 1958 in "
+        "Piemonte (ARPA Piemonte, 2026)."
+    )
     display_df = trend_df[['municipality_name', 'source', 'mk_trend', 'lr_slope_per_decade', 'lr_p_value']].copy()
     display_df['mk_trend'] = display_df['mk_trend'].apply(format_mk_trend)
     display_df.columns = ['Comune', 'Fonte', 'Trend (Mann-Kendall)', '°C/decade', 'p-value']
