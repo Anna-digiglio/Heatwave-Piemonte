@@ -99,6 +99,49 @@ with card3:
         )
         st.page_link("pages/04_ondate_di_calore.py", label="Vai alla pagina →")
 
+card4, card5, card6, card7 = st.columns(4)
+with card4:
+    with st.container(key="navcard-territoriale", height=CARD_HEIGHT):
+        render_nav_card_header(
+            icon="🌍", title="Contesto Territoriale",
+            description=(
+                "Uso del suolo, densità di popolazione e verde da satellite per "
+                "tutti i 1180 comuni piemontesi, e il loro legame con la "
+                "temperatura osservata."
+            ),
+        )
+        st.page_link("pages/05_contesto_territoriale.py", label="Vai alla pagina →")
+with card5:
+    with st.container(key="navcard-sintesi", height=CARD_HEIGHT):
+        render_nav_card_header(
+            icon="🔬", title="Sintesi della Ricerca",
+            description=(
+                "Cosa dicono 26 anni di dati sul clima piemontese: i "
+                "risultati principali del progetto, in breve."
+            ),
+        )
+        st.page_link("pages/06_sintesi_della_ricerca.py", label="Vai alla pagina →")
+with card6:
+    with st.container(key="navcard-download", height=CARD_HEIGHT):
+        render_nav_card_header(
+            icon="⬇️", title="Download Dati",
+            description=(
+                "Tutti i dati e i risultati di analisi mostrati in questo sito, "
+                "scaricabili in formato CSV."
+            ),
+        )
+        st.page_link("pages/07_download_dati.py", label="Vai alla pagina →")
+with card7:
+    with st.container(key="navcard-citazioni", height=CARD_HEIGHT):
+        render_nav_card_header(
+            icon="📚", title="Citazioni e Fonti",
+            description=(
+                "Da dove vengono i dati e quale letteratura scientifica è stata "
+                "usata per definizioni, metodi e confronti."
+            ),
+        )
+        st.page_link("pages/08_citazioni_e_fonti.py", label="Vai alla pagina →")
+
 st.divider()
 
 st.warning(
