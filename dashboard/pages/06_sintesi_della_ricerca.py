@@ -25,10 +25,11 @@ from components.queries import (
     get_spatial_analysis,
     get_trend_analysis,
 )
-from components.styling import inject_custom_css, render_stats_row
+from components.styling import inject_custom_css, render_sidebar_branding, render_stats_row
 
 st.set_page_config(page_title='Sintesi della Ricerca | Heatwave Piemonte', layout='wide')
 inject_custom_css()
+render_sidebar_branding()
 st.title("🔬 Sintesi della Ricerca")
 st.caption(
     "Riassunto di ciò che abbiamo trovato analizzando 26 anni di temperature in Piemonte, "
