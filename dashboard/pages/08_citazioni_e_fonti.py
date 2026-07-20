@@ -10,10 +10,11 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 import streamlit as st
 
-from components.styling import inject_custom_css
+from components.styling import inject_custom_css, render_sidebar_branding
 
 st.set_page_config(page_title='Citazioni e Fonti — Heatwave Piemonte', layout='wide')
 inject_custom_css()
+render_sidebar_branding()
 st.title("📚 Citazioni e Fonti")
 st.caption(
     "Da dove vengono i dati mostrati in questo sito, e quale letteratura scientifica "
