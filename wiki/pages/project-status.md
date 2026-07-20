@@ -34,7 +34,7 @@ ogni sessione di lavoro rilevante (vedi workflow di ingest in `CLAUDE.md`).
 | `src/analysis/` (statistica, spaziale, temporale) | pianificato | ✅ **implementata ed eseguita su dati reali il 2026-07-15** — trend (Mann-Kendall/regressione), statistiche ondate di calore, STL decomposition, Moran's I + clustering K-means (vedi [Analisi Statistica](statistical-analysis.md)) |
 | `src/visualization/` | pianificato | ❌ cartella vuota |
 | Progetti QGIS | pianificato | ✅ **generati ed eseguiti il 2026-07-15** — 3 progetti `.qgz` (heatmap, hotspot, animazione temporale) via PyQGIS headless, verificati con render PNG (vedi [Mappe GIS](gis-maps.md)); manca solo la mappa "Heatwave Index" |
-| Dashboard Streamlit | pianificato | ✅ **implementata il 2026-07-15, contenuto ampliato sostanzialmente lo stesso giorno** — 6 pagine (home con card di navigazione, analisi temporale, analisi spaziale, ondate di calore, contesto territoriale — separata da analisi spaziale il 2026-07-19, download), filtri, palette colori coerente, dati reali, verificata via `AppTest` e avviata live su `localhost:8501` (vedi [Dashboard](dashboard.md)) |
+| Dashboard Streamlit | pianificato | ✅ **implementata il 2026-07-15, contenuto ampliato sostanzialmente lo stesso giorno, pubblicata online il 2026-07-20** — 8 pagine (home con card di navigazione, analisi temporale, analisi spaziale, ondate di calore, contesto territoriale, sintesi della ricerca, download dati, citazioni e fonti), filtri, palette colori coerente, dati reali, verificata via `AppTest`, live su Streamlit Community Cloud: https://heatwave-piemonte.streamlit.app (vedi [Dashboard](dashboard.md)) |
 | Test unitari | pianificato (70%+ coverage) | ✅ **implementati il 2026-07-15** — 31 test pytest (`DataCleaner`, `src/analysis/` funzioni pure, `Config`), 86% di copertura su `clean_data.py`; **1 bug reale trovato e corretto** in `detect_outliers()` (vedi [Test Unitari](testing.md)) |
 | Documentazione | in gran parte fatta | ✅ README, PROJECT_SUMMARY, docs/* molto estesi (a volte più avanti del codice) |
 
@@ -488,10 +488,11 @@ completo:
    Parquet in `data/dashboard_export/` (69 MB, tracciato in Git),
    `dashboard/components/queries.py` riscritta per leggere solo da lì,
    `requirements-dashboard.txt` nuovo per il deploy. Resta manuale
-   l'aggiornamento (nessun refresh automatico) e **non ancora fatto** il
-   push su GitHub + collegamento a Streamlit Community Cloud (azione da
-   fare esplicitamente quando l'utente vorrà pubblicare davvero). Vedi
-   [Dashboard](dashboard.md) per il dettaglio completo.
+   l'aggiornamento (nessun refresh automatico). **Pubblicata il
+   2026-07-20**: dashboard live su Streamlit Community Cloud,
+   https://heatwave-piemonte.streamlit.app — deploy senza intoppi
+   segnalati dall'utente. Vedi [Dashboard](dashboard.md) per il dettaglio
+   completo.
 10. ~~Importare i 35 comuni extra scaricati dalla seconda macchina~~ —
     **fatto lo stesso giorno (2026-07-17)**: pulizia + risoluzione
     `municipality_id`, poi rilancio di `identify_heatwaves()`/viste

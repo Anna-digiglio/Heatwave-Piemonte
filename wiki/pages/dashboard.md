@@ -1233,9 +1233,18 @@ l'intero `AppTest` gira leggendo solo `data/dashboard_export/`.
 
 **Cosa resta manuale, deliberatamente**: dopo ogni sessione di aggiornamento
 dati, l'utente rilancia `python -m src.data_processing.export_dashboard_data`
-e fa commit/push dei Parquet aggiornati — nessun refresh automatico. Push su
-GitHub e collegamento a Streamlit Community Cloud non ancora fatti (azione
-visibile su servizio esterno, da fare solo su richiesta esplicita).
+e fa commit/push dei Parquet aggiornati — nessun refresh automatico.
+
+**Pubblicata il 2026-07-20**: push su GitHub + collegamento a Streamlit
+Community Cloud completati dall'utente, dashboard live su
+https://heatwave-piemonte.streamlit.app — nessun problema segnalato durante
+il deploy. Nota tecnica già presente dal 2026-07-19 e confermata dal deploy
+riuscito: Streamlit Community Cloud cerca `requirements.txt` nella stessa
+cartella dell'entry point (`dashboard/Home.py`) prima che nella root, quindi
+usa `dashboard/requirements.txt` (copia di `/requirements-dashboard.txt`,
+non del pesante `/requirements.txt` di progetto) — le due copie vanno
+tenute sincronizzate manualmente, come già annotato nei commenti di
+entrambi i file.
 
 ### Un solo comando per rilanciare analisi + export (2026-07-19)
 

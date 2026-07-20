@@ -3225,3 +3225,35 @@ Log cronologico append-only. Ogni riga: data, azione, pagine toccate.
   (il log è cronologico e append-only per convenzione di `CLAUDE.md`) —
   descrivono correttamente lo stato al momento in cui furono scritte,
   prima di questa rinumerazione.
+
+- **2026-07-20** — INGEST. `git pull` eseguito su richiesta dell'utente
+  ("fai pull del progetto e controlla i nuovi aggiornamenti"): fast-forward
+  pulito, 52 commit (`c2be200..d062018`), nessun conflitto (unica cartella
+  non tracciata locale, `.github/`, non toccata dal pull). I commit portati
+  includevano già propri aggiornamenti wiki (pagina "Contesto Territoriale"
+  separata, pagina "Sintesi della Ricerca" creata e rinumerata `06`,
+  pagina "Citazioni e Fonti", bibliografia completata, correzioni di numeri
+  hardcoded 51→108/177→234) — wiki già sincronizzata con quello stato,
+  nessuna azione necessaria oltre alla lettura.
+
+  L'utente ha poi comunicato che il progetto **è stato messo online**:
+  dashboard pubblicata su Streamlit Community Cloud,
+  https://heatwave-piemonte.streamlit.app, push su GitHub + collegamento
+  al servizio completati senza problemi (confermato dall'utente via
+  `AskUserQuestion`, non verificabile da codice/log locale). Questo
+  chiudeva un punto esplicitamente lasciato aperto nella wiki dal
+  2026-07-18 (`project-status.md` punto 9, `dashboard.md` sezione "Nessuna
+  connessione DB live"): entrambe le pagine dicevano ancora "push su
+  GitHub + collegamento a Streamlit Community Cloud non ancora fatti".
+
+  Pagine aggiornate: `project-status.md` (punto 9 chiuso con data/URL,
+  riga "Dashboard Streamlit" nella tabella Settimana 3 aggiornata da 6 a
+  8 pagine reali e marcata pubblicata), `dashboard.md` (sezione "Nessuna
+  connessione DB live" chiusa con nota di deploy, inclusa la conferma che
+  Streamlit Community Cloud usa `dashboard/requirements.txt`, non la
+  root, coerente con la nota tecnica già scritta il 2026-07-19 in quel
+  file). Non toccato `README.md`: la checklist "Settimana 3" è la
+  roadmap di pianificazione originale (tutte le voci restano `[ ]` per
+  convenzione, incluse altre già completate da tempo, es. "Dashboard
+  Streamlit") — sorgente grezza immutabile per `CLAUDE.md`, non va
+  editata per riflettere lo stato reale.
