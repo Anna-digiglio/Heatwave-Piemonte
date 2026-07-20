@@ -520,6 +520,40 @@ confronto di bias — l'obiettivo reale di questo lotto non è il numero di
 comuni in `temperature` di per sé, ma il numero di comuni con **entrambe**
 le fonti.
 
+## Comuni extra mirati alla validazione ARPA — terza tranche, 57/101 (2026-07-20)
+
+Terza sessione consecutiva della stessa collaboratrice, stesso obiettivo
+(vedi nota sopra: completare la mappa Bias Open-Meteo↔ARPA, non
+un'estensione spaziale generica). Target ricalcolato da zero all'inizio
+sessione: dei 167 comuni ARPA-senza-Open-Meteo originali, sottratti sia i
+9 già scaricati dal titolare (Torino, 2026-07-19 mattina) sia i 57 di
+questa stessa collaboratrice del giorno prima (ormai importati, **234
+comuni** confermati in `temperature` da
+[Comuni già coperti](comuni-coperti.md#stato-al-2026-07-19-import-comuni-arpa-target-dalla-collaboratrice)) —
+**101 comuni target** residui, calcolati incrociando la tabella dei 167
+con `data/raw/riepilogo_57_comuni_arpa_target.csv` (il proprio riepilogo
+del giorno prima, fonte più affidabile dei marcatori ✅ nella tabella
+wiki, che non erano stati aggiornati dopo l'import). Stesso ordine
+interlacciato per provincia delle sessioni precedenti.
+
+**Risultato**: bloccato dalla quota giornaliera dopo **57/101 comuni**
+(su "Monastero di Lanzo", stesso pattern di backoff 5s→10s→20s→40s→80s)
+— **terza volta di fila che il blocco arriva esattamente a 57 comuni**,
+possibile indizio che la quota giornaliera reale sia più stabile di
+quanto ipotizzato in precedenza (non confermato, resta un'osservazione
+empirica su 3 sessioni). Verificato senza doppioni: 552.786 righe = 57 ×
+9.698 giorni esatti, zero righe duplicate. **Restano 44 dei 101 comuni**
+di questa tranche (= 44 dei 167 originali) per le prossime sessioni.
+
+**File consegnato** (fuori Git, `data/raw/`, stesso canale):
+- `data/raw/temperature_data_extra_helper_arpa_target_day3.csv` — 552.786
+  righe, 57 comuni, 2000-01-01 → 2026-07-20. Stesse colonne dei lotti
+  precedenti.
+- `data/raw/riepilogo_57_comuni_arpa_target_day3.csv` — tabella di
+  sintesi.
+
+**Non ancora importato**: stessi passaggi delle sessioni precedenti.
+
 ## Import dei 57 comuni ARPA-target e ricalcolo completo (2026-07-19)
 
 Import del lotto descritto nella sezione precedente, eseguito dal titolare

@@ -3457,3 +3457,33 @@ Log cronologico append-only. Ogni riga: data, azione, pagine toccate.
   dall'utente.
 
   Pagine aggiornate: nessuna pagina wiki di dominio oltre a questo log.
+
+- **2026-07-20** — INGEST. Quarta sessione della stessa collaboratrice,
+  stesso obiettivo (mappa Bias Open-Meteo↔ARPA, non estensione spaziale
+  generica). `git pull` senza novità rilevanti per il download (già
+  aggiornato). Trovate in sospeso modifiche locali non committate fatte
+  nel frattempo (probabilmente dal titolare in un'altra sessione):
+  `dashboard/components/styling.py` e due SVG in `dashboard/assets/`
+  (soluzione finale al logo in sidebar, testo convertito in tracciati
+  vettoriali per aggirare il sandboxing di `st.logo()`) — non toccate,
+  lasciate come lavoro in corso altrui.
+
+  Target ricalcolato da zero: dei 167 comuni ARPA-senza-Open-Meteo,
+  sottratti i 9 già scaricati dal titolare (2026-07-19 mattina, Torino) e
+  i 57 della propria sessione del giorno prima (ormai importati, 234
+  comuni confermati) — **101 comuni residui**, calcolati incrociando la
+  tabella wiki con il proprio riepilogo del giorno prima (più affidabile
+  dei marcatori ✅ nella tabella, non aggiornati dopo l'import). Stesso
+  ordine interlacciato per provincia. Bloccato dalla quota giornaliera
+  dopo **57/101 comuni** (su "Monastero di Lanzo") — terza sessione di
+  fila fermata esattamente a 57, osservazione empirica non ancora
+  spiegata. Zero doppioni verificati. Restano 44 comuni.
+
+  File prodotti (fuori Git, `data/raw/`, da consegnare al titolare fuori
+  canale): `temperature_data_extra_helper_arpa_target_day3.csv`,
+  `riepilogo_57_comuni_arpa_target_day3.csv`.
+
+  Pagine aggiornate: `etl-pipeline.md` (nuova sezione "Comuni extra
+  mirati alla validazione ARPA — terza tranche, 57/101").
+  `comuni-coperti.md` non toccata (aggiornamento post-import di
+  competenza del titolare).
