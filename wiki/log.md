@@ -3618,3 +3618,55 @@ Log cronologico append-only. Ogni riga: data, azione, pagine toccate.
   Pagine aggiornate: `etl-pipeline.md` (nuova sezione "Estensione
   generale ripresa dopo l'obiettivo ARPA — 85 comuni").
   `comuni-coperti.md` non toccata.
+
+- **2026-07-22** — RISCRITTO `README.md` (SU RICHIESTA ESPLICITA
+  DELL'UTENTE, NON UN INGEST DI MATERIALE NUOVO). L'utente ha segnalato che
+  il README pubblico su GitHub "non sembra aggiornato, sembra fatto con
+  l'IA", mancava il link al sito ora pubblico
+  (https://heatwave-piemonte.streamlit.app/) e non voleva più la roadmap
+  "3 settimane" (il progetto ha richiesto più tempo di così). Riscritto
+  interamente usando `project-status.md`/`dashboard.md`/`data-model.md`
+  come fonte per i numeri reali (234 comuni Open-Meteo, 218 ARPA, 8 pagine
+  dashboard, 31 test, 3 mappe QGIS) invece di ripetere le metriche
+  aspirazionali di `PROJECT_SUMMARY.md`. Rimossa la sezione Roadmap;
+  aggiunta una sezione "Limiti noti" (copertura parziale, bias ARPA, mappa
+  Heatwave Index mancante) per onestà scientifica. Creato `LICENSE` (MIT),
+  mancante nonostante il badge la dichiarasse già — chiesto conferma
+  esplicita all'utente prima di aggiungerlo. Rimossi i placeholder
+  (`yourusername`, `Nome Cognome`, email finta) con i dati reali
+  dell'autrice (nome, GitHub, LinkedIn, email — forniti dall'utente su
+  richiesta). Nessuna modifica a codice/dati: solo documentazione.
+
+  Pagina aggiornata: `project-status.md` (nota sulla riscrittura del
+  README nella sezione discrepanze).
+
+- **2026-07-21** — INGEST: `git pull` (portato dalla collaboratrice: 2
+  nuove sessioni documentate in `etl-pipeline.md` prima di questo lavoro),
+  poi uniti i 2 lotti consegnati fuori Git — **22 comuni ARPA-target**
+  (ultimo lotto, **obiettivo dei 167 comuni completato al 100%**) e **85
+  comuni generici** (ripresa del criterio spaziale ordinario dopo la fine
+  dell'obiettivo ARPA). **Bug reale trovato durante l'unione**: 2 comuni
+  (Pragelato, Sestriere) presenti in **entrambi** i lotti della
+  collaboratrice — scaricati due volte nella stessa sessione perché il
+  controllo "già scaricato" della selezione generale guardava solo il DB,
+  non il file ARPA appena prodotto nella stessa sessione. 19.398 righe
+  duplicate identificate (confermate identiche), rimosse prima di salvare
+  definitivamente. File della collaboratrice eliminati dopo l'unione
+  (226 → 410 comuni in `temperature_data_extra.csv`).
+
+  Rilanciato poi il download generale (criterio spaziale, target = tutti
+  i 744 comuni ancora mancanti, fino al blocco quota): **19/720 riusciti**
+  prima del blocco su "Silvano d'Orba" (quota quasi certamente già
+  consumata dai 107 comuni a storico completo scaricati dalla
+  collaboratrice nella stessa giornata) — uniti allo stesso file (410 →
+  **429 comuni**). **Nessun import né ricalcolo**, per scelta esplicita
+  dell'utente (stessa decisione del 2026-07-20): si continua ad
+  accumulare.
+
+  Ricalcolata la tabella "Comuni già coperti" per provincia (incrociando
+  DB + tutti i file raw pendenti, non solo DB): **455/1180 comuni**
+  coperti (era 331 ieri sera).
+
+  Pagine aggiornate: `comuni-coperti.md` (obiettivo ARPA marcato
+  completo, tabella comuni-coperti rigenerata 331→455, nuove sezioni
+  sull'esito di entrambi i lotti e sul bug dei duplicati).

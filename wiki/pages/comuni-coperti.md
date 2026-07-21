@@ -25,6 +25,45 @@ volutamente indietro** rispetto ai file raw — questo è intenzionale, non
 un lavoro dimenticato. Vedi sezione "Obiettivo reale" più sotto per lo
 stato aggiornato dei comuni ancora mancanti.
 
+**Aggiornamento 2026-07-21 — obiettivo ARPA completato al 100%, ripresa
+estensione generale**: la collaboratrice ha consegnato gli ultimi **22
+comuni ARPA-target** (0 falliti, quota non toccata) — **tutti e 167 i
+comuni ARPA-senza-Open-Meteo sono ora scaricati**, storico completo.
+Contestualmente ha consegnato anche **85 comuni generici** (ripresa del
+criterio di estensione spaziale ordinario, non più ARPA-target).
+**Entrambi i lotti uniti in `temperature_data_extra.csv`** (226 → 410
+comuni nel file) — ma con un **bug reale trovato e corretto durante
+l'unione**: 2 comuni (Pragelato, Sestriere) comparivano in **entrambi** i
+lotti della collaboratrice, scaricati due volte nella stessa sessione
+probabilmente perché il controllo "già scaricato" della sua selezione
+generale ha guardato solo il DB (fermo a 234), non anche il file
+`arpa_final22.csv` appena prodotto nella stessa sessione — 19.398 righe
+duplicate rilevate e rimosse (verificate identiche prima di eliminarle,
+non uno scarto arbitrario). **Lezione per le prossime sessioni,
+collaboratrice inclusa**: il controllo "già coperto" deve sempre
+guardare DB **+ tutti i file raw pendenti**, non solo il DB — esattamente
+il motivo per cui la tabella "Comuni già coperti" sotto viene
+ricalcolata incrociando tutte le fonti, non solo `temperature`.
+
+Il titolare/IA ha poi rilanciato il download generale (stesso criterio
+spaziale, tutti i **744 comuni ancora mancanti** come target, fino al
+blocco quota): **bloccato dopo 19/720** (su "Silvano d'Orba", confermato
+dal blocco anche sul successivo "Ozzano Monferrato") — il lotto più
+piccolo di questa serie, quota evidentemente già parzialmente consumata
+dai due lotti della collaboratrice nella stessa giornata (22+85=107
+comuni a storico completo, volume enorme). I 19 riusciti uniti in
+`temperature_data_extra.csv` (410 → **429 comuni**, zero sovrapposizioni).
+**Nessun import né ricalcolo eseguito** (stessa decisione del 2026-07-20,
+confermata): si continua ad accumulare in attesa di un giro unico.
+
+**Totale accumulato non ancora importato**: `temperature_data_extra.csv`
+a 429 comuni (da 226 il 2026-07-20 mattina — +203 in due giorni), più i
+18 di Torino ancora a parte. Tabella "Comuni già coperti" sotto
+ricalcolata di conseguenza: **455/1180 comuni coperti** (era 331 ieri
+sera), quindi **725 comuni ancora scaricabili liberamente** (non 849 —
+quel numero, nella nota di ieri sera più sotto, è superato). L'obiettivo
+ARPA-target non esiste più come lista a parte: **completato al 100%**.
+
 **Stato al 2026-07-20 (sera) — 331 comuni coperti su 1180, NON
 riscaricare nessuno di questi**: la tabella "Comuni già coperti" sotto è
 stata ricalcolata da zero incrociando **tutte** le fonti, non solo il DB —
@@ -216,6 +255,16 @@ delta 2026-07-19→oggi per i 234 comuni già in `temperature` (anche quello
 non ancora importato) — **fino a 97 comuni nuovi** in attesa (305 - 226 +
 18), più i 22 ancora da scaricare.
 
+**Aggiornamento 2026-07-21 — OBIETTIVO COMPLETATO AL 100%**: la
+collaboratrice ha consegnato gli ultimi 22 comuni (0 falliti). **Tutti e
+167 i comuni ARPA-senza-Open-Meteo del target originale sono ora
+scaricati** (storico completo 2000→oggi) — uniti in
+`temperature_data_extra.csv` (vedi nota in cima alla pagina). Non serve
+più consultare l'elenco dei "22 mancanti" sopra: è chiuso. Resta solo da
+**importare** (rimandato, vedi decisione del 2026-07-20) perché la mappa
+Bias passi effettivamente da 108 a 218/218 comuni. La tabella sotto
+resta come riferimento storico di come si è arrivati al 100%.
+
 <details>
 <summary>I 167 comuni ARPA senza Open-Meteo, per provincia — ✅ = ormai coperto (in `temperature` o in un file raw pendente: Torino, collaboratrice day1/day3, o il lotto del titolare/IA del 2026-07-20), aggiornato al 2026-07-20 sera. 145/167 ✅, 22 ancora da scaricare (vedi elenco sopra).</summary>
 
@@ -406,7 +455,7 @@ importare per evitare doppioni.
 
 ## Comuni già coperti (NON riscaricare questi)
 
-### Alessandria (46/187 comuni coperti)
+### Alessandria (80/187 comuni coperti)
 
 | Comune | Codice ISTAT |
 |---|---|
@@ -415,56 +464,97 @@ importare per evitare doppioni.
 | Alfiano Natta | 006004 |
 | Alice Bel Colle | 006005 |
 | Arquata Scrivia | 006009 |
+| Balzola | 006011 |
 | Basaluzzo | 006012 |
 | Bassignana | 006013 |
+| Bistagno | 006017 |
 | Borgoratto Alessandrino | 006019 |
+| Bosco Marengo | 006021 |
 | Bosio | 006022 |
 | Bozzole | 006023 |
 | Brignano-Frascata | 006024 |
 | Cabella Ligure | 006025 |
+| Camino | 006027 |
+| Cantalupo Ligure | 006028 |
+| Carpeneto | 006033 |
 | Carrega Ligure | 006034 |
+| Casal Cermelli | 006037 |
 | Casale Monferrato | 006039 |
 | Casaleggio Boiro | 006038 |
 | Casalnoceto | 006040 |
 | Casasco | 006041 |
+| Cassine | 006043 |
+| Castellazzo Bormida | 006047 |
+| Castelnuovo Scrivia | 006053 |
 | Cereseto | 006057 |
+| Cerrina Monferrato | 006059 |
+| Denice | 006065 |
 | Fabbrica Curone | 006067 |
 | Fraconalto | 006069 |
+| Frassineto Po | 006073 |
 | Fubine Monferrato | 006076 |
 | Garbagna | 006079 |
 | Gavi | 006081 |
+| Giarole | 006082 |
 | Gremiasco | 006083 |
+| Grognardo | 006084 |
 | Grondona | 006085 |
 | Isola Sant'Antonio | 006087 |
+| Lu e Cuccaro Monferrato | 006193 |
 | Malvicino | 006090 |
+| Masio | 006091 |
+| Melazzo | 006092 |
 | Merana | 006093 |
 | Molare | 006095 |
 | Moncestino | 006099 |
+| Mongiardino Ligure | 006100 |
 | Montaldeo | 006103 |
+| Montecastello | 006105 |
+| Morano sul Po | 006109 |
 | Morsasco | 006112 |
+| Murisengo Monferrato | 006113 |
 | Novi Ligure | 006114 |
 | Occimiano | 006115 |
 | Ovada | 006121 |
+| Oviglio | 006122 |
+| Pontecurone | 006132 |
 | Ponzone | 006136 |
+| Pozzol Groppo | 006137 |
 | Predosa | 006140 |
+| Quattordio | 006142 |
 | Roccaforte Ligure | 006146 |
+| Rosignano Monferrato | 006149 |
+| Sale | 006151 |
 | San Salvatore Monferrato | 006154 |
 | Sant'Agata Fossili | 006156 |
 | Sardigliano | 006157 |
+| Sarezzano | 006158 |
 | Serralunga di Crea | 006159 |
 | Sezzadio | 006161 |
+| Solero | 006163 |
+| Spigno Monferrato | 006165 |
+| Spineto Scrivia | 006166 |
 | Tortona | 006174 |
+| Valenza | 006177 |
 | Vignale Monferrato | 006179 |
 | Villanova Monferrato | 006185 |
+| Voltaggio | 006190 |
 
-### Asti (29/117 comuni coperti)
+### Asti (39/117 comuni coperti)
 
 | Comune | Codice ISTAT |
 |---|---|
 | Asti | 005005 |
+| Baldichieri d'Asti | 005007 |
 | Buttigliera d'Asti | 005012 |
+| Calosso | 005015 |
+| Casorzo Monferrato | 005020 |
 | Castagnole delle Lanze | 005022 |
+| Castel Rocchero | 005032 |
 | Castell'Alfero | 005025 |
+| Castelnuovo Belbo | 005029 |
+| Cellarengo | 005033 |
+| Cerreto d'Asti | 005035 |
 | Cerro Tanaro | 005036 |
 | Cessole | 005037 |
 | Cisterna d'Asti | 005040 |
@@ -480,23 +570,27 @@ importare per evitare doppioni.
 | Montegrosso d'Asti | 005076 |
 | Moransengo-Tonengo | 005122 |
 | Nizza Monferrato | 005080 |
+| Revigliasco d'Asti | 005090 |
 | Robella | 005092 |
 | Roccaverano | 005094 |
 | San Damiano d'Asti | 005097 |
 | San Martino Alfieri | 005099 |
+| Scurzolengo | 005103 |
 | Serole | 005104 |
 | Sessame | 005105 |
 | Viarigi | 005115 |
 | Villa San Secondo | 005119 |
+| Villafranca d'Asti | 005117 |
 | Villanova d'Asti | 005118 |
 | Vinchio | 005120 |
 
-### Biella (18/74 comuni coperti)
+### Biella (22/74 comuni coperti)
 
 | Comune | Codice ISTAT |
 |---|---|
 | Biella | 096004 |
 | Camandona | 096009 |
+| Campiglia Cervo | 096086 |
 | Caprile | 096013 |
 | Cavaglià | 096016 |
 | Donato | 096024 |
@@ -510,11 +604,14 @@ importare per evitare doppioni.
 | Piedicavallo | 096044 |
 | Pray | 096050 |
 | Salussola | 096058 |
+| Sandigliano | 096059 |
+| Torrazzo | 096069 |
 | Valdengo | 096071 |
 | Valdilana | 096088 |
 | Villa del Bosco | 096078 |
+| Viverone | 096080 |
 
-### Cuneo (86/247 comuni coperti)
+### Cuneo (104/247 comuni coperti)
 
 | Comune | Codice ISTAT |
 |---|---|
@@ -535,6 +632,7 @@ importare per evitare doppioni.
 | Briga Alta | 004031 |
 | Brossasco | 004033 |
 | Canosio | 004038 |
+| Caraglio | 004040 |
 | Carrù | 004043 |
 | Casalgrasso | 004045 |
 | Castelletto Uzzone | 004050 |
@@ -544,6 +642,7 @@ importare per evitare doppioni.
 | Ceva | 004066 |
 | Cherasco | 004067 |
 | Chiusa di Pesio | 004068 |
+| Corneliano d'Alba | 004072 |
 | Costigliole Saluzzo | 004075 |
 | Cravanzana | 004076 |
 | Crissolo | 004077 |
@@ -560,21 +659,27 @@ importare per evitare doppioni.
 | Genola | 004096 |
 | Govone | 004099 |
 | Grinzane Cavour | 004100 |
+| Lagnasco | 004104 |
 | Limone Piemonte | 004110 |
 | Marene | 004117 |
 | Mombarcaro | 004124 |
 | Mombasiglio | 004125 |
+| Monastero di Vasco | 004126 |
+| Monasterolo di Savigliano | 004128 |
 | Monchiero | 004129 |
 | Mondovì | 004130 |
 | Montà | 004133 |
 | Monterosso Grana | 004139 |
 | Morozzo | 004144 |
+| Murello | 004146 |
 | Neive | 004148 |
 | Oncino | 004154 |
 | Ormea | 004155 |
 | Paesana | 004157 |
+| Pagno | 004158 |
 | Pamparato | 004159 |
 | Paroldo | 004160 |
+| Perletto | 004161 |
 | Perlo | 004162 |
 | Peveragno | 004163 |
 | Pianfei | 004165 |
@@ -583,43 +688,58 @@ importare per evitare doppioni.
 | Priero | 004175 |
 | Prunetto | 004178 |
 | Rifreddo | 004181 |
+| Roaschia | 004183 |
 | Robilante | 004185 |
 | Roburent | 004186 |
 | Roccabruna | 004187 |
 | Roccaforte Mondovì | 004190 |
 | Roddino | 004195 |
 | Rodello | 004196 |
+| Rossana | 004197 |
 | Saliceto | 004201 |
+| Salmour | 004202 |
 | Saluzzo | 004203 |
+| Sambuco | 004204 |
 | Sampeyre | 004205 |
 | San Damiano Macra | 004207 |
 | Santo Stefano Belbo | 004213 |
 | Somano | 004221 |
 | Sommariva del Bosco | 004222 |
 | Stroppo | 004224 |
+| Tarantasca | 004225 |
 | Torre San Giorgio | 004228 |
 | Torresina | 004229 |
 | Treiso | 004230 |
 | Trinità | 004232 |
 | Valdieri | 004233 |
+| Valgrana | 004234 |
 | Vernante | 004239 |
+| Vignolo | 004243 |
+| Villanova Solaro | 004246 |
 | Vinadio | 004248 |
+| Viola | 004249 |
+| Vottignasco | 004250 |
 
-### Novara (21/87 comuni coperti)
+### Novara (29/87 comuni coperti)
 
 | Comune | Codice ISTAT |
 |---|---|
 | Ameno | 003002 |
 | Armeno | 003006 |
+| Bogogno | 003021 |
 | Borgolavezzaro | 003023 |
 | Borgomanero | 003024 |
 | Cameri | 003032 |
 | Casaleggio Novara | 003039 |
 | Castelletto sopra Ticino | 003043 |
+| Cavaglietto | 003044 |
+| Cavallirio | 003047 |
 | Cerano | 003049 |
 | Colazza | 003051 |
 | Galliate | 003068 |
+| Garbagna Novarese | 003069 |
 | Ghemme | 003073 |
+| Granozzo con Monticello | 003077 |
 | Grignasco | 003079 |
 | Lesa | 003084 |
 | Momo | 003100 |
@@ -627,11 +747,14 @@ importare per evitare doppioni.
 | Oleggio | 003108 |
 | Paruzzaro | 003114 |
 | Pettenasco | 003116 |
+| Pogno | 003120 |
 | San Nazzaro Sesia | 003134 |
+| Sillavengo | 003138 |
+| Sozzago | 003141 |
 | Varallo Pombia | 003154 |
 | Vinzaglio | 003164 |
 
-### Torino (85/312 comuni coperti)
+### Torino (122/312 comuni coperti)
 
 | Comune | Codice ISTAT |
 |---|---|
@@ -646,6 +769,7 @@ importare per evitare doppioni.
 | Bobbio Pellice | 001026 |
 | Borgofranco d'Ivrea | 001030 |
 | Borgone Susa | 001032 |
+| Bosconero | 001033 |
 | Brosso | 001036 |
 | Bruino | 001038 |
 | Burolo | 001042 |
@@ -658,7 +782,10 @@ importare per evitare doppioni.
 | Carmagnola | 001059 |
 | Caselle Torinese | 001063 |
 | Castagneto Po | 001064 |
+| Castagnole Piemonte | 001065 |
 | Castelnuovo Nigra | 001067 |
+| Castiglione Torinese | 001068 |
+| Cavagnolo | 001069 |
 | Ceres | 001072 |
 | Ceresole Reale | 001073 |
 | Cesana Torinese | 001074 |
@@ -678,50 +805,83 @@ importare per evitare doppioni.
 | Fiano | 001104 |
 | Front | 001109 |
 | Giaglione | 001114 |
+| Giaveno | 001115 |
 | Gravere | 001117 |
 | Groscavallo | 001118 |
+| Grugliasco | 001120 |
 | Ingria | 001121 |
 | Lanzo Torinese | 001128 |
 | Lemie | 001131 |
 | Locana | 001134 |
 | Luserna San Giovanni | 001139 |
+| Macello | 001142 |
 | Maglione | 001143 |
 | Marentino | 001144 |
 | Massello | 001145 |
+| Mattie | 001147 |
+| Mompantero | 001154 |
+| Monastero di Lanzo | 001155 |
 | Moncalieri | 001156 |
 | Moncenisio | 001157 |
 | Noasca | 001165 |
 | Oulx | 001175 |
 | Pancalieri | 001178 |
+| Parella | 001179 |
+| Perrero | 001186 |
 | Pianezza | 001189 |
+| Pinasca | 001190 |
+| Pinerolo | 001191 |
 | Pino Torinese | 001192 |
 | Piscina | 001195 |
 | Piverone | 001196 |
+| Poirino | 001197 |
 | Pomaretto | 001198 |
+| Pragelato | 001201 |
 | Prali | 001202 |
 | Pralormo | 001203 |
 | Prarostino | 001205 |
+| Ribordone | 001212 |
 | Riva presso Chieri | 001215 |
+| Rivoli | 001219 |
 | Rocca Canavese | 001221 |
 | Roletto | 001222 |
+| Ronco Canavese | 001224 |
 | Rorà | 001226 |
+| Roure | 001227 |
+| Rubiana | 001229 |
 | Salbertrand | 001232 |
 | Samone | 001235 |
 | San Giorio di Susa | 001245 |
 | Santena | 001257 |
+| Sauze d'Oulx | 001259 |
 | Sauze di Cesana | 001258 |
+| Scarmagno | 001261 |
+| Sestriere | 001263 |
 | Sparone | 001267 |
+| Susa | 001270 |
 | Torino | 001272 |
 | Torrazza Piemonte | 001273 |
+| Trana | 001276 |
+| Traversella | 001278 |
 | Usseglio | 001282 |
 | Val della Torre | 001284 |
+| Valchiusa | 001318 |
 | Valprato Soana | 001288 |
+| Varisella | 001289 |
+| Venaria Reale | 001292 |
+| Venaus | 001291 |
+| Verolengo | 001293 |
 | Verrua Savoia | 001294 |
+| Vestignè | 001295 |
+| Vialfrè | 001296 |
 | Vigone | 001299 |
+| Villafranca Piemonte | 001300 |
+| Villareggia | 001304 |
+| Vistrorio | 001312 |
 | Viù | 001313 |
 | Volpiano | 001314 |
 
-### Verbano-Cusio-Ossola (27/74 comuni coperti)
+### Verbano-Cusio-Ossola (32/74 comuni coperti)
 
 | Comune | Codice ISTAT |
 |---|---|
@@ -729,6 +889,7 @@ importare per evitare doppioni.
 | Baceno | 103006 |
 | Bannio Anzino | 103007 |
 | Bognanco | 103012 |
+| Borgomezzavalle | 103078 |
 | Cannobio | 103017 |
 | Ceppo Morelli | 103021 |
 | Cesara | 103022 |
@@ -738,8 +899,11 @@ importare per evitare doppioni.
 | Domodossola | 103028 |
 | Druogno | 103029 |
 | Formazza | 103031 |
+| Ghiffa | 103033 |
+| Intragna | 103037 |
 | Macugnaga | 103039 |
 | Madonna del Sasso | 103040 |
+| Malesco | 103041 |
 | Mergozzo | 103044 |
 | Montecrestese | 103046 |
 | Omegna | 103050 |
@@ -750,27 +914,36 @@ importare per evitare doppioni.
 | Trasquera | 103067 |
 | Trontano | 103068 |
 | Valle Cannobina | 103079 |
+| Varzo | 103071 |
 | Verbania | 103072 |
 | Villadossola | 103075 |
 
-### Vercelli (19/82 comuni coperti)
+### Vercelli (27/82 comuni coperti)
 
 | Comune | Codice ISTAT |
 |---|---|
 | Alagna Valsesia | 002002 |
 | Albano Vercellese | 002003 |
+| Alice Castello | 002004 |
 | Alto Sermenza | 002170 |
+| Bianzè | 002011 |
 | Boccioleto | 002014 |
+| Buronzo | 002021 |
 | Carcoforo | 002029 |
 | Carisio | 002032 |
+| Casanova Elvo | 002033 |
 | Cellio con Breia | 002171 |
+| Crova | 002052 |
 | Fontanetto Po | 002058 |
 | Ghislarengo | 002062 |
 | Lozzolo | 002072 |
 | Moncrivello | 002079 |
 | Motta de' Conti | 002082 |
+| Postua | 002102 |
 | Rassa | 002110 |
 | Rimella | 002113 |
+| Rive | 002115 |
+| Saluggia | 002128 |
 | Scopello | 002135 |
 | Tricerro | 002147 |
 | Valduggia | 002152 |

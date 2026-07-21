@@ -516,8 +516,22 @@ completo:
 
 ## Discrepanze da tenere a mente quando si presenta il progetto
 
-`README.md` e `PROJECT_SUMMARY.md` descrivono metriche come "1.7M record",
-"Status: Production Ready", "database size 3-5 GB" — sono **target
-pianificati**, scritti prima di scrivere il codice, non misurazioni reali.
-Utile saperlo per non presentarli come risultati raggiunti in un colloquio
-o in una demo.
+`PROJECT_SUMMARY.md` descrive ancora metriche come "1.7M record", "Status:
+Production Ready", "database size 3-5 GB" — sono **target pianificati**,
+scritti prima di scrivere il codice, non misurazioni reali. Utile saperlo
+per non presentarli come risultati raggiunti in un colloquio o in una demo.
+
+**`README.md` riscritto il 2026-07-22** su richiesta esplicita dell'utente
+("non mi sembra aggiornato, sembra fatto con l'IA"): non è più un documento
+di pianificazione aspirazionale ma riflette lo stato reale rilevato in
+questa pagina (234 comuni Open-Meteo, 218 ARPA, 8 pagine dashboard live su
+https://heatwave-piemonte.streamlit.app/). Rimossa la roadmap "3 settimane"
+(l'utente ha impiegato più tempo di quello e non voleva quel vincolo
+temporale nel README pubblico), aggiunto `LICENSE` (MIT, mancante — il
+badge lo dichiarava ma il file non esisteva), corretti i placeholder
+(`yourusername`, `Nome Cognome`, email finta) con i dati reali dell'autrice.
+Per `CLAUDE.md` `README.md` resta formalmente una "sorgente grezza"
+immutabile dal punto di vista del workflow di ingest della wiki (la wiki
+non lo riscrive per sincronizzarsi), ma resta comunque un file che
+l'utente può chiedere di modificare direttamente come qualunque altro file
+del repo — è quanto avvenuto qui.
