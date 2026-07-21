@@ -3574,3 +3574,47 @@ Log cronologico append-only. Ogni riga: data, azione, pagine toccate.
   Pagine aggiornate: `comuni-coperti.md` (tabella "Comuni già coperti"
   interamente rigenerata, 177→331; nuova nota di orientamento in cima
   sulla distinzione tra le due liste).
+
+- **2026-07-21** — INGEST. Quinta e ultima sessione della stessa
+  collaboratrice sull'obiettivo ARPA. `git pull` senza conflitti. La
+  wiki elencava per nome i 22 comuni ARPA-target rimasti (su 167
+  originari) — presi direttamente, lotto piccolo, nessun calcolo di
+  esclusione necessario stavolta.
+
+  **Risultato: 22/22 riusciti, zero fallimenti, quota non toccata** —
+  primo lotto di questa serie completato in una sola sessione senza
+  bloccarsi. **Obiettivo raggiunto**: tutti i 167 comuni ARPA-target
+  sono ora scaricati (storico completo). Zero doppioni verificati
+  (213.378 righe = 22 × 9.699 giorni). Il file resta comunque in coda
+  per l'import, insieme agli altri lotti pendenti — il titolare ha
+  deciso il 2026-07-20 di accumulare senza ricalcolare a ogni sessione.
+
+  File prodotti (fuori Git, `data/raw/`, da consegnare al titolare fuori
+  canale): `temperature_data_extra_helper_arpa_final22.csv`,
+  `riepilogo_22_comuni_arpa_final.csv`.
+
+  Pagine aggiornate: `etl-pipeline.md` (nuova sezione "Comuni extra
+  mirati alla validazione ARPA — ultimo lotto, obiettivo completato").
+  `comuni-coperti.md` non toccata (aggiornamento post-import di
+  competenza del titolare, come da convenzione).
+
+- **2026-07-21** (stesso giorno, poco dopo) — INGEST. Con l'obiettivo
+  ARPA completato, l'utente ha chiesto di riprendere l'estensione
+  **generale** della copertura (non più mirata ad ARPA). Base: i 331
+  comuni già coperti, estratti dalla tabella per provincia di
+  `comuni-coperti.md` (rigenerata dal titolare il 2026-07-20). Stesso
+  algoritmo "farthest-point" delle sessioni originarie.
+
+  **Risultato: 85 comuni scaricati** — il lotto singolo più numeroso di
+  tutta la serie (oltre il 50% in più del massimo precedente, 57),
+  bloccato dalla quota su "Benna" con un solo fallimento. Tutte e 8 le
+  province rappresentate. Zero doppioni verificati (824.415 righe = 85 ×
+  9.699 giorni).
+
+  File prodotti (fuori Git, `data/raw/`, da consegnare al titolare fuori
+  canale): `temperature_data_extra_helper_general_20260722.csv`,
+  `riepilogo_85_comuni_generale.csv`.
+
+  Pagine aggiornate: `etl-pipeline.md` (nuova sezione "Estensione
+  generale ripresa dopo l'obiettivo ARPA — 85 comuni").
+  `comuni-coperti.md` non toccata.

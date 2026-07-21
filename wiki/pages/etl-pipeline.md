@@ -554,6 +554,67 @@ di questa tranche (= 44 dei 167 originali) per le prossime sessioni.
 
 **Non ancora importato**: stessi passaggi delle sessioni precedenti.
 
+## Estensione generale ripresa dopo l'obiettivo ARPA — 85 comuni (2026-07-21)
+
+Con i 167 comuni ARPA-target completati (vedi sezione sotto), la
+collaboratrice è tornata al criterio di estensione **generale** della
+copertura (non più mirato ad ARPA) — stesso algoritmo delle sessioni
+originarie (`compute_target_per_province()` + `farthest_point_sample()`
+per provincia), sui **331 comuni già coperti** (fonte:
+[Comuni già coperti](comuni-coperti.md), tabella per provincia
+rigenerata dal titolare il 2026-07-20, che include sia i comuni in
+`temperature` sia quelli su file raw pendenti — vedi sotto).
+
+**Risultato**: **85 comuni** scaricati con successo (il lotto singolo più
+numeroso di tutta questa serie di sessioni, oltre il 50% in più del
+massimo precedente di 57), bloccato dalla quota giornaliera su "Benna"
+dopo 1 solo fallimento. Distribuzione su tutte e 8 le province
+(Alessandria 15, Asti 10, Biella 4, Cuneo 16, Novara 8, Torino 20,
+Verbano-Cusio-Ossola 4, Vercelli 8). Verificato senza doppioni: 824.415
+righe = 85 × 9.699 giorni esatti.
+
+**File consegnato** (fuori Git, `data/raw/`, stesso canale):
+- `data/raw/temperature_data_extra_helper_general_20260722.csv` —
+  824.415 righe, 85 comuni, 2000-01-01 → 2026-07-21. Stesse colonne di
+  sempre.
+- `data/raw/riepilogo_85_comuni_generale.csv` — tabella di sintesi.
+
+**Non ancora importato**: resta in coda con gli altri lotti pendenti
+(vedi nota del titolare del 2026-07-20 su accumulo senza import/ricalcolo
+a ogni sessione). Se importato insieme al resto del backlog: **331 → 416
+comuni** in `temperature`.
+
+## Comuni extra mirati alla validazione ARPA — ultimo lotto, obiettivo completato (2026-07-21)
+
+Quinta e ultima sessione della stessa collaboratrice su questo obiettivo.
+Dopo `git pull`, la wiki (`comuni-coperti.md`) elencava per nome i **22
+comuni rimasti** su tutti i 167 originari (167 - 9 Torino - 57 - 57 - 22
+del titolare/IA il 2026-07-20) — presi direttamente senza bisogno di
+ricalcolare/interlacciare nulla, essendo un lotto piccolo (22 comuni,
+quasi tutti in provincia di Torino).
+
+**Risultato**: **22/22 riusciti, nessun fallimento, quota non toccata**
+— primo lotto di questa serie a completarsi interamente in una sola
+sessione senza bloccarsi. **La lista dei 167 comuni ARPA-target è ora
+scaricata al 100%** (storico completo 2000-01-01 → oggi per tutti).
+Verificato senza doppioni: 213.378 righe = 22 × 9.699 giorni esatti.
+
+**File consegnato** (fuori Git, `data/raw/`, stesso canale):
+- `data/raw/temperature_data_extra_helper_arpa_final22.csv` — 213.378
+  righe, 22 comuni, 2000-01-01 → 2026-07-21. Stesse colonne di sempre.
+- `data/raw/riepilogo_22_comuni_arpa_final.csv` — tabella di sintesi.
+
+**Non ancora importato** — stessi passaggi delle sessioni precedenti,
+ma qui con una nota in più: il titolare ha deciso (2026-07-20) di
+**accumulare senza importare/ricalcolare a ogni sessione** (il ricalcolo
+completo richiede ore), quindi questo file resta in coda insieme agli
+altri lotti pendenti (day1/day3 della collaboratrice, il lotto Torino,
+il lotto da 22 del titolare/IA del 2026-07-20) fino al prossimo giro di
+import unico. **Con questo lotto, tutti i comuni necessari per
+completare la mappa Bias Open-Meteo↔ARPA sono stati scaricati** — al
+prossimo import/ricalcolo, la mappa potrà usare la copertura ARPA
+completa (218/218 comuni con stazione attiva, invece dei 108 attuali).
+
 ## Import dei 57 comuni ARPA-target e ricalcolo completo (2026-07-19)
 
 Import del lotto descritto nella sezione precedente, eseguito dal titolare
