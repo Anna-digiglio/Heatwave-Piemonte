@@ -74,3 +74,6 @@ data/external/ndvi/
 # OS
 Thumbs.db
 .DS_Store
+
+# Istruzioni interne per l'assistente AI - non pubbliche
+CLAUDE.md

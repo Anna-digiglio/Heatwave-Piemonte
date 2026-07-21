@@ -3108,10 +3108,10 @@ Log cronologico append-only. Ogni riga: data, azione, pagine toccate.
 
 - **2026-07-19** (sera, seguito) — FIX: l'utente ha segnalato che la mappa
   "Bias Open-Meteo vs ARPA per comune" mostrava ancora ~55 comuni invece di
-  108, e ha corretto un mio equivoco: non esiste nessuna sessione Claude
-  parallela sul frontend (avevo assunto il contrario in precedenza,
-  vedendo file `dashboard/pages/` rinominati/aggiunti senza che li avessi
-  toccati io). Causa reale: un processo Streamlit locale, avviato dall'
+  108, e ha corretto un equivoco: non esisteva nessun intervento parallelo
+  sul frontend (si era assunto il contrario in precedenza, vedendo file
+  `dashboard/pages/` rinominati/aggiunti senza che fossero stati toccati in
+  questa sessione). Causa reale: un processo Streamlit locale, avviato dall'
   utente alle 14:02:42 (prima che l'export dati finisse alle 16:09),
   serviva ancora dati vecchi in cache (`st.cache_data(ttl=600)` — TTL
   scaduto più volte ma la sessione del browser non aveva mai rieseguito lo
