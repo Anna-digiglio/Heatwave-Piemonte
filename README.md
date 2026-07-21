@@ -1,289 +1,167 @@
-# 🌡️ Il riscaldamento del Piemonte: un'analisi spazio-temporale dei trend termici e delle ondate di calore
+# Il riscaldamento del Piemonte
 
-[![Python Version](https://img.shields.io/badge/Python-3.9+-blue)](https://www.python.org/downloads/)
+### Un'analisi spazio-temporale dei trend termici e delle ondate di calore
+
+[![Python](https://img.shields.io/badge/Python-3.11+-blue)](https://www.python.org/downloads/)
 [![License](https://img.shields.io/badge/License-MIT-green)](LICENSE)
-[![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
+[![Dashboard](https://img.shields.io/badge/Dashboard-live-orange)](https://heatwave-piemonte.streamlit.app/)
 
-## 📊 Descrizione del Progetto
+**Dashboard live: https://heatwave-piemonte.streamlit.app/**
 
-**Heatwave Piemonte** è un progetto di Data Engineering e GIS che analizza l'evoluzione delle temperature e delle ondate di calore nei comuni e nelle province piemontesi dal 2000 ad oggi. 
+## Descrizione
 
-Il progetto integra tecnologie moderne per la gestione, elaborazione e visualizzazione di dati climatici territoriali, fornendo insights su trend termici, vulnerabilità climatica e rischi ambientali.
+Heatwave Piemonte è un progetto di Data Engineering, Data Science e GIS che
+analizza l'evoluzione delle temperature e delle ondate di calore nei comuni
+piemontesi dal 2000 a oggi. Copre l'intera pipeline: acquisizione dati da
+fonti pubbliche, pulizia e caricamento in un database geospaziale, analisi
+statistica e spaziale, mappe GIS e una dashboard interattiva pubblicata online.
 
-### 🎯 Obiettivi Principali
+I dati di temperatura (Open-Meteo) sono validati contro le stazioni reali di
+ARPA Piemonte, per quantificare quanto ci si può fidare di una rianalisi
+climatica rispetto a un'osservazione a terra — un passaggio spesso dato per
+scontato in analisi simili.
 
-1. **Trend Termico**: Verificare se le giornate con temperature estreme sono aumentate nel tempo
-2. **Analisi Provinciale**: Identificare le province con maggiori incrementi di temperature
-3. **Differenze Territoriali**: Quantificare le variazioni geografiche significative
-4. **Vulnerabilità Climatica**: Identificare aree maggiormente esposte a ondate di calore
+## Domande di ricerca
 
-## 📈 Domande di Ricerca
+- Le giornate con temperature estreme (>30°C, >35°C, >40°C) sono aumentate nel tempo?
+- Quali province mostrano i maggiori incrementi di temperatura?
+- Esistono pattern geografici e stagionali significativi?
+- Quali comuni sono più vulnerabili alle ondate di calore, e perché (elevazione, urbanizzazione, uso del suolo)?
 
-- ❓ Le giornate con temperature estreme (>30°C, >35°C, >40°C) sono aumentate nel tempo?
-- ❓ Quali province mostrano i maggiori incrementi di temperatura?
-- ❓ Esistono pattern geografici e stagionali significativi?
-- ❓ Quali sono i comuni con maggiore vulnerabilità alle ondate di calore?
-- ❓ Come è evoluto il fenomeno delle "heatwaves" negli ultimi 25 anni?
+## Cosa contiene il progetto
 
-## 🛠️ Stack Tecnologico
+- **Acquisizione dati**: temperature giornaliere da Open-Meteo (234 comuni,
+  2000–oggi, oltre 2,2 milioni di righe), validazione contro 218 stazioni
+  reali ARPA Piemonte, popolazione (ISTAT), uso del suolo (Copernicus CORINE
+  Land Cover), indice di vegetazione NDVI (Copernicus Global Land Service),
+  confini amministrativi dei 1180 comuni piemontesi (ISTAT).
+- **Database**: PostgreSQL + PostGIS, schema con tabelle temperature/ondate
+  di calore/uso del suolo, viste materializzate per i KPI annuali, funzione
+  SQL per l'identificazione delle ondate di calore.
+- **Analisi statistica e spaziale**: trend di riscaldamento (Mann-Kendall e
+  regressione lineare), decomposizione stagionale (STL), autocorrelazione
+  spaziale (indice di Moran), clustering climatico (K-means), modello di
+  regressione a errore spaziale (temperatura in funzione di elevazione,
+  popolazione, uso del suolo, NDVI).
+- **Validazione**: confronto sistematico Open-Meteo vs stazioni ARPA reali
+  — correlazione alta (r≈0.97) ma bias sistematico negativo che cresce con
+  l'elevazione, e un tasso di rilevamento delle ondate di calore reali
+  inferiore a quanto la sola rianalisi suggerirebbe. Risultato riportato
+  onestamente come limite del dataset, non nascosto.
+- **Mappe GIS**: 3 progetti QGIS (heatmap provinciale, cluster climatici,
+  animazione temporale 2000–oggi) generati via PyQGIS.
+- **Dashboard Streamlit**: 8 pagine (panoramica, analisi temporale, analisi
+  spaziale, ondate di calore, contesto territoriale, sintesi divulgativa dei
+  risultati, download dati, citazioni e fonti), con selettore Open-Meteo /
+  ARPA / confronto diretto tra le due fonti.
+- **Test**: 31 test pytest sulla pipeline di pulizia dati e sulle funzioni di
+  analisi, 86% di copertura sul modulo di pulizia.
 
-### Backend & Data Engineering
-- **Python 3.9+** - Linguaggio principale
-- **pandas, numpy** - Elaborazione dati
-- **SQLAlchemy** - ORM per database
-- **GeoPandas** - Analisi geospaziale
+## Stack tecnologico
 
-### Database
-- **PostgreSQL 14+** - Data warehouse relazionale
-- **PostGIS** - Estensione geospaziale
-- **TimescaleDB** (opzionale) - Ottimizzazione serie temporali
+- **Python** — pandas, numpy, geopandas, SQLAlchemy
+- **Database** — PostgreSQL + PostGIS
+- **GIS** — QGIS (via PyQGIS headless), Folium, Shapely
+- **Analisi** — scikit-learn, statsmodels, pymannkendall, libpysal/spreg
+- **Dashboard** — Streamlit, Plotly
+- **Test** — pytest
 
-### Geospatial & Mapping
-- **QGIS** - Analisi e visualizzazione GIS
-- **Folium** - Mappe interattive
-- **Shapely** - Operazioni geometriche
-
-### Visualizzazione & BI
-- **Streamlit** - Dashboard interattiva
-- **Plotly** - Grafici interattivi
-- **Matplotlib/Seaborn** - Visualizzazioni statiche
-
-### DevOps & Versionamento
-- **Git/GitHub** - Version control
-- **Docker** (opzionale) - Containerizzazione
-- **GitHub Actions** (opzionale) - CI/CD
-
-## 📁 Struttura del Progetto
+## Struttura del progetto
 
 ```
 heatwave-piemonte/
 ├── src/
-│   ├── data_acquisition/       # Download e acquisizione dati
-│   ├── data_processing/        # Cleaning e preprocessing
-│   ├── database/               # Gestione database
-│   ├── analysis/               # Analisi statistiche
-│   ├── visualization/          # Grafici e heatmap
-│   └── utils/                  # Funzioni di utilità
-├── data/
-│   ├── raw/                    # Dati grezzi scaricati
-│   ├── processed/              # Dati elaborati
-│   └── external/               # Dati di riferimento (province, comuni)
-├── sql/                        # Query SQL e script DDL
-├── qgis_projects/              # Progetti QGIS
-├── dashboard/                  # Applicazione Streamlit
-├── docs/                       # Documentazione
-├── tests/                      # Test unitari
-├── config.yaml                 # Configurazione centrale
-├── requirements.txt            # Dipendenze Python
-├── .env.example                # Template variabili ambiente
-└── README.md                   # Questo file
+│   ├── data_acquisition/   # Open-Meteo, ARPA, popolazione, uso del suolo, NDVI, elevazione
+│   ├── data_processing/    # pulizia dati, export snapshot per la dashboard
+│   ├── database/           # caricamento nel database
+│   ├── analysis/           # trend, ondate di calore, STL, Moran's I, clustering, regressione spaziale, validazione ARPA
+│   └── utils/              # configurazione, logging
+├── sql/                    # schema DB e query
+├── qgis_projects/          # generazione mappe via PyQGIS
+├── dashboard/              # applicazione Streamlit (Home.py + pages/)
+├── data/                   # dati grezzi, elaborati, esterni, snapshot per il deploy
+├── tests/                  # test pytest
+├── wiki/                   # documentazione tecnica mantenuta aggiornata sessione per sessione
+├── docs/                   # documenti di pianificazione originali (obiettivi iniziali del progetto)
+├── config.yaml             # configurazione centrale
+└── requirements.txt        # dipendenze Python
 ```
 
-## 🚀 Quickstart
+## Come eseguirlo in locale
 
-### Prerequisiti
-- Python 3.9+
-- PostgreSQL 14+ con PostGIS
-- QGIS 3.20+
-- Git
+Per usare la dashboard non serve installare nulla: è pubblica su
+https://heatwave-piemonte.streamlit.app/ e legge uno snapshot dei dati già
+calcolato, senza bisogno di un database live.
 
-### Installazione
-
-1. **Clone il repository**
-   ```bash
-   git clone https://github.com/yourusername/heatwave-piemonte.git
-   cd heatwave-piemonte
-   ```
-
-2. **Crea ambiente virtuale**
-   ```bash
-   python -m venv venv
-   source venv/bin/activate  # Windows: venv\Scripts\activate
-   ```
-
-3. **Installa dipendenze**
-   ```bash
-   pip install -r requirements.txt
-   ```
-
-4. **Configura il database**
-   ```bash
-   cp .env.example .env
-   # Modifica .env con le tue credenziali
-   psql -U postgres -f sql/01_init_database.sql
-   ```
-
-5. **Scarica i dati**
-   ```bash
-   python src/data_acquisition/download_data.py
-   ```
-
-6. **Carica il database**
-   ```bash
-   python src/database/load_to_db.py
-   ```
-
-7. **Avvia il dashboard**
-   ```bash
-   streamlit run dashboard/app.py
-   ```
-
-## 📊 KPI Principali
-
-| KPI | Descrizione |
-|-----|-------------|
-| **Temp. Media Annuale** | Temperatura media per anno e provincia |
-| **Temp. Max Annuale** | Massima temperatura registrata |
-| **Giorni >30°C** | Count giorni con T > 30°C |
-| **Giorni >35°C** | Count giorni con T > 35°C |
-| **Giorni >40°C** | Count giorni con T > 40°C |
-| **Durata Ondate** | Lunghezza media heatwave |
-| **Trend Decennale** | Variazione °C ogni 10 anni |
-| **Anomalia Termica** | Differenza vs media climatica |
-
-## 🗺️ Mappe GIS
-
-- 🌡️ **Temperatura Media per Provincia** - Heatmap provinciale
-- 🔥 **Hotspot Climatici** - Zone ad alta vulnerabilità
-- 📈 **Evoluzione Temporale** - Animazione 2000-2026
-- 🌊 **Heatwave Index** - Indice di intensità delle ondate
-- 📍 **Distribuzione Comuni** - Analisi a livello comunale
-
-## 📈 Dataset
-
-Fonti dati pubbliche utilizzate (approccio intermedio):
-
-- **Default (abilitate)**
-   - **Open-Meteo API**: Dati meteorologici storici 2000-2026 (JSON)
-      - Temperature medie, massime, minime
-      - Precipitazioni giornaliere
-      - Free, no API key required
-   - **Copernicus ERA5**: Reanalysis giornaliero (NetCDF)
-      - Temperatura superficiale, precipitazione, pressione
-      - Usato per confronto/climatologia di riferimento
-
-- **Opzionali (disabilitate di default)**
-   - **ARPA Piemonte**: Stazioni e serie storiche locali (CSV)
-      - Per validazione e calibrazione locale
-   - **ISTAT**: Confini amministrativi e dati territoriali (GeoJSON/Shapefile)
-      - Comuni, province, codici ISTAT
-   - **OpenStreetMap**: Confini territoriali e geometrie aggiuntive (Nominatim/OSM)
-      - Boundary data via Nominatim
-
-Le sorgenti abilitate di default sono configurate in `config.yaml` e possono essere modificate tramite il flag `--sources` dello script di acquisizione.
-
-## 🔍 Analisi Statistiche Implementate
-
-✅ **Statistiche Descrittive** - Media, mediana, deviazione standard, quantili
-✅ **Trend Analysis** - Regressione lineare e Mann-Kendall test
-✅ **Correlazione Territoriale** - Autocorrelazione spaziale (Moran's I)
-✅ **Serie Temporali** - STL decomposition, Moving Average
-✅ **Analisi di Frequenza** - Distribuzioni empiriche
-✅ **Clustering Geografico** - K-means su coordinate geospaziali
-
-## 🎯 Roadmap (3 Settimane)
-
-### Settimana 1: Setup & Data Acquisition
-- [x] Struttura progetto
-- [ ] Setup database PostgreSQL/PostGIS
-- [ ] Download dati storici
-- [ ] Validazione e cleaning dati
-
-### Settimana 2: ETL & Analysis
-- [ ] Pipeline ETL completa
-- [ ] Caricamento database
-- [ ] Query SQL ottimizzate
-- [ ] Analisi statistiche
-
-### Settimana 3: Visualization & Dashboard
-- [ ] Mappe GIS in QGIS
-- [ ] Dashboard Streamlit
-- [ ] Documentazione finale
-- [ ] Deploy su GitHub
-
-## 📚 Documentazione
-
-- [ARCHITECTURE.md](docs/ARCHITECTURE.md) - Architettura tecnica dettagliata
-- [DATABASE.md](docs/DATABASE.md) - Schema relazionale e modello dati
-- [ETL.md](docs/ETL.md) - Pipeline di elaborazione dati
-- [API.md](docs/API.md) - Documentazione funzioni Python
-- [TUTORIAL.md](docs/TUTORIAL.md) - Guida passo-passo all'uso
-
-## 💻 Utilizzo
-
-### Download dati
-```bash
-python src/data_acquisition/download_data.py --year 2000:2026 --region all
-```
-
-### Elaborazione dati
-```bash
-python src/data_processing/clean_data.py --input data/raw --output data/processed
-```
-
-### Analisi
-```bash
-python src/analysis/statistical_analysis.py --input data/processed --output results/
-```
-
-### Dashboard
-```bash
-streamlit run dashboard/app.py
-```
-
-## 🧪 Testing
+Per riprodurre l'intera pipeline in locale:
 
 ```bash
-pytest tests/ --cov=src --cov-report=html
+git clone https://github.com/Anna-digiglio/Heatwave-Piemonte.git
+cd Heatwave-Piemonte
+
+python -m venv .venv
+.venv\Scripts\activate       # Linux/Mac: source .venv/bin/activate
+pip install -r requirements.txt
+
+cp .env.example .env          # configura le credenziali del database
+psql -U postgres -f sql/01_init_database.sql
+
+python -m src.data_acquisition.download_data
+python -m src.database.load_to_db
+
+streamlit run dashboard/Home.py
 ```
 
-## 📋 Code Quality
+Richiede PostgreSQL 14+ con estensione PostGIS. Gli script aggiuntivi di
+acquisizione (ARPA, popolazione, uso del suolo, NDVI, elevazione) sono in
+`src/data_acquisition/` e vengono eseguiti separatamente man mano che si
+aggiungono covariate all'analisi.
+
+## Test
 
 ```bash
-# Formatting
-black src/
-
-# Linting
-flake8 src/ --max-line-length=100
-
-# Type checking
-mypy src/
+pytest tests/ -v
+pytest tests/ --cov=src.data_processing --cov=src.analysis --cov=src.utils.config --cov-report=term-missing
 ```
 
-## 🤝 Contribuzioni
+## Documentazione
 
-Le contribuzioni sono benvenute! Per modifiche significative:
+La documentazione tecnica di dettaglio (schema dati, pipeline ETL, catalogo
+KPI, metodologia statistica) è mantenuta in [`wiki/`](wiki/index.md),
+aggiornata a ogni sessione di lavoro rilevante e tenuta sincronizzata con lo
+stato reale del codice. I documenti in `docs/` descrivono invece la
+pianificazione originale del progetto e non riflettono necessariamente lo
+stato attuale.
 
-1. Fork il repository
-2. Crea un branch (`git checkout -b feature/AmazingFeature`)
-3. Commit i cambiamenti (`git commit -m 'Add AmazingFeature'`)
-4. Push al branch (`git push origin feature/AmazingFeature`)
-5. Apri una Pull Request
+## Limiti noti
 
-## 📝 Licenza
+- Copertura dati di temperatura reale: 234 dei 1180 comuni piemontesi per
+  Open-Meteo, 218 per ARPA Piemonte (in estensione progressiva).
+- Open-Meteo (rianalisi climatica) sottostima sistematicamente le
+  temperature massime reali rispetto alle stazioni ARPA, con un bias che
+  cresce in territorio alpino — vedi la modalità "Confronto" nella
+  dashboard per il dettaglio quantitativo.
+- La mappa "Heatwave Index" (indice composito di intensità/frequenza) è
+  pianificata ma non ancora realizzata.
+- La dashboard pubblica legge uno snapshot statico dei dati: l'aggiornamento
+  non è automatico.
 
-Questo progetto è licenziato sotto la MIT License - vedi il file [LICENSE](LICENSE) per i dettagli.
+## Licenza
 
-## 👤 Autore
+Distribuito con licenza MIT — vedi [LICENSE](LICENSE).
 
-**Nome Cognome**
-- LinkedIn: [@tuoprofilo](https://linkedin.com/in/tuoprofilo)
-- GitHub: [@tuoprofilo](https://github.com/tuoprofilo)
-- Email: tuoemail@example.com
+## Autore
 
-## 🙏 Ringraziamenti
+**Anna Digiglio** — laurea in Scienze Naturali, in formazione ITS Data
+Manager for Business Intelligence Software Developer.
 
-- ARPA Piemonte per i dati meteorologici
-- Open-Meteo per l'API meteorologica
-- Copernicus per i dati ERA5
-- La comunità Python per i librerie eccezionali
+- GitHub: [@Anna-digiglio](https://github.com/Anna-digiglio)
+- LinkedIn: [anna-digiglio](https://www.linkedin.com/in/anna-digiglio-76a144406/)
+- Email: anna.digiglio97@gmail.com
 
-## 📞 Contatti & Support
+## Fonti dati
 
-Per domande o problemi, apri una [GitHub Issue](issues) o contattami direttamente.
-
----
-
-**Ultimo aggiornamento**: Maggio 2026  
-**Versione**: 1.0.0  
-**Status**: 🚧 In Sviluppo
+Open-Meteo, ARPA Piemonte, ISTAT, Copernicus (CORINE Land Cover, NDVI Global
+Land Service) — dettaglio completo con link in
+[wiki/pages/data-sources.md](wiki/pages/data-sources.md) e nella pagina
+"Citazioni e Fonti" della dashboard.
