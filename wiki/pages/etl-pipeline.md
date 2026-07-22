@@ -615,6 +615,63 @@ completare la mappa Bias Open-Meteo↔ARPA sono stati scaricati** — al
 prossimo import/ricalcolo, la mappa potrà usare la copertura ARPA
 completa (218/218 comuni con stazione attiva, invece dei 108 attuali).
 
+## Estensione generale, metodo DB-free — 57 comuni (2026-07-22)
+
+Su richiesta dell'utente, nuovo lotto di estensione generale, stesso
+algoritmo delle sessioni precedenti (`compute_target_per_province()` +
+`farthest_point_sample()` per provincia) ma eseguito da una macchina
+**senza accesso al database Postgres/PostGIS** (nessun `.env`, solo
+`config.yaml` con placeholder) — stesso vincolo della collaboratrice
+delle sessioni precedenti, qui pero' senza nemmeno il canale per farsi
+mandare i dati da lei. Le due funzioni che in
+`download_extra_municipalities.py` interrogano il DB
+(`load_all_municipalities()`, `already_downloaded_ids()`) sono state
+sostituite con fonti locali equivalenti (script separato, non nel
+repository — vedi nota sotto sul perche'):
+
+- **1180 comuni + coordinate**: join tra lo shapefile ufficiale ISTAT
+  (`data/external/istat_confini/Com01012026_g/`, filtrato `COD_REG==1`) e
+  `data/dashboard_export/municipality_metadata_all.parquet` (lat/lon
+  gia' esportati per la dashboard, vedi [Dashboard](dashboard.md)).
+  **Bug scoperto**: il `.dbf` dello shapefile ha i nomi con lettere
+  accentate corrotti (bytes UTF-8 decodificati come Latin-1, "Agliè"
+  letto come "AgliÃ¨") — 28/1180 comuni non si univano per nome finche'
+  non corretto con `nome.encode('latin-1').decode('utf-8')` prima del
+  join. Verificato dopo il fix: tutti e 1180 i comuni si abbinano.
+- **Comuni gia' coperti**: parsati dalla tabella
+  [Comuni già coperti](comuni-coperti.md) (455 codici ISTAT), non da una
+  query DB.
+
+**Risultato**: **57 comuni** scaricati con successo, zero falliti per
+motivi diversi dalla quota, bloccato dalla quota dopo 57 (backoff
+crescente su "Capriglio", confermato sul successivo "Pollone" prima di
+fermarsi). Distribuzione: Alessandria 8, Asti 7, Biella 7, Cuneo 7,
+Novara 7, Torino 7, Verbano-Cusio-Ossola 7, Vercelli 7 (selezione
+round-robin per provincia, non raggruppata, cosi' il blocco a meta'
+lascia comunque copertura distribuita). Verificato senza doppioni e
+senza sovrapposizioni con i 455 gia' coperti: 552.900 righe = 57 ×
+9.700 giorni esatti.
+
+**File prodotti** (fuori Git, `data/raw/`, da consegnare al collega
+fuori canale, stesse colonne di sempre):
+- `data/raw/temperature_data_extra_helper_general_20260722b.csv` —
+  552.900 righe, 57 comuni, 2000-01-01 → 2026-07-22.
+- `data/raw/riepilogo_generale_20260722b.csv` — tabella di sintesi.
+
+Suffisso "b" per non confondersi con
+`temperature_data_extra_helper_general_20260722.csv`, gia' presente da
+una sessione precedente (85 comuni, nome scelto quel giorno per un
+delta mai eseguito con quel nome — coincidenza di date, non un errore di
+questa sessione).
+
+**Non ancora importato** — stessa decisione del 2026-07-20 (accumulo
+senza import/ricalcolo a ogni sessione): resta in coda con gli altri
+lotti pendenti. **Script DB-free non salvato nel repository**: e' una
+soluzione ad-hoc per questa sessione specifica (nessun accesso DB), non
+un'alternativa generale a `download_extra_municipalities.py` — se
+un'altra sessione futura si trova nella stessa condizione, questa
+sezione ne descrive il metodo per poterlo ricostruire.
+
 ## Import dei 57 comuni ARPA-target e ricalcolo completo (2026-07-19)
 
 Import del lotto descritto nella sezione precedente, eseguito dal titolare

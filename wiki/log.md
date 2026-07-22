@@ -3670,3 +3670,56 @@ Log cronologico append-only. Ogni riga: data, azione, pagine toccate.
   Pagine aggiornate: `comuni-coperti.md` (obiettivo ARPA marcato
   completo, tabella comuni-coperti rigenerata 331→455, nuove sezioni
   sull'esito di entrambi i lotti e sul bug dei duplicati).
+
+- **2026-07-22** — `git pull` (nessun commit nuovo, repo già allineato).
+  Su richiesta dell'utente ("scarica nuovi comuni del Piemonte fino a
+  quando non ci blocca, dammi i CSV da dare al collega"), nuovo lotto di
+  estensione generale — stesso obiettivo/algoritmo delle sessioni
+  precedenti, ma da **questa macchina, senza alcun accesso al DB**
+  (nessun `.env`, verificato già in una sessione precedente). Le funzioni
+  che in `download_extra_municipalities.py` leggono da Postgres
+  (`load_all_municipalities()`, `already_downloaded_ids()`) sono state
+  sostituite con fonti locali: shapefile ISTAT ufficiale già presente in
+  `data/external/istat_confini/` (per l'elenco dei 1180 comuni + codice
+  ISTAT) unito a `data/dashboard_export/municipality_metadata_all.parquet`
+  (per lat/lon, export statico già usato dalla dashboard) e alla tabella
+  "Comuni già coperti" di `comuni-coperti.md` (per sapere cosa escludere).
+
+  **Bug reale scoperto e corretto durante il join**: il file `.dbf` dello
+  shapefile ha un problema di encoding sui nomi accentati (bytes UTF-8
+  letti come Latin-1 — "Agliè" diventava "AgliÃ¨"), che faceva fallire il
+  join per nome su 28/1180 comuni. Risolto con
+  `nome.encode('latin-1').decode('utf-8')` prima di unire; verificato che
+  dopo il fix tutti e 1180 i comuni si abbinano correttamente.
+
+  **Bug proprio, trovato e corretto prima di lanciare il download vero**:
+  lo script di selezione (in uno scratchpad temporaneo, non nel repo)
+  calcolava la root del progetto risalendo le cartelle a partire dal
+  proprio percorso — ma vivendo fuori dal repo, il ciclo risaliva fino
+  alla radice del disco senza mai trovare `config.yaml`, restando
+  bloccato all'infinito. Diagnosticato isolando ogni passaggio (import,
+  lettura shapefile) con timeout brevi finché non si è capito quale
+  passo non terminava mai; corretto imponendo il percorso assoluto della
+  root invece di derivarlo da `__file__`.
+
+  **Download**: selezionati 150 comuni candidati (stesso metodo
+  farthest-point-sampling per provincia, interlacciati round-robin tra
+  province). Scaricati **57 comuni** con successo (storico completo
+  2000-01-01 → oggi), zero falliti per motivi diversi dalla quota,
+  bloccato dopo 57 (backoff crescente su "Capriglio", confermato sul
+  successivo "Pollone" prima di fermarsi — stesso identico numero della
+  sessione del 2026-07-19, coincidenza). Verificato senza doppioni interni
+  né sovrapposizioni con i 455 comuni già coperti; codici ISTAT
+  verificati a 6 cifre su tutte le 57 righe del riepilogo.
+
+  File prodotti in `data/raw/` (fuori Git, come da convenzione):
+  `temperature_data_extra_helper_general_20260722b.csv` (dati, formato di
+  consegna standard) e `riepilogo_generale_20260722b.csv` (sintesi per
+  comune) — suffisso "b" per non confondersi con l'omonimo file già
+  presente da una sessione precedente (85 comuni, stesso nome usato quel
+  giorno per un delta mai eseguito).
+
+  Pagine aggiornate: `comuni-coperti.md` (nuova voce in cima, tabella
+  comuni-coperti rigenerata programmaticamente 455→512, tutti gli header
+  di provincia aggiornati), `etl-pipeline.md` (nuova sezione "Estensione
+  generale, metodo DB-free — 57 comuni").
