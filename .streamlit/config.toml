@@ -1,0 +1,47 @@
+# Tema della dashboard (Streamlit >= 1.5x). Chiavi verificate contro il
+# pacchetto effettivamente installato (vedi .venv/Lib/site-packages/streamlit/config.py)
+# invece di essere copiate da memoria — alcune (baseRadius, showWidgetBorder,
+# chartCategoricalColors, sezioni [theme.dark]/[theme.sidebar]) sono
+# relativamente recenti e non esistono nelle versioni più vecchie di Streamlit.
+
+[theme]
+base = "light"
+primaryColor = "#2563eb"
+backgroundColor = "#ffffff"
+secondaryBackgroundColor = "#f1f5f9"
+textColor = "#1a202c"
+borderColor = "#e2e8f0"
+linkColor = "#2563eb"
+font = "sans-serif"
+baseRadius = "large"
+buttonRadius = "medium"
+showWidgetBorder = true
+# Stessa famiglia di colori usata nei grafici (vedi
+# dashboard/components/constants.py) come fallback per i grafici che non
+# specificano un colore esplicito.
+chartCategoricalColors = ["#3498db", "#e74c3c", "#2ecc71", "#f39c12", "#9b59b6", "#1abc9c"]
+
+[theme.sidebar]
+backgroundColor = "#f8fafc"
+borderColor = "#e2e8f0"
+
+[theme.dark]
+# Allineato ai token THEME_* di dashboard/components/constants.py
+# (2026-07-17): prima di questo fix il tema scuro nativo di Streamlit usava
+# ancora i colori quasi-neri della sessione 2026-07-15, indipendenti dal
+# grigio ardesia scelto per il restyling — la pagina appariva "sempre nera"
+# perché hero/card (chiari solo di poco) galleggiavano sopra questo sfondo
+# nativo invece che fondercisi. Vedi wiki/log.md 2026-07-17.
+primaryColor = "#3498db"
+backgroundColor = "#1c2130"
+secondaryBackgroundColor = "#262c3d"
+textColor = "#f1f3f8"
+borderColor = "#3a4159"
+
+[theme.dark.sidebar]
+# Leggermente più scuro dello sfondo principale (THEME_INK_SIDEBAR in
+# constants.py) per distinguere il pannello laterale dal contenuto, su
+# richiesta esplicita dell'utente (2026-07-17: "la nav bar laterale falla
+# di un colore diverso" — prima era identica al main).
+backgroundColor = "#161a26"
+borderColor = "#3a4159"
