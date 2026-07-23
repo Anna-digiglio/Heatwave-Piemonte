@@ -4,7 +4,7 @@
 `src/analysis/seasonal_analysis.py`, `src/analysis/spatial_analysis.py`,
 `src/analysis/spatial_regression.py`, `src/analysis/validate_arpa.py`.
 
-## Validazione contro ARPA Piemonte (2026-07-18, estesa il 2026-07-19)
+## Validazione contro ARPA Piemonte (2026-07-18, estesa il 2026-07-19, copertura completa il 2026-07-23)
 
 Fase 1 del piano paper ([Articolo scientifico](paper-scientifico.md)),
 priorità più alta — le temperature usate in tutto il resto di questa pagina
@@ -13,39 +13,40 @@ sono stime Open-Meteo (rianalisi/modello), non osservazioni dirette.
 ARPA reale corrispondente (vedi [Fonti dati](data-sources.md) per come sono
 stati trovati/scaricati), le due serie sullo stesso `(comune, data)`.
 
-**Aggiornamento 2026-07-19**: il campione è passato da **51 a 108 comuni**
-(più che raddoppiato) dopo l'import di 57 comuni scelti apposta dalla lista
-dei comuni ARPA senza Open-Meteo (vedi [Comuni già
-coperti](comuni-coperti.md#obiettivo-reale-completare-la-mappa-bias-open-meteoarpa)) —
-i numeri sotto sono ricalcolati sul campione esteso, non più sui 51
-originali.
+**Aggiornamento 2026-07-23 — copertura ARPA completa, 218/218 comuni**:
+dopo il giro unico di import (177→599 comuni Open-Meteo, vedi [Comuni già
+coperti](comuni-coperti.md)), **tutti i 218 comuni con stazione ARPA
+attiva hanno ora anche Open-Meteo** — il campione di validazione è
+completo, non più un sottoinsieme (era 51 il 2026-07-18, 108 il
+2026-07-19, ora 218/218).
 
-**Risultato aggregato su `temp_max`** (974.498 coppie di osservazioni,
+**Risultato aggregato su `temp_max`** (2.068.072 coppie di osservazioni,
 2000-2026):
 
 | Metrica | Valore |
 |---|---|
-| Correlazione di Pearson (r), media sui 108 comuni | **0.967** |
-| Bias medio (Open-Meteo − ARPA) | **-1.59 °C** |
-| MAE medio | 2.51 °C |
-| RMSE medio | 2.99 °C |
+| Correlazione di Pearson (r), media sui 218 comuni | **0.968** |
+| Bias medio (Open-Meteo − ARPA) | **-1.52 °C** |
+| MAE medio | 2.50 °C |
+| RMSE medio | 2.98 °C |
 
 La correlazione è molto alta — Open-Meteo segue bene la variabilità
 giorno-per-giorno reale — ma c'è un **bias sistematico negativo**:
-Open-Meteo sottostima le temperature massime reali di circa 1.6°C in
-media, con un range molto ampio per comune (da +4.09°C a Piatto a
-**-7.05°C a Valprato Soana**, entrambi comuni collinari/alpini — il bias
-non è uniforme nemmeno in direzione). Il bias medio (-1.59°C) è pressoché
-invariato rispetto ai 51 comuni originali (-1.71°C), segno che non era un
-artefatto del campione ridotto.
+Open-Meteo sottostima le temperature massime reali di circa 1.5°C in
+media, con un range molto ampio per comune (da +4.35°C a Sampeyre a
+**-7.69°C a Cossogno**, entrambi comuni alpini/prealpini — il bias non è
+uniforme nemmeno in direzione). Il bias medio (-1.52°C) resta pressoché
+invariato attraverso tutti e 3 gli allargamenti del campione (-1.71°C →
+-1.59°C → -1.52°C), conferma solida che non è un artefatto di un campione
+piccolo.
 
-**Il bias correla con l'elevazione** (r=-0.350, p=0.0002, n=108,
-ricontrollato sul campione esteso incrociando `output/arpa_validation.csv`
-con `municipalities.elevation_m` — la significatività è più solida ora,
-p è sceso da 0.012 a 0.0002 con più del doppio dei comuni): più alto il
-comune, più negativo il bias — cioè più Open-Meteo sottostima le massime
-reali. Interpretazione plausibile (non a livello di certezza): un prodotto
-di rianalisi rappresenta una cella di griglia, non un punto — in rilievo
+**Il bias correla con l'elevazione** (r=-0.296, p=0.000009, n=218,
+ricontrollato sul campione completo incrociando `output/arpa_validation.csv`
+con `municipalities.elevation_m` — correlazione leggermente più debole ma
+significatività fortissima con il campione pieno): più alto il comune,
+più negativo il bias — cioè più Open-Meteo sottostima le massime reali.
+Interpretazione plausibile (non a livello di certezza): un prodotto di
+rianalisi rappresenta una cella di griglia, non un punto — in rilievo
 alpino complesso questo media esposizioni/quote diverse dentro la stessa
 cella, smussando le temperature estreme che una stazione puntuale osserva
 davvero. Questo è coerente con l'autocorrelazione spaziale residua già
@@ -54,94 +55,123 @@ vista nel modello a errore spaziale (vedi sotto) — un dato di rianalisi
 ipotizzato in [Articolo scientifico](paper-scientifico.md) prima ancora di
 avere questo controllo empirico.
 
-### Bias sui giorni davvero caldi (2026-07-18, aggiornato 2026-07-19)
+### Bias sui giorni davvero caldi (2026-07-18, aggiornato 2026-07-23)
 
 Il bias medio sopra è calcolato su tutti i giorni dell'anno — ma il
 progetto misura ondate di calore, non temperatura media. Ristretto ai
 giorni **realmente caldi** (soglia su `arpa_temp_max`, ARPA come verità di
-terra, tutti i 108 comuni aggregati):
+terra, tutti i 218 comuni aggregati):
 
 | Condizione | n giorni | Bias | MAE | RMSE | r |
 |---|---|---|---|---|---|
-| Tutti i giorni | 961.990 | -1.55°C | 2.53°C | 3.23°C | 0.952 |
-| ARPA temp_max > 30°C | 59.320 | -2.31°C | 2.51°C | 3.02°C | **0.662** |
-| ARPA temp_max > 35°C | 5.291 | -2.60°C | 2.77°C | 3.31°C | **0.393** |
+| Tutti i giorni | 2.047.067 | -1.47°C | 2.51°C | 3.25°C | 0.948 |
+| ARPA temp_max > 30°C | 110.357 | -2.38°C | 2.60°C | 3.20°C | **0.618** |
+| ARPA temp_max > 35°C | 8.808 | -2.64°C | 2.82°C | 3.44°C | **0.375** |
 
-Il bias medio non peggiora drammaticamente sui giorni caldi (-1.55°C →
--2.60°C), ma la **correlazione crolla** (0.952 → 0.393): Open-Meteo continua
+Il bias medio non peggiora drammaticamente sui giorni caldi (-1.47°C →
+-2.64°C), ma la **correlazione crolla** (0.948 → 0.375): Open-Meteo continua
 a sottostimare di circa la stessa quantità, ma perde quasi completamente la
 capacità di distinguere *quali* giorni estremi lo sono davvero di più
 rispetto ad altri, proprio nella fascia che definisce le ondate di calore.
-Pattern confermato sul campione esteso (era 0.956 → 0.400 sui 51 comuni).
+Pattern confermato su tutti e 3 gli allargamenti del campione (0.956 →
+0.400 → 0.393 → 0.375 sui giorni >35°C).
 
-### Confronto a livello di evento: quante ondate di calore "vere" mancano? (2026-07-18, aggiornato 2026-07-19)
+### Confronto a livello di evento: quante ondate di calore "vere" mancano? (2026-07-18, aggiornato 2026-07-23)
 
 Il test più diretto: `identify_heatwaves()` (stessa logica del DB — ≥3
 giorni consecutivi con temp_max > 35°C — reimplementata in Python su
 `arpa_temperature` in `identify_heatwaves_from_series()`) applicata ai dati
-ARPA (verità di terra) per i 108 comuni, confrontata con le ondate già in
+ARPA (verità di terra) per i 218 comuni, confrontata con le ondate già in
 `heatwave_events` (da Open-Meteo) per **gli stessi comuni**, per
 sovrapposizione temporale (non serve che le date coincidano esattamente).
 
 | | Conteggio |
 |---|---|
-| Ondate reali (ARPA) | **1.108** |
-| Ondate rilevate da Open-Meteo | **280** |
-| Precision (delle ondate OM, quante sono confermate da ARPA) | 61.8% |
-| Recall (delle ondate reali, quante OM cattura) | **16.4%** |
+| Ondate reali (ARPA) | **1.185** |
+| Ondate rilevate da Open-Meteo | **459** |
+| Precision (delle ondate OM, quante sono confermate da ARPA) | 63.6% |
+| Recall (delle ondate reali, quante OM cattura) | **25.2%** |
 
-Risultato più rilevante di tutta la validazione, e **peggiorato** sul
-campione esteso: sui 108 comuni con riscontro reale, Open-Meteo **rileva
-meno di un sesto delle ondate di calore effettivamente accadute** (recall
-16.4%, era 31.4% sui 51 comuni originali) — coerente con il bias negativo
-sistematico, che tiene sistematicamente più giorni sotto soglia 35°C di
-quanti dovrebbero esserci. Il calo del recall (non solo il numero assoluto
-di ondate) suggerisce che i 57 comuni aggiunti (scelti per avere ARPA, non
-per caratteristiche climatiche) siano mediamente più esposti al
-sottoconteggio dei precedenti 51 — da approfondire prima di generalizzare
-nel paper, non ancora spiegato. Anche le ondate che Open-Meteo rileva non
-sono tutte "vere": il 38% (100% - 62% precision, sostanzialmente invariato)
+Risultato più rilevante di tutta la validazione — e questa volta
+**migliorato** rispetto al campione intermedio: recall 16.4% (108 comuni,
+2026-07-19) → **25.2%** (218 comuni, campione ARPA completo). Non è
+monotono: era 31.4% sui 51 comuni originali, sceso a 16.4% con i 57
+aggiunti (comuni scelti per avere ARPA, non per caratteristiche
+climatiche), risalito a 25.2% col completamento a 218. La spiegazione più
+plausibile è semplice: il valore sui 51/108 comuni era una stima rumorosa
+su un campione piccolo e non rappresentativo (selezionato per
+disponibilità di stazione ARPA, non casualmente) — il valore a campione
+completo (218/218, l'intero universo ARPA disponibile) è il più
+affidabile dei tre. Resta comunque **basso in assoluto**: Open-Meteo
+rileva circa un quarto delle ondate di calore realmente accadute,
+coerente col bias negativo sistematico. Anche le ondate che Open-Meteo
+rileva non sono tutte "vere": il 36.4% (100% - 63.6% precision, stabile)
 non trova riscontro in un evento ARPA sovrapposto nello stesso comune.
-Implicazione diretta per il paper: le **770 ondate totali già contate su
-234 comuni sono quasi certamente un sottoconteggio sostanziale** del
+Implicazione diretta per il paper: le **2.192 ondate totali già contate su
+599 comuni sono quasi certamente un sottoconteggio sostanziale** del
 fenomeno reale, non solo un numero "conservativo" — da dichiarare
-esplicitamente come limite quantificato, non solo qualitativo. Dettaglio
-per evento in `output/arpa_heatwave_events.csv`; bias per condizione in
+esplicitamente come limite quantificato (fattore ~4×, non ~3× come si
+poteva pensare prima), non solo qualitativo. Dettaglio per evento in
+`output/arpa_heatwave_events.csv`; bias per condizione in
 `output/arpa_hot_day_bias.csv`.
 
-### Il trend di riscaldamento regge sui dati di stazione reali (2026-07-18, aggiornato 2026-07-19)
+### Il trend di riscaldamento regge sui dati di stazione reali (2026-07-18, aggiornato 2026-07-23)
 
-Buona notizia in mezzo alle precedenti: a differenza dell'accuratezza
-giornaliera e del conteggio delle ondate (entrambi problematici, vedi
-sopra), **il trend di riscaldamento è robusto alla fonte dei dati**, anche
-sul campione esteso. Rieseguiti Mann-Kendall + regressione lineare (stesse
-funzioni pure di `trend_analysis.py`) sulla media annuale ARPA per i 108
-comuni, confrontati con `output/trend_analysis.csv` (Open-Meteo) già
-calcolato:
+A differenza dell'accuratezza giornaliera e del conteggio delle ondate
+(entrambi problematici, vedi sopra), **il trend di riscaldamento resta
+robusto alla fonte dei dati** anche sul campione ARPA completo — ma con
+una sfumatura nuova rispetto ai due aggiornamenti precedenti (vedi sotto).
+Rieseguiti Mann-Kendall + regressione lineare (stesse funzioni pure di
+`trend_analysis.py`) sulla media annuale ARPA per i 218 comuni, confrontati
+con `output/trend_analysis.csv` (Open-Meteo) già calcolato:
 
 | Metrica | Valore |
 |---|---|
-| Segno della pendenza concorde ARPA/Open-Meteo | **90.7%** (98/108 comuni) |
-| Trend ARPA significativo (p<0.05) | 94/108 |
-| Trend Open-Meteo significativo (p<0.05) | 91/108 |
-| Entrambi significativi | 80/108 |
-| Differenza media di pendenza (OM − ARPA) | -0.096 °C/decade (sd=0.537) |
+| Segno della pendenza concorde ARPA/Open-Meteo | **92.7%** (202/218 comuni) |
+| Trend ARPA significativo (p<0.05) | 175/218 |
+| Trend Open-Meteo significativo (p<0.05) | 201/218 |
+| Entrambi significativi | 160/218 |
+| Differenza media di pendenza (OM − ARPA) | **+0.148 °C/decade** (sd=0.475) |
 
-Numeri quasi identici a quelli sui 51 comuni originali (concordanza
-88.2%→90.7%, differenza di pendenza -0.095→-0.096°C/decade) — il risultato
-principale del paper resta confermato sul campione più che raddoppiato.
-**Nota**: l'elenco specifico dei comuni a segno discorde sui 51 originali
-(Acceglio, Briga Alta, Castelmagno, Cuneo, Limone Piemonte, Novi Ligure —
-tutti casi con almeno una fonte non significativa, nessun caso di due
-trend opposti *entrambi* significativi) non è stato ricontrollato
-nominalmente sul campione a 108 comuni — solo i conteggi aggregati sopra
-sono aggiornati. La differenza media di pendenza è piccola rispetto alla
-dispersione dei trend stessi
-(+0.3/+1.4°C/decade nel campione). **Implicazione per il paper**: il
-risultato principale ("riscaldamento diffuso e significativo") non è un
-artefatto della fonte dati Open-Meteo — a differenza del conteggio delle
-ondate di calore, che invece va corretto/qualificato esplicitamente.
-Dettaglio per comune in `output/arpa_trend_comparison.csv`.
+**Nota importante**: il segno della differenza media di pendenza si è
+**invertito** rispetto ai due aggiornamenti precedenti (-0.095°C/decade a
+51 comuni, -0.096°C/decade a 108, ora **+0.148°C/decade** a 218) — prima
+Open-Meteo sottostimava leggermente il trend rispetto ad ARPA, ora lo
+sovrastima leggermente. La differenza resta piccola rispetto alla
+dispersione dei trend stessi, ma l'inversione di segno con un campione
+più che raddoppiato (non solo un cambio di magnitudine) è un segnale che
+questo confronto specifico non si era ancora stabilizzato ai campioni
+precedenti — da trattare con cautela nel paper: il messaggio qualitativo
+("i due trend sono simili") tiene, il numero preciso di scarto no.
+Concordanza di segno invece stabile e alta in tutti e 3 i campioni
+(88.2% → 90.7% → 92.7%).
+
+<details>
+<summary>Numeri superati (51 e 108 comuni, tenuti per confronto storico)</summary>
+
+| Metrica | 2026-07-18 (51) | 2026-07-19 (108) | 2026-07-23 (218) |
+|---|---|---|---|
+| Segno della pendenza concorde | 88.2% (45/51) | 90.7% (98/108) | 92.7% (202/218) |
+| Trend ARPA significativo (p<0.05) | 43/51 | 94/108 | 175/218 |
+| Trend Open-Meteo significativo (p<0.05) | 40/51 | 91/108 | 201/218 |
+| Entrambi significativi | 35/51 | 80/108 | 160/218 |
+| Differenza media di pendenza (OM − ARPA) | -0.095 °C/decade | -0.096 °C/decade | **+0.148 °C/decade** |
+
+Il segno della differenza di pendenza si inverte proprio tra il secondo e
+il terzo campione — vedi la nota sopra. La concordanza di segno resta
+invece stabile e in crescita in tutti e 3 gli allargamenti.
+
+**Implicazione per il paper**: il risultato principale ("riscaldamento
+diffuso e significativo, segno concorde tra le fonti nel 92.7% dei casi")
+non è un artefatto della fonte dati Open-Meteo — a differenza del
+conteggio delle ondate di calore, che invece va corretto/qualificato
+esplicitamente, e a differenza dello scarto medio di pendenza, la cui
+inversione di segno consiglia di riportare solo il risultato qualitativo
+(concordanza di segno), non la cifra esatta dello scarto, finché non si
+osserva se si stabilizza a campioni futuri. Dettaglio per comune in
+`output/arpa_trend_comparison.csv`.
+
+</details>
 
 **Caveat**: la stazione ARPA scelta per ciascun comune è quella più vicina
 per *quota* al centroide comunale, non necessariamente rappresentativa

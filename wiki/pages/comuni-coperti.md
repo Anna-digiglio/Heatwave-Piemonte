@@ -11,6 +11,34 @@ scaricare due volte lo stesso comune sprecando quota di rate limit
 giornaliero (vedi [Fonti Dati](data-sources.md) per il limite scoperto il
 2026-07-17).
 
+**Aggiornamento 2026-07-23 (pomeriggio) — GIRO UNICO DI IMPORT ESEGUITO,
+234 → 599 comuni**: su richiesta esplicita dell'utente, fatto il giro
+unico di import + ricalcolo rimandato dal 2026-07-20. Consolidati tutti i
+lotti pendenti (347 comuni nuovi da `temperature_data_extra.csv`, 18 da
+Torino, 267 righe di delta per i 177 comuni originali) — **3.540.507
+righe pulite e inserite**, **599 comuni** ora in `temperature`
+(5.809.330 righe). Ricalcolo a valle: elevazione 599/599,
+`TRUNCATE`+`identify_heatwaves()` → **2.192 ondate** (da 770),
+`kpi_annual_by_municipality` → **16.173 righe** (599×27 anni). Mappe QGIS
+rigenerate. `download_arpa.py` e `refresh_dashboard.py` (analisi
+completa + export dashboard) lanciati **in parallelo** per risparmiare
+tempo (217 comuni ARPA scaricati in ~2h, poi importati mentre la STL era
+ancora a metà) — **STL completata in 4h10min** per 599 comuni, tutti e 7
+gli step riusciti. **Copertura ARPA ora completa: 218/218 comuni** hanno
+sia Open-Meteo che ARPA (era 108/234) — bias -1.52°C (stabile), recall
+ondate risalito al 25.2% (da 16.4%), vedi [Analisi
+statistica](statistical-analysis.md#validazione-contro-arpa-piemonte-2026-07-18-estesa-il-2026-07-19-copertura-completa-il-2026-07-23)
+per il dettaglio completo. File raw/processed consolidati: `temperature_data_extra.csv`
+assorbe anche il lotto Torino (591 comuni), `temperature_data_recent.csv`
+e gli archivi ormai ridondanti eliminati; stesso consolidamento sui file
+`data/processed/` (77.576 + 5.731.754 = 5.809.330, combacia col DB).
+**Bug trovato e corretto durante il consolidamento**: un errore mio nel
+merge dei capoluoghi ha temporaneamente sovrascritto la colonna
+`province` con valori vuoti per 16 righe, causando la perdita silenziosa
+di 14 righe per una deduplica su chiave sbagliata — scoperto verificando
+il totale contro il DB (non tornava), corretto ricalcolando la colonna
+da `municipality_id` invece che dalla colonna vuota.
+
 **Decisione del 2026-07-20 — accumulo dati SENZA import/ricalcolo**:
 l'utente ha deciso esplicitamente di **non importare né ricalcolare** ad
 ogni sessione di download — l'intera pipeline a valle (pulizia, join,
@@ -25,7 +53,6 @@ volutamente indietro** rispetto ai file raw — questo è intenzionale, non
 un lavoro dimenticato. Vedi sezione "Obiettivo reale" più sotto per lo
 stato aggiornato dei comuni ancora mancanti.
 
-<<<<<<< HEAD
 **Aggiornamento 2026-07-23 — 8 doppioni scoperti: causa root trovata
 (wiki non pushata)**: la collaboratrice ha consegnato altri **57 comuni
 generici** (`temperature_data_extra_helper_general_20260723.csv` +
@@ -54,7 +81,7 @@ sovrapposizioni). Tabella "Comuni già coperti" sotto ricalcolata:
 **599/1180 comuni coperti** (era 531), **581 ancora scaricabili
 liberamente** — quasi a metà strada. **Nessun import né ricalcolo**, come
 da decisione del 2026-07-20.
-=======
+
 **Aggiornamento 2026-07-23 — quarto giorno consecutivo, stesso metodo
 DB-free, altri 57 comuni**: stessa richiesta dell'utente ("come gli altri
 giorni"), stesso script della sessione precedente (non salvato nel repo,
@@ -79,7 +106,6 @@ collega, coerente con la convenzione "file eliminati dopo l'unione".
 Tabella "Comuni già coperti" sotto rigenerata di conseguenza:
 **569/1180 comuni coperti** (era 512), **611 ancora scaricabili
 liberamente**.
->>>>>>> d216b75f78c3a4025768fc9d6a29f113ee589b42
 
 **Aggiornamento 2026-07-22 — nuovo lotto generale, 57 comuni, metodo
 DB-free**: su richiesta dell'utente ("scarica nuovi comuni... fino a
@@ -563,11 +589,7 @@ importare per evitare doppioni.
 
 ## Comuni già coperti (NON riscaricare questi)
 
-<<<<<<< HEAD
 ### Alessandria (126/187 comuni coperti)
-=======
-### Alessandria (96/187 comuni coperti)
->>>>>>> d216b75f78c3a4025768fc9d6a29f113ee589b42
 
 | Comune | Codice ISTAT |
 |---|---|
@@ -613,12 +635,9 @@ importare per evitare doppioni.
 | Cavatore | 006055 |
 | Cereseto | 006057 |
 | Cerrina Monferrato | 006059 |
-<<<<<<< HEAD
 | Coniolo | 006060 |
 | Conzano | 006061 |
 | Costa Vescovato | 006062 |
-=======
->>>>>>> d216b75f78c3a4025768fc9d6a29f113ee589b42
 | Cremolino | 006063 |
 | Denice | 006065 |
 | Fabbrica Curone | 006067 |
@@ -647,10 +666,7 @@ importare per evitare doppioni.
 | Moncestino | 006099 |
 | Mongiardino Ligure | 006100 |
 | Monleale | 006101 |
-<<<<<<< HEAD
 | Montacuto | 006102 |
-=======
->>>>>>> d216b75f78c3a4025768fc9d6a29f113ee589b42
 | Montaldeo | 006103 |
 | Montecastello | 006105 |
 | Montechiaro d'Acqui | 006106 |
@@ -667,10 +683,7 @@ importare per evitare doppioni.
 | Pareto | 006125 |
 | Pontecurone | 006132 |
 | Pontestura | 006133 |
-<<<<<<< HEAD
 | Ponti | 006134 |
-=======
->>>>>>> d216b75f78c3a4025768fc9d6a29f113ee589b42
 | Ponzone | 006136 |
 | Pozzol Groppo | 006137 |
 | Pozzolo Formigaro | 006138 |
@@ -694,13 +707,9 @@ importare per evitare doppioni.
 | Solero | 006163 |
 | Spigno Monferrato | 006165 |
 | Spineto Scrivia | 006166 |
-<<<<<<< HEAD
 | Strevi | 006168 |
 | Tagliolo Monferrato | 006169 |
 | Terzo | 006172 |
-=======
-| Tagliolo Monferrato | 006169 |
->>>>>>> d216b75f78c3a4025768fc9d6a29f113ee589b42
 | Tortona | 006174 |
 | Valenza | 006177 |
 | Valmacca | 006178 |

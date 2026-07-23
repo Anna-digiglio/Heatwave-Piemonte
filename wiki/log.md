@@ -3724,7 +3724,6 @@ Log cronologico append-only. Ogni riga: data, azione, pagine toccate.
   di provincia aggiornati), `etl-pipeline.md` (nuova sezione "Estensione
   generale, metodo DB-free — 57 comuni").
 
-<<<<<<< HEAD
 - **2026-07-22** (seguito) — INGEST: `git pull` (portati i 57 comuni
   della sessione DB-free descritta sopra), poi uniti in
   `temperature_data_extra.csv` (429 → 486 comuni, zero sovrapposizioni,
@@ -3771,7 +3770,7 @@ Log cronologico append-only. Ogni riga: data, azione, pagine toccate.
   Pagine aggiornate: `comuni-coperti.md` (causa root dei doppioni
   documentata esplicitamente, unione del lotto del collega, esito del
   nuovo giro di download, tabella comuni-coperti rigenerata 531→599).
-=======
+
 - **2026-07-23** — `git pull` (nessun commit nuovo: la sessione precedente
   era già stata committata dall'utente, `871a63e`). Stessa richiesta
   identica dell'utente ("come gli altri giorni"), quarto giorno
@@ -3804,4 +3803,63 @@ Log cronologico append-only. Ogni riga: data, azione, pagine toccate.
   comuni-coperti rigenerata 512→569, tutti gli header di provincia
   aggiornati), `etl-pipeline.md` (nuova sezione "Estensione generale,
   metodo DB-free — altri 57 comuni").
->>>>>>> d216b75f78c3a4025768fc9d6a29f113ee589b42
+
+- **2026-07-23** (pomeriggio-sera) — GIRO UNICO DI IMPORT + RICALCOLO
+  (234 → 599 comuni), su richiesta esplicita dell'utente ("avvia
+  l'operazione di import e ricalcolo su tutto il progetto"). Consolidati
+  tutti i lotti pendenti accumulati dal 2026-07-20: 347 comuni nuovi da
+  `temperature_data_extra.csv`, 18 da Torino, 267 righe di delta per i
+  177 comuni originali — **3.540.507 righe pulite e inserite** in
+  `temperature` (234 → **599 comuni**, 5.809.330 righe totali). Ricalcolo
+  a valle completo: elevazione 599/599, `TRUNCATE`+`identify_heatwaves()`
+  → **2.192 ondate** (da 770), `kpi_annual_by_municipality` → **16.173
+  righe**. Mappe QGIS rigenerate.
+
+  `download_arpa.py` e `refresh_dashboard.py` (pipeline di analisi
+  completa) lanciati **in parallelo** per risparmiare tempo — la STL da
+  sola (~4h10min per 599 comuni) copriva ampiamente il tempo di download
+  ARPA (~2h per 217 stazioni), quindi l'import di `arpa_temperature` è
+  avvenuto ben prima che `validate_arpa` (ultimo step prima dell'export)
+  ne avesse bisogno. **Copertura ARPA ora completa: 218/218 comuni**
+  hanno sia Open-Meteo che ARPA (era 108/234) — bias -1.52°C (stabile su
+  tutti e 3 gli allargamenti del campione), recall delle ondate risalito
+  al 25.2% (da 16.4% a 108 comuni), ma la differenza di pendenza del
+  trend ha **invertito segno** (-0.096→+0.148°C/decade) — segnalato
+  esplicitamente come risultato instabile, non ancora da riportare come
+  cifra precisa nel paper.
+
+  **Bug di merge trovato e corretto durante il consolidamento dei file**:
+  un mio errore nel merge dei capoluoghi ha temporaneamente sovrascritto
+  la colonna `province` con valori vuoti per 16 righe, causando la
+  perdita silenziosa di 14 righe per una deduplica su chiave sbagliata —
+  scoperto verificando il totale contro il DB (non tornava), corretto
+  ricalcolando la colonna da `municipality_id`.
+
+  **Scoperta separata e più seria**: `wiki/pages/comuni-coperti.md` e
+  `wiki/log.md` contenevano **6+1 marcatori di conflitto Git non
+  risolti** (`<<<<<<< HEAD` / `=======` / `>>>>>>>`), già presenti
+  nell'ultimo commit pushato (non un conflitto attivo nella sessione
+  corrente — `git status` non segnalava nulla, erano testo letterale
+  commesso per errore da una sessione precedente che ha "risolto" un
+  conflitto salvando entrambe le versioni con i marcatori invece di
+  scegliere/unire il contenuto). Probabile causa: due sessioni diverse
+  (questa e quella "DB-free, quarto giorno consecutivo") hanno scritto
+  narrazioni indipendenti per lo stesso giorno (2026-07-23) in cima alla
+  pagina, generando un conflitto al momento dell'unione mai risolto
+  correttamente. Risolto tenendo **entrambe** le narrazioni in sequenza
+  (nessuna informazione persa) per il testo libero, e sostituendo per
+  intero la tabella "Comuni già coperti" (dove i conflitti erano
+  interni alle righe della tabella) con una versione rigenerata da zero
+  dal DB. Verificato che non ci fossero altri marcatori altrove nel
+  repo (solo falsi positivi in `.venv`, librerie di terze parti).
+
+  Consolidamento file: `temperature_data_extra.csv` assorbe anche il
+  lotto Torino (591 comuni), `temperature_data_recent.csv` e gli archivi
+  ridondanti eliminati; stesso consolidamento su `data/processed/`
+  (77.576 + 5.731.754 = 5.809.330, combacia esattamente col DB).
+
+  Pagine aggiornate: `comuni-coperti.md`, `project-status.md`,
+  `statistical-analysis.md` (numeri di validazione ARPA ricalcolati sul
+  campione completo a 218 comuni in tutte le sottosezioni, tabella di
+  confronto storico aggiunta), `log.md` (questa voce, correzione dei
+  conflitti Git non risolti).

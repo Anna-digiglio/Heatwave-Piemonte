@@ -296,7 +296,17 @@ def export_seasonal_decomposition_all() -> None:
 
     combined = pd.concat(frames, ignore_index=True)
     combined['date'] = pd.to_datetime(combined['date'])
-    combined.to_parquet(EXPORT_DIR / 'seasonal_decomposition_all.parquet', index=False)
+    # float32 + gzip invece del default (float64 + snappy): a 599 comuni il
+    # file superava i 100MB del limite GitHub (154MB) - scoperto il
+    # 2026-07-23 quando il push e' stato respinto. float32 e' piu' che
+    # sufficiente per temperature in gradi (nessuna perdita di precisione
+    # rilevante), gzip comprime meglio di snappy per questo tipo di dati
+    # (83MB contro 93MB con solo float32).
+    for col in ['observed', 'trend', 'seasonal', 'resid']:
+        combined[col] = combined[col].astype('float32')
+    combined.to_parquet(
+        EXPORT_DIR / 'seasonal_decomposition_all.parquet', index=False, compression='gzip'
+    )
     logger.info(f"seasonal_decomposition_all.parquet: {len(combined)} righe, {len(frames)} comuni")
 
 
