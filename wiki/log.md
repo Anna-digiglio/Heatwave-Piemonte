@@ -3723,3 +3723,50 @@ Log cronologico append-only. Ogni riga: data, azione, pagine toccate.
   comuni-coperti rigenerata programmaticamente 455→512, tutti gli header
   di provincia aggiornati), `etl-pipeline.md` (nuova sezione "Estensione
   generale, metodo DB-free — 57 comuni").
+
+- **2026-07-22** (seguito) — INGEST: `git pull` (portati i 57 comuni
+  della sessione DB-free descritta sopra), poi uniti in
+  `temperature_data_extra.csv` (429 → 486 comuni, zero sovrapposizioni,
+  file del collega eliminati dopo l'unione). Rilanciato subito il
+  download generale (stesso criterio spaziale, target = 668 comuni
+  ancora mancanti, fino al blocco quota): **19/650 riusciti** prima del
+  blocco su "Felizzano" (confermato dal blocco anche sul successivo) —
+  quota quasi certamente già consumata dal lotto del collega nella
+  stessa giornata. I 19 uniti allo stesso file (486 → 505 comuni).
+  **Nessun import né ricalcolo**, per scelta esplicita dell'utente
+  (stessa decisione del 2026-07-20): si continua ad accumulare.
+
+  Ricalcolata la tabella "Comuni già coperti" per provincia: **531/1180
+  comuni** coperti (era 512).
+
+  Pagine aggiornate: `comuni-coperti.md` (unione del lotto del collega,
+  esito del nuovo giro di download, tabella comuni-coperti rigenerata
+  512→531).
+
+- **2026-07-23** — INGEST + CAUSA ROOT TROVATA: la collaboratrice ha
+  consegnato altri 57 comuni generici. All'unione, **8 comuni erano già
+  presenti** (77.600 righe duplicate, deduplicate prima di salvare) —
+  **causa**: l'aggiornamento di questa pagina del 2026-07-22 sera (i 19
+  comuni di quel giro, 4 dei quali coincidono con gli 8 doppioni di oggi)
+  era rimasto **non committato/pushato** — la collaboratrice ha lavorato
+  su uno snapshot Git di un giorno indietro. Il meccanismo di
+  coordinamento "aggiorna la wiki, la collega la consulta via git pull"
+  **richiede che i commit vengano effettivamente pushati**, non solo
+  scritti su disco — altrimenti si ripete lo stesso spreco di quota già
+  visto il 2026-07-21 (Pragelato/Sestriere, causa diversa ma stesso
+  sintomo). File della collaboratrice uniti (505 → 554 comuni) ed
+  eliminati.
+
+  Rilanciato il download generale sui comuni mancanti (580 coperti, 600
+  mancanti all'avvio): **19/574 riusciti** prima del blocco su "Avolasca"
+  (confermato dal blocco anche sul successivo) — presi anche i due
+  comuni bloccati ieri (Felizzano, Mombello Monferrato). Uniti allo
+  stesso file (554 → 573 comuni). **Nessun import né ricalcolo**, per
+  scelta esplicita dell'utente (stessa decisione del 2026-07-20).
+
+  Ricalcolata la tabella "Comuni già coperti": **599/1180 comuni**
+  coperti (era 531).
+
+  Pagine aggiornate: `comuni-coperti.md` (causa root dei doppioni
+  documentata esplicitamente, unione del lotto del collega, esito del
+  nuovo giro di download, tabella comuni-coperti rigenerata 531→599).
