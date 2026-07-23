@@ -672,6 +672,39 @@ un'alternativa generale a `download_extra_municipalities.py` — se
 un'altra sessione futura si trova nella stessa condizione, questa
 sezione ne descrive il metodo per poterlo ricostruire.
 
+## Estensione generale, metodo DB-free — altri 57 comuni (2026-07-23)
+
+Quarta giornata consecutiva della stessa richiesta ("come gli altri
+giorni"). Stesso metodo DB-free descritto nella sezione precedente
+(2026-07-22): shapefile ISTAT + `municipality_metadata_all.parquet` per
+l'elenco comuni/coordinate, tabella "Comuni già coperti" di
+[Comuni già coperti](comuni-coperti.md) per il filtro di esclusione. Lo
+script stesso non è salvato nel repository (vive in una cartella
+temporanea di sessione) e va ricreato da zero a ogni sessione — non un
+problema, dato che è comunque descritto per intero qui.
+
+**Risultato**: **57 comuni**, zero falliti per motivi diversi dalla
+quota, bloccato dopo 57 (backoff crescente su "Grana Monferrato",
+confermato su "Sostegno"). Distribuzione: Alessandria 8, Asti 7, Biella
+7, Cuneo 7, Novara 7, Torino 7, Verbano-Cusio-Ossola 7, Vercelli 7 —
+identica a quella del 2026-07-22 (stessa proporzione tra province, dato
+che il numero di comuni già coperti per provincia non cambia
+sostanzialmente la ripartizione). Verificato senza doppioni ne'
+sovrapposizioni con i 512 gia' coperti: 552.957 righe = 57 × 9.701
+giorni esatti (un giorno in piu' di ieri, la serie storica si allunga
+ogni giorno che passa).
+
+**File prodotti** (fuori Git, `data/raw/`):
+- `data/raw/temperature_data_extra_helper_general_20260723.csv` —
+  552.957 righe, 57 comuni, 2000-01-01 → 2026-07-23.
+- `data/raw/riepilogo_generale_20260723.csv` — tabella di sintesi.
+
+**Osservazione**: all'inizio di questa sessione `data/raw/` non
+conteneva più nessuno dei file della sessione del 2026-07-22 — segno
+che erano già stati presi in consegna e importati/archiviati dal
+collega, coerente con la convenzione "file eliminati dopo l'unione"
+usata in tutte le sessioni precedenti di questo tipo.
+
 ## Import dei 57 comuni ARPA-target e ricalcolo completo (2026-07-19)
 
 Import del lotto descritto nella sezione precedente, eseguito dal titolare

@@ -25,6 +25,7 @@ volutamente indietro** rispetto ai file raw — questo è intenzionale, non
 un lavoro dimenticato. Vedi sezione "Obiettivo reale" più sotto per lo
 stato aggiornato dei comuni ancora mancanti.
 
+<<<<<<< HEAD
 **Aggiornamento 2026-07-23 — 8 doppioni scoperti: causa root trovata
 (wiki non pushata)**: la collaboratrice ha consegnato altri **57 comuni
 generici** (`temperature_data_extra_helper_general_20260723.csv` +
@@ -53,6 +54,32 @@ sovrapposizioni). Tabella "Comuni già coperti" sotto ricalcolata:
 **599/1180 comuni coperti** (era 531), **581 ancora scaricabili
 liberamente** — quasi a metà strada. **Nessun import né ricalcolo**, come
 da decisione del 2026-07-20.
+=======
+**Aggiornamento 2026-07-23 — quarto giorno consecutivo, stesso metodo
+DB-free, altri 57 comuni**: stessa richiesta dell'utente ("come gli altri
+giorni"), stesso script della sessione precedente (non salvato nel repo,
+solo descritto in [Pipeline ETL](etl-pipeline.md)), ricreato da zero
+perché vive in una cartella temporanea fuori dal repo. **Scaricati altri
+57 comuni** (2000-01-01 → 2026-07-23), zero falliti per motivi diversi
+dalla quota, bloccato dopo 57 (backoff crescente su "Grana Monferrato",
+confermato sul successivo "Sostegno" — terzo giorno di fila che si
+ferma esattamente a 57, coincidenza numerica non un limite fisso: il
+conteggio di righe scaricate è leggermente diverso ogni giorno, 552.957
+oggi contro 552.900 il 2026-07-22, perché la serie storica si allunga di
+un giorno ogni 24 ore). Verificato senza doppioni interni né
+sovrapposizioni con i 512 comuni già coperti.
+
+File prodotti in `data/raw/` (fuori Git, da consegnare al collega fuori
+canale): `temperature_data_extra_helper_general_20260723.csv` (dati) e
+`riepilogo_generale_20260723.csv` (sintesi). **Nota**: i file della
+sessione del 2026-07-22 non erano più presenti in `data/raw/` all'inizio
+di questa sessione — segno che sono già stati presi in consegna dal
+collega, coerente con la convenzione "file eliminati dopo l'unione".
+
+Tabella "Comuni già coperti" sotto rigenerata di conseguenza:
+**569/1180 comuni coperti** (era 512), **611 ancora scaricabili
+liberamente**.
+>>>>>>> d216b75f78c3a4025768fc9d6a29f113ee589b42
 
 **Aggiornamento 2026-07-22 — nuovo lotto generale, 57 comuni, metodo
 DB-free**: su richiesta dell'utente ("scarica nuovi comuni... fino a
@@ -536,7 +563,11 @@ importare per evitare doppioni.
 
 ## Comuni già coperti (NON riscaricare questi)
 
+<<<<<<< HEAD
 ### Alessandria (126/187 comuni coperti)
+=======
+### Alessandria (96/187 comuni coperti)
+>>>>>>> d216b75f78c3a4025768fc9d6a29f113ee589b42
 
 | Comune | Codice ISTAT |
 |---|---|
@@ -582,9 +613,12 @@ importare per evitare doppioni.
 | Cavatore | 006055 |
 | Cereseto | 006057 |
 | Cerrina Monferrato | 006059 |
+<<<<<<< HEAD
 | Coniolo | 006060 |
 | Conzano | 006061 |
 | Costa Vescovato | 006062 |
+=======
+>>>>>>> d216b75f78c3a4025768fc9d6a29f113ee589b42
 | Cremolino | 006063 |
 | Denice | 006065 |
 | Fabbrica Curone | 006067 |
@@ -613,7 +647,10 @@ importare per evitare doppioni.
 | Moncestino | 006099 |
 | Mongiardino Ligure | 006100 |
 | Monleale | 006101 |
+<<<<<<< HEAD
 | Montacuto | 006102 |
+=======
+>>>>>>> d216b75f78c3a4025768fc9d6a29f113ee589b42
 | Montaldeo | 006103 |
 | Montecastello | 006105 |
 | Montechiaro d'Acqui | 006106 |
@@ -630,7 +667,10 @@ importare per evitare doppioni.
 | Pareto | 006125 |
 | Pontecurone | 006132 |
 | Pontestura | 006133 |
+<<<<<<< HEAD
 | Ponti | 006134 |
+=======
+>>>>>>> d216b75f78c3a4025768fc9d6a29f113ee589b42
 | Ponzone | 006136 |
 | Pozzol Groppo | 006137 |
 | Pozzolo Formigaro | 006138 |
@@ -654,9 +694,13 @@ importare per evitare doppioni.
 | Solero | 006163 |
 | Spigno Monferrato | 006165 |
 | Spineto Scrivia | 006166 |
+<<<<<<< HEAD
 | Strevi | 006168 |
 | Tagliolo Monferrato | 006169 |
 | Terzo | 006172 |
+=======
+| Tagliolo Monferrato | 006169 |
+>>>>>>> d216b75f78c3a4025768fc9d6a29f113ee589b42
 | Tortona | 006174 |
 | Valenza | 006177 |
 | Valmacca | 006178 |
