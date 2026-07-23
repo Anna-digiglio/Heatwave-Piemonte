@@ -3723,3 +3723,36 @@ Log cronologico append-only. Ogni riga: data, azione, pagine toccate.
   comuni-coperti rigenerata programmaticamente 455→512, tutti gli header
   di provincia aggiornati), `etl-pipeline.md` (nuova sezione "Estensione
   generale, metodo DB-free — 57 comuni").
+
+- **2026-07-23** — `git pull` (nessun commit nuovo: la sessione precedente
+  era già stata committata dall'utente, `871a63e`). Stessa richiesta
+  identica dell'utente ("come gli altri giorni"), quarto giorno
+  consecutivo di questo tipo di sessione. Script DB-free della sessione
+  precedente non più disponibile (la cartella temporanea di sessione è
+  cambiata tra una conversazione e l'altra) — ricreato da zero nella
+  nuova scratchpad, stessa logica, solo il suffisso data aggiornato
+  (`20260723`).
+
+  Selezionati 150 candidati (farthest-point-sampling per provincia,
+  round-robin), esclusi i 512 comuni già coperti (letti dalla tabella di
+  `comuni-coperti.md`, non da un DB — stesso vincolo di sempre, ancora
+  nessun `.env` in questa macchina). **Scaricati 57 comuni**, zero
+  falliti per motivi diversi dalla quota, bloccato dopo 57 (backoff
+  crescente su "Grana Monferrato", confermato su "Sostegno" — terzo
+  giorno di fila fermo esattamente a 57, coincidenza: la serie storica è
+  un giorno più lunga di ieri, quindi non è un conteggio identico di
+  richieste). Verificato senza doppioni interni né sovrapposizioni con i
+  512 già coperti.
+
+  **Osservazione**: `data/raw/` era vuota all'inizio della sessione — i
+  file consegnati ieri (22/7) non c'erano più, segno che il collega li
+  aveva già presi in consegna, coerente con la convenzione "file
+  eliminati dopo l'unione".
+
+  File prodotti in `data/raw/` (fuori Git): `temperature_data_extra_helper_general_20260723.csv`
+  (dati) e `riepilogo_generale_20260723.csv` (sintesi).
+
+  Pagine aggiornate: `comuni-coperti.md` (nuova voce in cima, tabella
+  comuni-coperti rigenerata 512→569, tutti gli header di provincia
+  aggiornati), `etl-pipeline.md` (nuova sezione "Estensione generale,
+  metodo DB-free — altri 57 comuni").
