@@ -193,9 +193,13 @@ mattina, altri 57 dalla stessa collaboratrice) → **177 comuni (2026-07-18,
 +22 scaricati direttamente)** — sempre con lo stesso campionamento
 "farthest-point" per copertura spaziale, vedi [ETL](etl-pipeline.md). Dal
 2026-07-17 il periodo coperto arriva anche **fino a oggi**, non più fermo
-al 31/12/2025. Tutti i numeri qui sotto sono aggiornati alla versione a
-177 comuni; dove rilevante è indicato anche il risultato precedente per
-confronto.
+al 31/12/2025. → **234 comuni (2026-07-19)** → **599 comuni (2026-07-23)**,
+ultimo giro di import (vedi [Comuni già coperti](comuni-coperti.md) e
+[Stato del progetto](project-status.md)). I numeri delle sezioni per
+modulo sotto sono aggiornati alla versione a 177 comuni (con confronto
+storico); i risultati aggiornati a 599 comuni sono raccolti nella sezione
+["Aggiornamento — da 177 a 599 comuni"](#aggiornamento-2026-07-24--da-177-a-599-comuni-via-234)
+poco più sotto, per evitare di riscrivere ogni sezione storica.
 
 ## Aggiornamento 2026-07-17 — da 44 a 63 comuni, dati fino ad oggi
 
@@ -362,6 +366,74 @@ API rifiuta oltre 100 coordinate in un'unica richiesta).
   robusto e stabile in tutte e tre le versioni (n=63/98/177). Vedi
   sezione dedicata sotto per il dettaglio completo e la tabella di
   confronto.
+
+## Aggiornamento 2026-07-24 — da 177 a 599 comuni (via 234)
+
+Il giro unico di import del 2026-07-23 ([Comuni già coperti](comuni-coperti.md),
+[Stato del progetto](project-status.md)) ha portato la copertura Open-Meteo
+177 → 234 (2026-07-19) → **599 comuni**, con `refresh_dashboard.py`
+(rilancia tutti e 5 i moduli di `src/analysis/` in sequenza) rieseguito
+sull'intero campione finale il 2026-07-23 pomeriggio. Questa sezione
+riporta i risultati aggiornati, scritta il giorno dopo l'import (il codice
+era già aggiornato, mancava solo la sintesi in questa pagina — vedi
+`wiki/log.md` per il dettaglio della sessione di sincronizzazione).
+
+**Il passaggio intermedio a 234 comuni (2026-07-19) non ha una sezione
+dedicata in questa pagina** (fu documentato solo in
+[Stato del progetto](project-status.md) e nel testo della dashboard): il
+modello a errore spaziale a n=234 aveva reso **% urbano di nuovo
+significativo** (p=0.031, coefficiente +0.0083, segno atteso) e NDVI non
+significativo (p=0.66) — citato qui solo come punto di confronto, non
+verificabile a ritroso perché i file `output/` di quella run sono stati
+sovrascritti dalle esecuzioni successive.
+
+- **Trend (`trend_analysis.py`)**: **556/599 comuni (92.8%)** con trend di
+  riscaldamento significativo (p<0.05), pendenza da -0.62 a +1.51
+  °C/decade (Prarostino il più ripido, seguito da Angrogna +1.50 e
+  Traversella +1.46). **Cambio degno di nota**: la claim ripetuta per tre
+  estensioni consecutive ("Briga Alta resta l'unico comune con
+  raffreddamento significativo") **non è più vera** — a 599 comuni compare
+  un secondo caso, **Argentera** (-0.40°C/decade, p=0.041). Briga Alta
+  resta comunque il caso più marcato (-0.62°C/decade, p=0.015).
+- **Ondate di calore (`heatwave_stats.py`)**: **2.192 ondate totali** (da
+  640 a n=177). Il comune con più ondate cambia ancora una volta:
+  **Molino dei Torti e Castellazzo Bormida, 17 ciascuno** (pari merito),
+  davanti ai precedenti leader Bassignana/Bozzole/Tortona (16 a n=177).
+- **STL (`seasonal_analysis.py`)**: componente di trend in aumento in
+  **589/599 comuni (98.3%)**. I 10 comuni non in aumento sono, in ordine
+  di variazione totale: Briga Alta (-1.54°C), **Argentera (-0.46°C, nuovo
+  rispetto a n=177)**, Limone Piemonte (-0.45°C), Sambuco (-0.33°C, nuovo),
+  Castelmagno (-0.21°C), Grondona (-0.19°C), Borghetto di Borbera (-0.18°C,
+  nuovo), Fabbrica Curone (-0.04°C, nuovo), Ormea (-0.01°C, nuovo), Perlo
+  (-0.01°C, nuovo) — coerente con Argentera che emerge anche in
+  Mann-Kendall come secondo caso di raffreddamento significativo. Ampiezza
+  stagionale 27.4-36.4°C (leggero allargamento verso l'alto rispetto a
+  27.4-35.3°C a n=177).
+- **Moran's I e clustering (`spatial_analysis.py`)**: **Moran's I = 0.2115**
+  (atteso sotto casualità: -0.0015), **p=0.001 su 999 permutazioni** —
+  ulteriore miglioramento rispetto a 177 comuni (0.1695, p=0.001): il
+  segnale di autocorrelazione spaziale resta stabile e sempre più
+  significativo al crescere del campione. Cluster K-means (k=3):
+
+  | Cluster | Temp. media | N. comuni |
+  |---|---|---|
+  | 0 — alpino | 6.2°C | 152 |
+  | 1 — intermedio | 11.9°C | 249 |
+  | 2 — pianura calda | 13.2°C | 198 |
+
+- **Regressione spaziale (`spatial_regression.py`)**: vedi la sezione
+  dedicata più sotto per il dettaglio completo (tabella di confronto
+  n=63/98/177/599 e discussione del ribaltamento di significatività
+  %urbano/NDVI).
+
+**In sintesi**: l'estensione a 599 comuni conferma ulteriormente i
+risultati già robusti (riscaldamento diffuso, autocorrelazione spaziale
+reale) e introduce due correzioni oneste rispetto a claim precedenti
+ripetute più volte come stabili — un secondo comune in raffreddamento
+(Argentera) e un nuovo ribaltamento di significatività nel modello a
+errore spaziale (%urbano/NDVI, vedi sotto) — nessuna delle due invalida le
+conclusioni principali del progetto, ma vanno riportate nel paper come
+parte della cronologia di convergenza del campione, non nascoste.
 
 ## `trend_analysis.py` — trend di riscaldamento
 
@@ -739,6 +811,61 @@ confidenza (vedi [Articolo scientifico](paper-scientifico.md)).
 > modo sostanziale?". Un coefficiente che si stabilizza per 2-3 estensioni
 > consecutive è un'evidenza molto più solida di una singola soglia
 > p<0.05 superata per caso.
+
+### Aggiornamento 2026-07-24 — rieseguito su 599 comuni (via 234)
+
+Rilanciato di nuovo dopo il giro unico di import del 2026-07-23 (177 → 234
+→ 599 comuni), come parte di `refresh_dashboard.py`. Il passaggio
+intermedio a n=234 (2026-07-19, non documentato in dettaglio in questa
+pagina all'epoca) aveva reso **% urbano di nuovo significativo** (p=0.031,
+coefficiente +0.0083, segno atteso) con NDVI non significativo (p=0.66) —
+citato qui solo come riferimento, i file `output/` di quella run non sono
+più disponibili (sovrascritti dalle esecuzioni successive).
+
+**Fase 1 (OLS, n=599)**: R²=0.973, elevazione ancora dominante
+(-0.0058°C/m, p<0.001). Popolazione non significativa (p=0.110). **%
+urbano è ora significativo anche nell'OLS classico** (coef=-0.0129,
+p=0.003) ma con **segno negativo** — più urbanizzazione associata a
+temperature *più basse*, l'opposto di quanto atteso fisicamente,
+probabile confondimento residuo con l'elevazione non ancora corretto a
+questo stadio. NDVI non significativo (p=0.162). Moran's I sui residui
+OLS = 0.2094 (p=0.001) — ancora significativo, l'OLS resta inadeguato per
+l'inferenza.
+
+**Fase 2 (modello a errore spaziale, n=599)**: lambda=0.932 (p<0.001) — la
+dipendenza spaziale nell'errore si rafforza ulteriormente rispetto a tutte
+le versioni precedenti (0.738 → 0.803 → 0.854 → 0.932). Con questo
+modello:
+
+- Elevazione resta dominante e stabile: coef=-0.00593, p<0.001.
+- Popolazione non significativa (p=0.834).
+- **% urbano torna non significativo** (coef=+0.00198, p=0.370) — il
+  segno torna positivo (atteso) ma perde di nuovo significatività,
+  ribaltando il risultato di n=234.
+- **NDVI diventa significativo** (p=0.012) con **coefficiente negativo**
+  (-0.380) — per la prima volta il segno è quello fisicamente atteso (più
+  vegetazione → temperatura più bassa), a differenza di tutte le versioni
+  precedenti dove NDVI, quando significativo, aveva sempre un segno
+  controintuitivo (più verde → più caldo, ipotizzato come confondimento
+  con l'agricoltura irrigua di pianura).
+
+| Variabile | n=63 | n=98 | n=177 | n=234 (rif. parziale) | n=599 |
+|---|---|---|---|---|---|
+| Elevazione | coef=-0.0055, p<0.001 | coef=-0.0057, p<0.001 | coef=-0.0058, p<0.001 | — | coef=-0.0059, p<0.001 — **unico predittore stabile in ogni versione** |
+| Popolazione | p=0.116, non signif. | p=0.968, non signif. | p=0.800, non signif. | — | p=0.834, non signif. |
+| **% urbano** | p=0.011, signif. | p=0.334, non signif. | p=0.193, non signif. | **p=0.031, signif.** (coef=+0.0083) | **p=0.370, non signif.** (coef=+0.0020) |
+| **NDVI** | p=0.0037, signif. (segno contro.) | coef=+1.089, p=0.0085, signif. (segno contro.) | coef=+0.161, p=0.581, non signif. | p=0.66, non signif. (coef=+0.10) | **coef=-0.380, p=0.012, signif. (segno atteso, per la prima volta)** |
+| Lambda (errore spaziale) | 0.738 | 0.803 | 0.854 | — | **0.932** |
+
+**Lettura onesta**: dopo 5 rilanci successivi (n=63/98/177/234/599), **%
+urbano e NDVI non hanno mai raggiunto due estensioni consecutive con lo
+stesso esito** — significatività e persino il segno di NDVI continuano a
+cambiare. L'unica conclusione quantitativa che regge in ogni singola
+versione, senza eccezioni, è che **l'elevazione è il predittore dominante
+e stabile** della temperatura media. Qualunque affermazione su uso del
+suolo/vegetazione nel paper va presentata esplicitamente come non ancora
+convergente, non come un risultato consolidato — indipendentemente da
+quale sia l'ultima cifra disponibile al momento della scrittura.
 
 Output: `output/spatial_regression.csv`,
 `output/spatial_regression_summary.txt` (OLS+VIF+Moran's I residui),

@@ -20,11 +20,11 @@ dubbio, la sorgente grezza (codice/SQL/config) prevale sempre sulla wiki.
 - [Fonti dati](pages/data-sources.md) — Open-Meteo, Copernicus ERA5, ARPA, ISTAT, OSM (stato e bug noti)
 - [Modello dati](pages/data-model.md) — schema PostgreSQL/PostGIS: tabelle, viste, funzione `identify_heatwaves()`
 - [Pipeline ETL](pages/etl-pipeline.md) — extract/transform/load reali, gap noti
-- [Comuni già coperti](pages/comuni-coperti.md) — elenco dei 234 comuni già in `temperature` (108 con copertura ARPA), guida al formato per nuovi download collaborativi (evitare doppioni)
+- [Comuni già coperti](pages/comuni-coperti.md) — elenco dei 599 comuni già in `temperature` (218 con copertura ARPA completa), guida al formato per nuovi download collaborativi (evitare doppioni)
 
 ## Analisi
 
-- [Analisi statistica e spaziale](pages/statistical-analysis.md) — `src/analysis/`: trend (Mann-Kendall/regressione), ondate di calore, STL, Moran's I, clustering, modello a errore spaziale (temp ~ elevazione/popolazione/uso del suolo/NDVI), **validazione contro stazioni ARPA reali** (108 comuni, bias -1.59°C, correla con elevazione) — eseguita su dati reali
+- [Analisi statistica e spaziale](pages/statistical-analysis.md) — `src/analysis/`: trend (Mann-Kendall/regressione, 556/599 comuni significativi), ondate di calore (2.192 totali), STL, Moran's I (0.2115, p=0.001 su 599 comuni), clustering, modello a errore spaziale (temp ~ elevazione/popolazione/uso del suolo/NDVI — solo l'elevazione resta stabile su 5 estensioni), **validazione contro stazioni ARPA reali** (218/218 comuni, copertura completa, bias -1.52°C, correla con elevazione) — eseguita su dati reali
 - [Catalogo KPI](pages/kpi-catalog.md) — KPI definiti, formule, dove sono calcolati
 - [Query SQL](pages/sql-queries.md) — catalogo query di `sql/02_common_queries.sql`
 - [Glossario concetti](pages/concepts.md) — Mann-Kendall, Moran's I, STL, IQR, K-means, definizione di ondata di calore

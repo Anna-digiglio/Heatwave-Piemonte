@@ -3863,3 +3863,75 @@ Log cronologico append-only. Ogni riga: data, azione, pagine toccate.
   campione completo a 218 comuni in tutte le sottosezioni, tabella di
   confronto storico aggiunta), `log.md` (questa voce, correzione dei
   conflitti Git non risolti).
+
+- **2026-07-24** — SINCRONIZZAZIONE WIKI/FRONTEND SUI RISULTATI A 599
+  COMUNI. Richiesta esplicita dell'utente: dopo il giro di import
+  234 → 599 comuni della sessione precedente (2026-07-23), verificare che
+  "tutte le scritte del frontend e della wiki" fossero coerenti e capire
+  se i risultati statistici fossero cambiati in modo significativo con
+  l'estensione del campione.
+
+  **Audit** (nessuna modifica, solo lettura): confrontati i numeri
+  hardcoded in `wiki/pages/*.md` e in `dashboard/**/*.py` con lo stato
+  reale del DB (`data/dashboard_export/overview_stats.json`, già a 599/218
+  grazie all'export rigenerato il 23/7) e con i file freschi in `output/`
+  (tutti datati 23/7 16:13-16:14, prodotti da `refresh_dashboard.py` sullo
+  stesso giro di import). Trovato che i numeri **letti dinamicamente** a
+  runtime (Home page, card, mappe) erano già corretti, ma **il testo
+  statico no**: `dashboard/pages/08_citazioni_e_fonti.py` e
+  `dashboard/pages/05_contesto_territoriale.py` (risultati del modello a
+  errore spaziale) citavano ancora "234 comuni"; commenti/docstring in
+  `Home.py`, `queries.py`, `data_source.py` erano stale (quest'ultimo
+  affermava pure "110 comuni hanno solo ARPA", falso da quando la
+  copertura ARPA è completa: sono 0); `README.md` (due punti) e
+  `wiki/pages/gis-maps.md` (fermo a "177 comuni" nonostante le mappe QGIS
+  fossero già state rigenerate il 23/7) erano anch'essi stale.
+
+  **Scoperta più rilevante**: `refresh_dashboard.py` aveva già
+  ri-eseguito tutti e 5 i moduli di `src/analysis/` sul campione a 599
+  comuni durante la sessione del 23/7 (in parallelo al download ARPA), ma
+  **nessuna pagina wiki raccontava questi risultati** — la narrazione di
+  `statistical-analysis.md` si fermava a n=177 (il passaggio intermedio a
+  n=234 non aveva mai avuto una sezione dedicata). Letti i file `output/`
+  freschi (`trend_analysis.csv`, `heatwave_stats_by_municipality.csv`,
+  `seasonal_trend_summary.csv`, `spatial_analysis.csv`,
+  `morans_i_summary.csv`, `spatial_regression_summary.txt`,
+  `spatial_regression_spatial_model.txt`) per ricostruire i risultati reali
+  a 599 comuni, mai scritti da nessuna parte:
+  - Moran's I sale a **0.2115** (p=0.001), da 0.1695 a n=177.
+  - Cluster K-means: 152 alpino (6.2°C) / 249 intermedio (11.9°C) / 198
+    pianura calda (13.2°C).
+  - Trend: 556/599 comuni significativi (92.8%). **La claim ripetuta per
+    tre estensioni consecutive ("Briga Alta resta l'unico raffreddamento
+    significativo") non è più vera**: a 599 comuni compare un secondo caso,
+    **Argentera** (-0.40°C/decade, p=0.041), confermato anche da STL (589/599
+    comuni in aumento, 10 non in aumento).
+  - Ondate di calore: 2.192 totali, nuovo comune con più ondate **Molino
+    dei Torti/Castellazzo Bormida (17 pari merito)**, non più
+    Bassignana/Bozzole/Tortona (16 a n=177).
+  - Regressione spaziale: **% urbano torna non significativo** (p=0.370,
+    era p=0.031 a n=234, il terzo ribaltamento di significatività su 5
+    estensioni) mentre **NDVI diventa significativo con segno negativo**
+    (p=0.012) — per la prima volta il segno fisicamente atteso (più
+    vegetazione → più fresco), invece del solito segno controintuitivo
+    delle versioni precedenti. Lambda spaziale sale a 0.932 (da 0.854).
+    **L'unico predittore stabile in tutte e 5 le versioni (n=63/98/177/234/599)
+    resta l'elevazione.**
+
+  **Fix applicati**: testo statico corretto nei 3 file dashboard sopra
+  citati (numeri aggiornati a 599/218, risultato del modello spaziale
+  riscritto con i numeri reali a n=599 invece di n=234), commenti/docstring
+  aggiornati, `README.md` corretto (due punti), nuova sezione
+  "Aggiornamento 2026-07-24 — da 177 a 599 comuni (via 234)" aggiunta in
+  `statistical-analysis.md` (sintesi di tutti e 5 i moduli) più una
+  sottosezione dedicata dentro `spatial_regression.py` con la tabella di
+  confronto estesa a n=234/599, `gis-maps.md` aggiornata (177 → 599
+  comuni ovunque), `index.md` aggiornato (voci "Comuni già coperti" e
+  "Analisi statistica" con i numeri correnti).
+
+  Pagine aggiornate: `statistical-analysis.md`, `gis-maps.md`, `index.md`,
+  `project-status.md` (nuovo paragrafo di sintesi), `log.md` (questa voce).
+  File fuori wiki corretti: `dashboard/pages/08_citazioni_e_fonti.py`,
+  `dashboard/pages/05_contesto_territoriale.py`, `dashboard/Home.py`,
+  `dashboard/components/queries.py`, `dashboard/components/data_source.py`,
+  `README.md`.

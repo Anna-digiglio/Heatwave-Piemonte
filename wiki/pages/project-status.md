@@ -489,6 +489,30 @@ instabile da non riportare come cifra precisa nel paper, solo come
 concordanza qualitativa (92.7% dei comuni concorde in segno, stabile e
 in crescita).
 
+**2026-07-24 — sincronizzazione wiki/dashboard sui risultati a 599 comuni**:
+`refresh_dashboard.py` (tutti e 5 i moduli di `src/analysis/`) era già
+stato rieseguito sul campione a 599 comuni il 23/7 pomeriggio insieme
+all'import, ma i risultati non erano ancora stati sintetizzati in
+`statistical-analysis.md` né corretti nel testo statico della dashboard —
+fatto in questa sessione (richiesta esplicita dell'utente: "controlla
+tutte le scritte del frontend e della wiki... riportalo"). Due correzioni
+sostanziali rispetto a claim ripetute per più estensioni consecutive
+(dettaglio completo in
+[Analisi statistica](statistical-analysis.md#aggiornamento-2026-07-24--da-177-a-599-comuni-via-234)):
+**Argentera si aggiunge a Briga Alta come secondo comune con
+raffreddamento significativo** (Mann-Kendall, confermato anche da STL), e
+nel modello a errore spaziale **% urbano torna non significativo**
+(p=0.370, era p=0.031 a n=234) mentre **NDVI diventa significativo con
+segno negativo** (p=0.012, per la prima volta il segno atteso invece del
+solito segno controintuitivo). L'unico predittore rimasto stabile in
+tutte e 5 le versioni del modello (n=63/98/177/234/599) resta
+l'elevazione. Corretti anche 5 punti di testo statico non aggiornati
+automaticamente (fermi a "234 comuni"): `dashboard/pages/08_citazioni_e_fonti.py`,
+`dashboard/pages/05_contesto_territoriale.py` (risultati del modello
+spaziale), commenti/docstring in `Home.py`/`queries.py`/`data_source.py`,
+oltre a `README.md` (due punti) e `wiki/pages/gis-maps.md` (fermo a "177
+comuni" nonostante le mappe QGIS fossero già state rigenerate il 23/7).
+
 ## Prossimi passi
 
 Tutti minori/non bloccanti — il nucleo pianificato del progetto è
