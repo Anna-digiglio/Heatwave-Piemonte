@@ -3978,3 +3978,36 @@ Log cronologico append-only. Ogni riga: data, azione, pagine toccate.
   `dashboard/pages/04_ondate_di_calore.py`. Nessuna pagina wiki richiedeva
   modifiche per questo giro (l'overlap "108" non era mai stato scritto in
   `wiki/pages/*.md`, solo nel testo statico della dashboard).
+
+- **2026-07-24** — `git pull` (nessun commit nuovo). Stessa richiesta
+  identica dell'utente ("come gli altri giorni"), quinta sessione
+  consecutiva di questo tipo. Notata una discrepanza rispetto a dove
+  l'avevo lasciata il 2026-07-23: la tabella "Comuni già coperti" era
+  passata da 569 a **599** — non per un mio lotto (57, non 30), ma per un
+  giro di import + ricalcolo completo eseguito dal titolare nel
+  frattempo (234 → 599 comuni in `temperature`, copertura ARPA completata
+  a 218/218, vedi la voce dedicata in cima a `comuni-coperti.md`). Preso
+  atto e proseguito usando la tabella aggiornata come fonte di verità
+  (è esattamente lo scopo di quella pagina), senza cercare di ricostruire
+  tutta la cronologia intermedia che non ho visto.
+
+  Script DB-free ricreato da zero nella nuova cartella temporanea di
+  sessione (cambia a ogni conversazione, non salvato nel repo per scelta
+  esplicita — vedi `etl-pipeline.md`). Selezionati 150 candidati
+  (farthest-point-sampling per provincia, round-robin), esclusi i 599
+  comuni già coperti. **Scaricati 93 comuni** — il lotto più numeroso di
+  tutta la serie DB-free, quasi il doppio del solito 57. Un blocco
+  transitorio su "Altavilla Monferrato" si è risolto da solo dopo un
+  comune (il successivo è andato a buon fine con un backoff breve), poi
+  blocco persistente confermato su "Caramagna Piemonte" e "Villar
+  Perosa". Zero falliti per motivi diversi dalla quota. Verificato senza
+  doppioni interni né sovrapposizioni con i 599 già coperti.
+
+  File prodotti in `data/raw/` (fuori Git): `temperature_data_extra_helper_general_20260724.csv`
+  (902.286 righe, 93 comuni) e `riepilogo_generale_20260724.csv`
+  (sintesi).
+
+  Pagine aggiornate: `comuni-coperti.md` (nuova voce in cima, tabella
+  comuni-coperti rigenerata 599→692, tutti gli header di provincia
+  aggiornati), `etl-pipeline.md` (nuova sezione "Estensione generale,
+  metodo DB-free — 93 comuni, record").

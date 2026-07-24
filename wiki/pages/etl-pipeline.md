@@ -672,6 +672,33 @@ un'alternativa generale a `download_extra_municipalities.py` — se
 un'altra sessione futura si trova nella stessa condizione, questa
 sezione ne descrive il metodo per poterlo ricostruire.
 
+## Estensione generale, metodo DB-free — 93 comuni, record (2026-07-24)
+
+Quinta giornata consecutiva della stessa richiesta. Stesso metodo
+DB-free delle due sessioni precedenti — shapefile ISTAT +
+`municipality_metadata_all.parquet` + tabella "Comuni già coperti" di
+[Comuni già coperti](comuni-coperti.md), stessa base dei **599 comuni**
+già coperti dopo il giro di import + ricalcolo eseguito dal titolare il
+2026-07-23 pomeriggio (234 → 599 comuni in `temperature`, vedi sezione
+dedicata sotto).
+
+**Risultato**: **93 comuni**, il lotto più numeroso di tutta la serie
+DB-free (quasi il doppio del solito 57) — un blocco transitorio su
+"Altavilla Monferrato" recuperato dopo un solo fallimento (il comune
+successivo è andato a buon fine), poi blocco persistente confermato su
+"Caramagna Piemonte" e "Villar Perosa". Zero falliti per motivi diversi
+dalla quota. Distribuzione: Asti 14, Alessandria 13, Cuneo 13, Torino 13,
+Novara 11, Vercelli 11, Biella 9, Verbano-Cusio-Ossola 9. Verificato
+senza doppioni né sovrapposizioni con i 599 già coperti: 902.286 righe =
+93 × 9.702 giorni esatti.
+
+**File prodotti** (fuori Git, `data/raw/`):
+- `data/raw/temperature_data_extra_helper_general_20260724.csv` —
+  902.286 righe, 93 comuni, 2000-01-01 → 2026-07-24.
+- `data/raw/riepilogo_generale_20260724.csv` — tabella di sintesi.
+
+**Non ancora importato**: resta in coda per il prossimo giro di import.
+
 ## Estensione generale, metodo DB-free — altri 57 comuni (2026-07-23)
 
 Quarta giornata consecutiva della stessa richiesta ("come gli altri
