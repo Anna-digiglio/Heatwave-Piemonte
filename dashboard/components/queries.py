@@ -28,15 +28,36 @@ def _export_path(filename: str) -> Path:
 
 # --- Loader di base (un solo pd.read_parquet per file, riusato da più
 # funzioni pubbliche) -------------------------------------------------------
+#
+# Due riduzioni di memoria applicate ai file con una riga per comune/giorno
+# (milioni di righe): float64 -> float32 sulle colonne numeriche (precisione
+# persa trascurabile per dati di temperatura, ben sotto la risoluzione delle
+# misure stesse) e municipality_name/province_name -> category (poche
+# centinaia di valori distinti ripetuti su milioni di righe - str/object le
+# ripete per intero a ogni riga, category le codifica come interi). Merge/
+# groupby/isin restano invariati (pandas 3 li gestisce in modo trasparente
+# anche misti a colonne str, verificato). Necessario su Streamlit Community
+# Cloud (limite RAM ~1GB): con 599 comuni i precalcolati superano 750MB
+# senza queste riduzioni, a ridosso del limite - vedi wiki/log.md 2026-07-24.
+
+def _shrink_memory(df: pd.DataFrame) -> pd.DataFrame:
+    float_cols = df.select_dtypes(include='float64').columns
+    if len(float_cols):
+        df[float_cols] = df[float_cols].astype('float32')
+    for col in ('municipality_name', 'province_name'):
+        if col in df.columns:
+            df[col] = df[col].astype('category')
+    return df
+
 
 @st.cache_data(ttl=600)
 def _load_temperature_daily_all() -> pd.DataFrame:
-    return pd.read_parquet(_export_path('temperature_daily_all.parquet'))
+    return _shrink_memory(pd.read_parquet(_export_path('temperature_daily_all.parquet')))
 
 
 @st.cache_data(ttl=600)
 def _load_arpa_temperature_daily_all() -> pd.DataFrame:
-    return pd.read_parquet(_export_path('arpa_temperature_daily_all.parquet'))
+    return _shrink_memory(pd.read_parquet(_export_path('arpa_temperature_daily_all.parquet')))
 
 
 @st.cache_data(ttl=600)
@@ -54,7 +75,7 @@ def _load_seasonal_decomposition_all() -> pd.DataFrame:
     path = _export_path('seasonal_decomposition_all.parquet')
     if not path.exists():
         return pd.DataFrame()
-    return pd.read_parquet(path)
+    return _shrink_memory(pd.read_parquet(path))
 
 
 # --- Overview / KPI ---------------------------------------------------------
@@ -156,7 +177,7 @@ def get_kpi_annual_by_province() -> pd.DataFrame:
 
 # --- Serie giornaliere Open-Meteo -------------------------------------------
 
-@st.cache_data(ttl=600)
+@st.cache_data(ttl=600, max_entries=50)
 def get_daily_temperature(municipality_name: str) -> pd.DataFrame:
     """Serie giornaliera di temperatura per un comune."""
     daily = _load_temperature_daily_all()
@@ -165,7 +186,7 @@ def get_daily_temperature(municipality_name: str) -> pd.DataFrame:
     return df.sort_values('date').reset_index(drop=True)
 
 
-@st.cache_data(ttl=600)
+@st.cache_data(ttl=600, max_entries=20)
 def get_daily_temperature_aggregate(municipality_names: tuple) -> pd.DataFrame:
     """
     Media giornaliera di temperatura sui comuni indicati - usata per
@@ -276,7 +297,7 @@ def get_morans_i_summary() -> pd.DataFrame:
     return pd.read_parquet(path)
 
 
-@st.cache_data(ttl=600)
+@st.cache_data(ttl=600, max_entries=50)
 def get_seasonal_decomposition(municipality_name: str) -> pd.DataFrame:
     """Risultati di src/analysis/seasonal_analysis.py per un comune."""
     all_stl = _load_seasonal_decomposition_all()
@@ -287,7 +308,7 @@ def get_seasonal_decomposition(municipality_name: str) -> pd.DataFrame:
     return df.sort_values('date').reset_index(drop=True)
 
 
-@st.cache_data(ttl=600)
+@st.cache_data(ttl=600, max_entries=20)
 def get_seasonal_decomposition_aggregate(municipality_names: tuple) -> pd.DataFrame:
     """
     STL decomposition calcolata al volo sulla media giornaliera dei comuni
@@ -418,7 +439,7 @@ def get_arpa_municipality_metadata() -> pd.DataFrame:
     return meta[meta['municipality_name'].isin(names)].reset_index(drop=True)
 
 
-@st.cache_data(ttl=600)
+@st.cache_data(ttl=600, max_entries=50)
 def get_arpa_daily_temperature(municipality_name: str) -> pd.DataFrame:
     """Serie giornaliera ARPA (osservazione di stazione reale) per un comune."""
     daily = _load_arpa_temperature_daily_all()
@@ -427,7 +448,7 @@ def get_arpa_daily_temperature(municipality_name: str) -> pd.DataFrame:
     return df.sort_values('date').reset_index(drop=True)
 
 
-@st.cache_data(ttl=600)
+@st.cache_data(ttl=600, max_entries=20)
 def get_arpa_daily_temperature_multi(municipality_names: tuple) -> pd.DataFrame:
     """
     Serie giornaliera ARPA per più comuni insieme (una riga per
@@ -490,7 +511,7 @@ def compute_annual_kpi_from_daily(daily: pd.DataFrame) -> pd.DataFrame:
     )
 
 
-@st.cache_data(ttl=600)
+@st.cache_data(ttl=600, max_entries=20)
 def get_arpa_heatwave_events(municipality_names: tuple, threshold: float = 35.0, min_duration: int = 3) -> pd.DataFrame:
     """
     Ondate di calore (definizione canonica a soglia fissa) calcolate al
