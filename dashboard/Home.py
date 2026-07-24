@@ -27,6 +27,7 @@ from components.queries import (
     get_combined_heatwave_count,
     get_combined_municipality_geometries_wkt,
     get_combined_trend_analysis,
+    get_n_municipalities_both_sources,
     get_overview_stats,
 )
 from components.styling import (
@@ -153,7 +154,7 @@ st.warning(
     f"**{n_municipalities_combined} dei {stats['n_municipalities']} comuni "
     f"piemontesi** — {stats['n_municipalities_with_data']} con dati Open-Meteo "
     f"e {arpa_stats['n_arpa_municipalities']} con dati ARPA (stazione reale), "
-    f"108 dei quali con entrambe le fonti — non un censimento completo. Gli "
+    f"{get_n_municipalities_both_sources()} dei quali con entrambe le fonti — non un censimento completo. Gli "
     "8 capoluoghi di provincia più altri comuni scelti per coprire bene il "
     "territorio (zone di montagna, pianura, collina). Le pagine di analisi "
     "hanno un selettore per scegliere quale fonte guardare comune per "
