@@ -30,8 +30,8 @@ scontato in analisi simili.
 
 ## Cosa contiene il progetto
 
-- **Acquisizione dati**: temperature giornaliere da Open-Meteo (234 comuni,
-  2000–oggi, oltre 2,2 milioni di righe), validazione contro 218 stazioni
+- **Acquisizione dati**: temperature giornaliere da Open-Meteo (599 comuni,
+  2000–oggi, oltre 5,8 milioni di righe), validazione contro 218 stazioni
   reali ARPA Piemonte, popolazione (ISTAT), uso del suolo (Copernicus CORINE
   Land Cover), indice di vegetazione NDVI (Copernicus Global Land Service),
   confini amministrativi dei 1180 comuni piemontesi (ISTAT).
@@ -135,8 +135,9 @@ stato attuale.
 
 ## Limiti noti
 
-- Copertura dati di temperatura reale: 234 dei 1180 comuni piemontesi per
-  Open-Meteo, 218 per ARPA Piemonte (in estensione progressiva).
+- Copertura dati di temperatura reale: 599 dei 1180 comuni piemontesi per
+  Open-Meteo, 218 per ARPA Piemonte — copertura ARPA completa (tutti i
+  comuni con stazione attiva hanno anche dati Open-Meteo).
 - Open-Meteo (rianalisi climatica) sottostima sistematicamente le
   temperature massime reali rispetto alle stazioni ARPA, con un bias che
   cresce in territorio alpino — vedi la modalità "Confronto" nella
