@@ -37,6 +37,8 @@ from components.queries import (
     get_morans_i_summary,
     get_municipality_geometries_wkt,
     get_municipality_metadata,
+    get_n_municipalities_arpa_only,
+    get_n_municipalities_both_sources,
     get_province_geometries_wkt,
     get_spatial_analysis,
     get_trend_analysis,
@@ -259,10 +261,10 @@ with tab_overview:
                 signed=True,
             )
             st.caption(
-                "Le due mappe non coprono esattamente gli stessi comuni (108 hanno "
-                "entrambe le fonti, gli altri solo una — vedi info box in alto): "
-                "confronta le zone dove **entrambe** hanno un colore, non l'assenza "
-                "di colore in una delle due."
+                f"Le due mappe non coprono esattamente gli stessi comuni "
+                f"({get_n_municipalities_both_sources()} hanno entrambe le fonti, gli "
+                "altri solo una — vedi info box in alto): confronta le zone dove "
+                "**entrambe** hanno un colore, non l'assenza di colore in una delle due."
             )
     else:
         geo_df_active = get_arpa_municipality_geometries_wkt() if source == SOURCE_ARPA else get_municipality_geometries_wkt()
@@ -290,7 +292,8 @@ with tab_overview:
             "A differenza delle due mappe sopra (ciascuna fonte calcola il proprio trend in "
             "autonomia), questa mappa mostra la differenza **diretta** giorno per giorno tra le "
             "due fonti sullo stesso comune (Open-Meteo − ARPA su temp. massima) — per questo "
-            "esiste solo per i 108 comuni con **entrambe** le fonti, non per i 110 solo-ARPA. "
+            f"esiste solo per i {get_n_municipalities_both_sources()} comuni con **entrambe** le "
+            f"fonti, non per i {get_n_municipalities_arpa_only()} solo-ARPA. "
             "Blu = Open-Meteo sottostima la temperatura reale (la maggioranza dei casi)."
         )
         validation = get_arpa_validation()
@@ -528,8 +531,8 @@ with tab_detail:
         st.caption(
             "Ex pagina dedicata \"Validazione Dati\", spostata qui il 2026-07-18: la mappa bias "
             "e il confronto ondate/trend sono già più sopra e in Ondate di Calore/Analisi "
-            "Temporale (modalità Confronto) — qui il resto del dettaglio, sui 108 comuni con "
-            "entrambe le fonti."
+            f"Temporale (modalità Confronto) — qui il resto del dettaglio, sui "
+            f"{get_n_municipalities_both_sources()} comuni con entrambe le fonti."
         )
         validation = get_arpa_validation()
         hot_bias = get_arpa_hot_day_bias()
