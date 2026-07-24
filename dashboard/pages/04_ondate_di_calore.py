@@ -38,6 +38,7 @@ from components.queries import (
     get_heatwave_stats_by_municipality,
     get_municipality_geometries_wkt,
     get_municipality_metadata,
+    get_n_municipalities_both_sources,
 )
 from components.styling import inject_custom_css, render_sidebar_branding
 
@@ -129,8 +130,8 @@ if source == SOURCE_BOTH:
         cc3.metric("Ondate ARPA reali", int(comparison.get('n_arpa_events', 0)))
         cc3.caption(f"Contro {int(comparison.get('n_om_events', 0))} rilevate da Open-Meteo")
         st.caption(
-            "Calcolato sui 108 comuni con entrambe le fonti disponibili (non filtrato per "
-            "provincia/anno)."
+            f"Calcolato sui {get_n_municipalities_both_sources()} comuni con entrambe le fonti "
+            "disponibili (non filtrato per provincia/anno)."
         )
     else:
         st.info("Nessun risultato di confronto disponibile.")
@@ -263,9 +264,10 @@ with tab_overview:
                 integer=True,
             )
             st.caption(
-                "Le due mappe non coprono esattamente gli stessi comuni (108 hanno entrambe le "
-                "fonti, gli altri solo una): confronta le zone dove **entrambe** hanno un colore, "
-                "non l'assenza di colore in una delle due."
+                f"Le due mappe non coprono esattamente gli stessi comuni "
+                f"({get_n_municipalities_both_sources()} hanno entrambe le fonti, gli altri solo "
+                "una): confronta le zone dove **entrambe** hanno un colore, non l'assenza di "
+                "colore in una delle due."
             )
     else:
         geo_df = get_arpa_municipality_geometries_wkt() if source == SOURCE_ARPA else get_municipality_geometries_wkt()
