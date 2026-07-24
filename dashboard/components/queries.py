@@ -86,7 +86,7 @@ def get_arpa_overview_stats() -> dict:
 def get_combined_trend_analysis() -> pd.DataFrame:
     """
     Trend per **tutti** i comuni con dati reali, unendo le due fonti invece
-    di limitarsi a Open-Meteo: i 234 comuni Open-Meteo usano il trend
+    di limitarsi a Open-Meteo: i 599 comuni Open-Meteo usano il trend
     Open-Meteo (fonte più validata finora, vedi
     wiki/pages/statistical-analysis.md), i comuni **solo ARPA** (nessun
     dato Open-Meteo) usano il trend ARPA calcolato al volo
