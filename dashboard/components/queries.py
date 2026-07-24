@@ -389,6 +389,28 @@ def get_arpa_municipality_names_with_data() -> list:
 
 
 @st.cache_data(ttl=600)
+def get_n_municipalities_both_sources() -> int:
+    """
+    N. comuni con **sia** Open-Meteo sia ARPA (intersezione) - calcolato
+    dall'intersezione reale dei due elenchi invece di un numero scritto a
+    mano, che altrimenti va aggiornato manualmente in testo statico a ogni
+    estensione della copertura (era successo con "108", stale dopo
+    l'estensione a 599/218 del 2026-07-23 - vedi wiki/log.md).
+    """
+    om_names = set(get_municipality_names_with_data())
+    arpa_names = set(get_arpa_municipality_names_with_data())
+    return len(om_names & arpa_names)
+
+
+@st.cache_data(ttl=600)
+def get_n_municipalities_arpa_only() -> int:
+    """N. comuni con **solo** ARPA (nessun dato Open-Meteo) - vedi `get_n_municipalities_both_sources()`."""
+    om_names = set(get_municipality_names_with_data())
+    arpa_names = set(get_arpa_municipality_names_with_data())
+    return len(arpa_names - om_names)
+
+
+@st.cache_data(ttl=600)
 def get_arpa_municipality_metadata() -> pd.DataFrame:
     """Provincia, elevazione e centroide per ciascun comune con dati ARPA."""
     names = set(get_arpa_municipality_names_with_data())
