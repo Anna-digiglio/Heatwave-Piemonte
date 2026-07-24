@@ -3935,3 +3935,46 @@ Log cronologico append-only. Ogni riga: data, azione, pagine toccate.
   `dashboard/pages/05_contesto_territoriale.py`, `dashboard/Home.py`,
   `dashboard/components/queries.py`, `dashboard/components/data_source.py`,
   `README.md`.
+
+- **2026-07-24 (seguito)** — SECONDO GIRO: "108 comuni" HARDCODED SFUGGITI
+  AL PRIMO AUDIT. L'utente ha segnalato un'altra occorrenza rimasta
+  ("Analisi Spaziale", caption sulla mappa Bias Open-Meteo vs ARPA: "108
+  comuni... 110 solo-ARPA") e chiesto un secondo giro completo sul resto
+  del frontend, non fidandosi che il primo audit fosse esaustivo (a ragione:
+  il primo giro aveva cercato solo "234"/"177 comuni", non l'overlap
+  Open-Meteo∩ARPA scritto altrove come "108"/"110", numero originario del
+  2026-07-18 mai più aggiornato). Grep sistematico su tutto `dashboard/`
+  per ogni numero di comuni storico (51/63/98/108/145/155/177/190/
+  234/331/640/770): trovate **6 occorrenze hardcoded di "108" e 1 di "110
+  solo-ARPA"** in `Home.py:156`, `03_analisi_spaziale.py` (righe 262, 293,
+  531) e `04_ondate_di_calore.py` (righe 132, 266) — tutte descrivevano
+  l'overlap Open-Meteo∩ARPA come fisso a 108/110, falso da quando la
+  copertura ARPA è completa (218/218 hanno anche Open-Meteo, overlap
+  reale = 218).
+
+  **Fix strutturale, non solo un altro find-replace**: invece di
+  sostituire "108" con "218" a mano (lo stesso problema si sarebbe
+  ripresentato alla prossima estensione), aggiunte due funzioni cacheate
+  in `queries.py` — `get_n_municipalities_both_sources()` e
+  `get_n_municipalities_arpa_only()` — che calcolano l'overlap
+  dall'intersezione/differenza reale dei due elenchi di nomi comune
+  (`get_municipality_names_with_data()` ∩/− `get_arpa_municipality_names_with_data()`),
+  invece di un numero scritto a mano. Tutte e 6 le occorrenze sostituite
+  con chiamate a queste funzioni: da qui in avanti restano corrette anche
+  alla prossima estensione della copertura, senza bisogno di un altro
+  giro di audit manuale.
+
+  Verificato con `py_compile` + `AppTest` su `Home.py`,
+  `03_analisi_spaziale.py`, `04_ondate_di_calore.py` (nessuna eccezione
+  nuova; l'unica eccezione residua su `03_analisi_spaziale.py` testata in
+  isolamento è il solito limite noto di `AppTest.from_file()` su una
+  sottopagina fuori dal contesto multipage — `st.page_link` →
+  `KeyError: 'url_pathname'`, preesistente e riprodotto identico anche
+  sulla versione originale via `git stash`, non introdotto da questa
+  sessione).
+
+  Pagine toccate: `dashboard/components/queries.py` (2 nuove funzioni),
+  `dashboard/Home.py`, `dashboard/pages/03_analisi_spaziale.py`,
+  `dashboard/pages/04_ondate_di_calore.py`. Nessuna pagina wiki richiedeva
+  modifiche per questo giro (l'overlap "108" non era mai stato scritto in
+  `wiki/pages/*.md`, solo nel testo statico della dashboard).
